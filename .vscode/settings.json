@@ -1,0 +1,5 @@
+{
+  "terminal.integrated.env.linux": {
+    "PATH": "${env:PATH}:/home/rixon/.nix-profile/bin"
+  }
+}

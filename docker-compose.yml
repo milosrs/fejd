@@ -1,0 +1,63 @@
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fejd-backend
+    ports:
+      - "8080:8080"
+    environment:
+      PORT: 8080
+      DATABASE_URL: postgres://postgres:postgres@db:5432/fejd?sslmode=disable
+      KEYCLOAK_URL: http://keycloak:8080
+    depends_on:
+      - db
+      - keycloak
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: fejd-frontend
+    ports:
+      - "5173:80"
+    environment:
+      VITE_API_URL: http://localhost:8080
+      VITE_KEYCLOAK_URL: http://localhost:8080
+    depends_on:
+      - backend
+      - keycloak
+
+  db:
+    image: postgres:16-alpine
+    container_name: fejd-db
+    environment:
+      POSTGRES_DB: fejd
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.2.5
+    container_name: fejd-keycloak
+    command: ["start-dev", "--http-port=8080", "--db=postgres", "--db-url=jdbc:postgresql://db:5432/fejd", "--db-username=postgres", "--db-password=postgres", "--hostname-strict=false", "--hostname-debug=true"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://db:5432/fejd
+      KC_DB_USERNAME: postgres
+      KC_DB_PASSWORD: postgres
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    ports:
+      - "9090:8080"
+    depends_on:
+      - db
+    volumes:
+      - ./keycloak/themes:/opt/keycloak/themes
+      - ./keycloak/providers:/opt/keycloak/providers
+
+volumes:
+  pgdata:

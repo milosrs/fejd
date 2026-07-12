@@ -27,6 +27,25 @@ go.work.sum
 # env file
 .env
 
+# direnv / local state
+.direnv/
+.tmp/
+
+# Node / frontend
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.capacitor/
+frontend/android/
+frontend/ios/
+pnpm-lock.yaml
+.pnpm-store/
+
+# Nix
+result
+result-*
+
 # Editor/IDE
 # .idea/
 # .vscode/

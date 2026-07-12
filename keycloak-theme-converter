@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+THEME_ROOT="$ROOT_DIR/keycloak/themes"
+PROVIDERS_ROOT="$ROOT_DIR/keycloak/providers"
+THEME_BUILDER_DIR="$ROOT_DIR/keycloak/theme-builder"
+
+mkdir -p "$THEME_ROOT" "$PROVIDERS_ROOT"
+
+if [[ $# -lt 1 ]]; then
+  echo "Usage: ./keycloak-theme-converter <theme-name>"
+  echo "Example: ./keycloak-theme-converter fejd"
+  exit 1
+fi
+
+THEME_NAME="$1"
+THEME_SOURCE="$THEME_ROOT/$THEME_NAME"
+
+if [[ ! -d "$THEME_SOURCE" ]]; then
+  echo "Theme directory not found: $THEME_SOURCE"
+  exit 1
+fi
+
+if [[ -f "$THEME_BUILDER_DIR/package.json" ]]; then
+  (cd "$THEME_BUILDER_DIR" && node ./build.mjs)
+fi
+
+echo "Keycloak theme source is ready at: $THEME_SOURCE"
+echo "The theme directory is mounted into the Keycloak container through docker compose."
+echo "Developers can edit the theme assets in the repository and restart the Keycloak service."
