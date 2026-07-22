@@ -1,5 +1,8 @@
 {
   "terminal.integrated.env.linux": {
     "PATH": "${env:PATH}:/home/rixon/.nix-profile/bin"
-  }
+  },
+  "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+  "nixEnvSelector.useFlakes": true,
+  "nixEnvSelector.flakeShell": "default"
 }

@@ -10,6 +10,8 @@ services:
       PORT: 8080
       DATABASE_URL: postgres://postgres:postgres@db:5432/fejd?sslmode=disable
       KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: fejd
+      KEYCLOAK_CLIENT_ID: fejd-backend
     depends_on:
       - db
       - keycloak
@@ -23,7 +25,9 @@ services:
       - "5173:80"
     environment:
       VITE_API_URL: http://localhost:8080
-      VITE_KEYCLOAK_URL: http://localhost:8080
+      VITE_KEYCLOAK_URL: http://localhost:9090
+      VITE_KEYCLOAK_REALM: fejd
+      VITE_KEYCLOAK_CLIENT_ID: fejd-frontend
     depends_on:
       - backend
       - keycloak

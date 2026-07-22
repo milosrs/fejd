@@ -1,0 +1,1331 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "description": "Booking and appointment management API.",
+        "title": "Fejd API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/admin/business/{businessID}/employees": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all business users for a business (admin only).",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List all business users",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/models.BusinessUser"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/business/{businessID}/employees/{userID}/overrides": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a working hours override (e.g. holiday) for an employee.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Add a date override",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User ID (Keycloak sub)",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/models.WorkingHoursOverride"
+                            }
+                        }
+                    },
+                    "description": "Override details",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/models.WorkingHoursOverride"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/business/{businessID}/employees/{userID}/overrides/{overrideID}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a working hours override for an employee.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete a date override",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User ID (Keycloak sub)",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Override UUID",
+                        "name": "overrideID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/business/{businessID}/employees/{userID}/working-hours": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns weekly working hours and date overrides for an employee.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get employee working hours",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User ID (Keycloak sub)",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.WorkingHoursResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replaces the weekly working hours for an employee.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Set employee working hours",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "User ID (Keycloak sub)",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.SetWorkingHoursRequest"
+                            }
+                        }
+                    },
+                    "description": "Weekly working hours",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/business/{businessID}/services": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adds a new service to a business.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Create a service",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/models.Service"
+                            }
+                        }
+                    },
+                    "description": "Service details",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/models.Service"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/business/{businessID}/services/{serviceID}": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Updates an existing service for a business.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update a service",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service UUID",
+                        "name": "serviceID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/models.Service"
+                            }
+                        }
+                    },
+                    "description": "Updated service details",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/models.Service"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes a service from a business.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete a service",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service UUID",
+                        "name": "serviceID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/appointments": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new appointment for the authenticated customer.",
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Book an appointment",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.CreateAppointmentRequest"
+                            }
+                        }
+                    },
+                    "description": "Appointment details",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/models.Appointment"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/business/{slug}": {
+            "get": {
+                "description": "Returns a business with its services and employees by slug.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "Get business details",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.BusinessResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/business/{slug}/employees": {
+            "get": {
+                "description": "Returns all employees for a business.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "List business employees",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/models.BusinessUser"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/business/{slug}/services": {
+            "get": {
+                "description": "Returns all active services for a business.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "List business services",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/models.Service"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/business/{slug}/slots": {
+            "get": {
+                "description": "Returns available time slots for a service and employee on a given date.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "Get available time slots",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service UUID",
+                        "name": "service_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Employee UUID",
+                        "name": "employee_id",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Date (YYYY-MM-DD)",
+                        "name": "date",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.SlotsResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/my/appointments": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns all appointments for the authenticated customer.",
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "List customer appointments",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/models.Appointment"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/my/appointments/{appointmentID}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels an appointment owned by the authenticated customer.",
+                "tags": [
+                    "appointments"
+                ],
+                "summary": "Cancel an appointment",
+                "parameters": [
+                    {
+                        "description": "Appointment UUID",
+                        "name": "appointmentID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "servers": [
+        {
+            "url": "//localhost:8080"
+        }
+    ],
+    "components": {
+        "securitySchemes": {
+            "BearerAuth": {
+                "description": "Type \"Bearer\" followed by a space and JWT token.",
+                "type": "apiKey",
+                "name": "Authorization",
+                "in": "header"
+            }
+        },
+        "schemas": {
+            "handler.BusinessResponse": {
+                "type": "object",
+                "required": [
+                    "business",
+                    "employees",
+                    "services"
+                ],
+                "properties": {
+                    "business": {
+                        "$ref": "#/components/schemas/models.Business"
+                    },
+                    "employees": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/models.BusinessUser"
+                        }
+                    },
+                    "services": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/models.Service"
+                        }
+                    }
+                }
+            },
+            "handler.CreateAppointmentRequest": {
+                "type": "object",
+                "required": [
+                    "business_id",
+                    "business_user_id",
+                    "service_id",
+                    "start_time"
+                ],
+                "properties": {
+                    "business_id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "business_user_id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "service_id": {
+                        "type": "string",
+                        "example": "550e8400-e29b-41d4-a716-446655440000"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "example": "2024-01-01T09:00:00Z"
+                    }
+                }
+            },
+            "handler.ErrorResponse": {
+                "type": "object",
+                "required": [
+                    "error"
+                ],
+                "properties": {
+                    "error": {
+                        "type": "string",
+                        "example": "error message"
+                    }
+                }
+            },
+            "handler.MessageResponse": {
+                "type": "object",
+                "required": [
+                    "message"
+                ],
+                "properties": {
+                    "message": {
+                        "type": "string",
+                        "example": "operation complete"
+                    }
+                }
+            },
+            "handler.SetWorkingHoursRequest": {
+                "type": "object",
+                "required": [
+                    "working_hours"
+                ],
+                "properties": {
+                    "working_hours": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/models.WorkingHours"
+                        }
+                    }
+                }
+            },
+            "handler.SlotsResponse": {
+                "type": "object",
+                "required": [
+                    "date",
+                    "slots"
+                ],
+                "properties": {
+                    "date": {
+                        "type": "string",
+                        "example": "2024-01-01"
+                    },
+                    "slots": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/models.TimeSlot"
+                        }
+                    }
+                }
+            },
+            "handler.WorkingHoursResponse": {
+                "type": "object",
+                "required": [
+                    "overrides",
+                    "working_hours"
+                ],
+                "properties": {
+                    "overrides": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/models.WorkingHoursOverride"
+                        }
+                    },
+                    "working_hours": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/models.WorkingHours"
+                        }
+                    }
+                }
+            },
+            "models.Appointment": {
+                "type": "object",
+                "required": [
+                    "business_id",
+                    "business_user_id",
+                    "created_at",
+                    "customer_user_id",
+                    "end_time",
+                    "id",
+                    "service_id",
+                    "start_time",
+                    "status"
+                ],
+                "properties": {
+                    "business_id": {
+                        "type": "string"
+                    },
+                    "business_user_id": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "customer_user_id": {
+                        "type": "string"
+                    },
+                    "end_time": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "service_id": {
+                        "type": "string"
+                    },
+                    "start_time": {
+                        "type": "string"
+                    },
+                    "status": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/models.AppointmentStatus"
+                            }
+                        ],
+                        "example": "confirmed"
+                    }
+                }
+            },
+            "models.AppointmentStatus": {
+                "type": "string",
+                "enum": [
+                    "confirmed",
+                    "cancelled",
+                    "completed",
+                    "no_show"
+                ],
+                "x-enum-varnames": [
+                    "AppointmentStatusConfirmed",
+                    "AppointmentStatusCancelled",
+                    "AppointmentStatusCompleted",
+                    "AppointmentStatusNoShow"
+                ]
+            },
+            "models.Business": {
+                "type": "object",
+                "required": [
+                    "created_at",
+                    "id",
+                    "name",
+                    "slug",
+                    "updated_at"
+                ],
+                "properties": {
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Acme Spa"
+                    },
+                    "slug": {
+                        "type": "string",
+                        "example": "acme-spa"
+                    },
+                    "updated_at": {
+                        "type": "string"
+                    }
+                }
+            },
+            "models.BusinessUser": {
+                "type": "object",
+                "required": [
+                    "business_id",
+                    "display_name",
+                    "id",
+                    "role",
+                    "user_id"
+                ],
+                "properties": {
+                    "business_id": {
+                        "type": "string"
+                    },
+                    "display_name": {
+                        "type": "string",
+                        "example": "John Doe"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string",
+                        "example": "admin"
+                    },
+                    "user_id": {
+                        "type": "string"
+                    }
+                }
+            },
+            "models.Service": {
+                "type": "object",
+                "required": [
+                    "active",
+                    "business_id",
+                    "created_at",
+                    "duration_minutes",
+                    "id",
+                    "name"
+                ],
+                "properties": {
+                    "active": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "business_id": {
+                        "type": "string"
+                    },
+                    "created_at": {
+                        "type": "string"
+                    },
+                    "duration_minutes": {
+                        "type": "integer",
+                        "example": 60
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Massage"
+                    },
+                    "price": {
+                        "type": "number",
+                        "example": 100
+                    }
+                }
+            },
+            "models.TimeSlot": {
+                "type": "object",
+                "required": [
+                    "end_time",
+                    "start_time"
+                ],
+                "properties": {
+                    "end_time": {
+                        "type": "string"
+                    },
+                    "start_time": {
+                        "type": "string"
+                    }
+                }
+            },
+            "models.WorkingHours": {
+                "type": "object",
+                "required": [
+                    "day_of_week",
+                    "end_time",
+                    "start_time"
+                ],
+                "properties": {
+                    "business_user_id": {
+                        "type": "string"
+                    },
+                    "day_of_week": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "example": "17:00"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "example": "09:00"
+                    }
+                }
+            },
+            "models.WorkingHoursOverride": {
+                "type": "object",
+                "required": [
+                    "is_off",
+                    "override_date"
+                ],
+                "properties": {
+                    "business_user_id": {
+                        "type": "string"
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "example": "14:00"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "is_off": {
+                        "type": "boolean",
+                        "example": false
+                    },
+                    "override_date": {
+                        "type": "string",
+                        "example": "2024-12-25"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "example": "Christmas hours"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "example": "10:00"
+                    }
+                }
+            }
+        }
+    }
+}

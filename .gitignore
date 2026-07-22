@@ -16,6 +16,9 @@
 coverage.*
 *.coverprofile
 profile.cov
+*.tsbuildinfo
+**/playwright-report/
+**/test-results/
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
@@ -26,6 +29,11 @@ go.work.sum
 
 # env file
 .env
+
+# IDE / editor
+.vscode/
+.idea/
+.kilo/
 
 # direnv / local state
 .direnv/
@@ -39,12 +47,20 @@ frontend/.vite/
 frontend/.capacitor/
 frontend/android/
 frontend/ios/
+frontend/storybook-static/
 pnpm-lock.yaml
 .pnpm-store/
+
+# Generated swagger docs (intermediate)
+backend/docs/
+frontend/openapi.json
 
 # Nix
 result
 result-*
+
+# Keycloak theme build output
+keycloak/themes/
 
 # Editor/IDE
 # .idea/
