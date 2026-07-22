@@ -42,9 +42,6 @@
     "workbox-window": "latest",
     "zustand": "latest"
   },
-  "pnpm": {
-    "onlyBuiltDependencies": ["esbuild"]
-  },
   "devDependencies": {
     "@storybook/addon-a11y": "^10.5.3",
     "@storybook/addon-actions": "^9.0.8",
