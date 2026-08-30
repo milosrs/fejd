@@ -12,22 +12,27 @@ services:
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: fejd
       KEYCLOAK_CLIENT_ID: fejd-backend
+      KEYCLOAK_CLIENT_SECRET: EYlizeFHVtfRPhomKqasA4mgRYGLfJBL
     depends_on:
       - db
       - keycloak
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: node:22-alpine
     container_name: fejd-frontend
-    ports:
-      - "5173:80"
+    working_dir: /app
     environment:
+      NODE_ENV: development
       VITE_API_URL: http://localhost:8080
       VITE_KEYCLOAK_URL: http://localhost:9090
       VITE_KEYCLOAK_REALM: fejd
       VITE_KEYCLOAK_CLIENT_ID: fejd-frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    command: sh -c "corepack enable && pnpm install && pnpm dev"
     depends_on:
       - backend
       - keycloak

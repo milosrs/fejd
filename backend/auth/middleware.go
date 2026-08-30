@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 )
 
@@ -22,12 +23,14 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString, err := ExtractBearerToken(r)
 		if err != nil {
+			log.Printf("[auth] missing/invalid bearer token: %v (path=%s)", err, r.URL.Path)
 			http.Error(w, "unauthorized: "+err.Error(), http.StatusUnauthorized)
 			return
 		}
 
 		claims, err := m.jwksClient.ValidateToken(tokenString)
 		if err != nil {
+			log.Printf("[auth] token validation failed: %v (path=%s)", err, r.URL.Path)
 			http.Error(w, "unauthorized: invalid token", http.StatusUnauthorized)
 			return
 		}
@@ -41,6 +44,8 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 			roles = append(roles, realmRoles...)
 		}
 		ctx = context.WithValue(ctx, ContextKeyRoles, roles)
+
+		log.Printf("[auth] authenticated user=%q path=%s roles=%v", claims.Subject, r.URL.Path, roles)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})

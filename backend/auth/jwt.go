@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -71,6 +72,8 @@ func (k *JWKSClient) ValidateToken(tokenString string) (*Claims, error) {
 	if !ok || !token.Valid {
 		return nil, fmt.Errorf("invalid token claims")
 	}
+
+	log.Printf("[auth] token validated subject=%q issuer=%q expires=%v", claims.Subject, claims.Issuer, claims.ExpiresAt)
 
 	return claims, nil
 }

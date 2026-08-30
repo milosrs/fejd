@@ -20,13 +20,20 @@ export const useAuthStore = create<AuthState>((set) => ({
   roles: [],
   init: async () => {
     try {
+      console.log("[auth] initializing keycloak (login-required)")
       const authenticated = await keycloak.init({
-        onLoad: "check-sso",
-        silentCheckSsoRedirectUri: window.location.origin + "/silent-check-sso.html",
+        onLoad: "login-required",
         pkceMethod: "S256",
       })
+      console.log("[auth] keycloak.init result:", authenticated)
       if (authenticated) {
         const tokenParsed = keycloak.tokenParsed as Record<string, any>
+        console.log(
+          "[auth] authenticated as",
+          tokenParsed?.preferred_username ?? keycloak.subject,
+          "roles:",
+          tokenParsed?.realm_access?.roles,
+        )
         set({
           initialized: true,
           authenticated: true,
@@ -38,17 +45,24 @@ export const useAuthStore = create<AuthState>((set) => ({
           },
           roles: tokenParsed?.realm_access?.roles ?? [],
         })
-      } else {
-        set({ initialized: true, authenticated: false })
-      }
 
-      keycloak.onTokenExpired = () => {
-        keycloak.updateToken(30).catch(() => {
-          set({ authenticated: false, token: null })
-        })
+        keycloak.onTokenExpired = () => {
+          console.log("[auth] token expired, attempting refresh")
+          keycloak.updateToken(30).catch(() => {
+            console.error("[auth] token refresh failed, redirecting to login")
+            set({ authenticated: false, token: null })
+            keycloak.login()
+          })
+        }
+      } else {
+        console.log("[auth] no valid token, redirecting to keycloak login")
+        set({ initialized: true, authenticated: false })
+        keycloak.login()
       }
-    } catch {
+    } catch (err) {
+      console.error("[auth] keycloak init failed:", err)
       set({ initialized: true, authenticated: false })
+      keycloak.login().catch(() => {})
     }
   },
   login: () => keycloak.login(),

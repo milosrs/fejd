@@ -58,7 +58,9 @@
             gradle
             jdk
             just
+            just-lsp
             nginx
+            ngrok
             nix-direnv
             nodejs
             openssl
