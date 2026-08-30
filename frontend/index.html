@@ -9,6 +9,23 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="default" />
     <meta name="apple-mobile-web-app-title" content="fejd" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <script>
+      ;(function () {
+        var theme = "dark"
+        try {
+          var stored = localStorage.getItem("vite-ui-theme")
+          if (stored === "light" || stored === "dark" || stored === "system") {
+            theme = stored
+          }
+        } catch (e) {}
+        if (theme === "system") {
+          theme = window.matchMedia("(prefers-color-scheme: dark)").matches
+            ? "dark"
+            : "light"
+        }
+        document.documentElement.classList.add(theme)
+      })()
+    </script>
     <title>fejd - Book Appointments</title>
   </head>
   <body>

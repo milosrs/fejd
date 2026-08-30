@@ -27,6 +27,10 @@ keycloak-theme-converter theme-name:
 up:
     docker compose up -d
 
+# Start all docker services except the frontend (run FE separately: just dev-frontend)
+up-backend:
+    docker compose up -d backend db keycloak
+
 # Stop all services
 down:
     docker compose down
@@ -62,8 +66,8 @@ dev-backend:
 dev-frontend:
     cd frontend && pnpm dev
 
-# Run both backend and frontend locally (requires db, keycloak already up)
-dev: dev-backend dev-frontend
+# Run backend, Keycloak and DB in docker-compose, and the frontend locally with hot reload
+dev: up-backend dev-frontend
 
 # Start ngrok tunnel to expose Keycloak for identity provider testing
 ngrok-keycloak:

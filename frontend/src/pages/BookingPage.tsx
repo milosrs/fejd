@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { format } from "date-fns"
+import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useBusiness, useAvailableSlots, createAppointment, TimeSlot } from "../hooks/useApi"
 import { useBookingStore } from "../stores/bookingStore"
 import { useTimeSlotStream } from "../hooks/useTimeSlotStream"
@@ -131,14 +132,9 @@ export function BookingPage() {
                 </CardHeader>
                 <CardContent>
                   <Calendar
-                    mode="single"
-                    selected={selectedDate ? new Date(selectedDate + "T00:00:00") : undefined}
-                    onSelect={(date) => date && setDate(format(date, "yyyy-MM-dd"))}
-                    disabled={(date) => {
-                      const today = new Date()
-                      today.setHours(0, 0, 0, 0)
-                      return date < today
-                    }}
+                    value={selectedDate ? parseDate(selectedDate) : undefined}
+                    onChange={(date) => date && setDate(date.toString())}
+                    minValue={today(getLocalTimeZone())}
                     className="mx-auto"
                   />
                 </CardContent>
@@ -172,7 +168,7 @@ export function BookingPage() {
                             Selected: {format(new Date(selectedSlot.start_time), "EEEE, MMMM d, yyyy 'at' h:mm a")}
                           </p>
                           {error && <p className="text-sm text-red-500 mb-2">{error}</p>}
-                          <Button onClick={handleBook} disabled={booking} className="w-full">
+                          <Button onClick={handleBook} isDisabled={booking} className="w-full">
                             {booking ? "Booking..." : authenticated ? "Confirm Booking" : "Login to Book"}
                           </Button>
                         </div>

@@ -6,7 +6,7 @@ const meta: Meta<typeof Button> = {
   component: Button,
   args: {
     children: "Button",
-    disabled: false,
+    isDisabled: false,
   },
   argTypes: {
     variant: {
@@ -52,7 +52,7 @@ export const Icon: Story = {
 }
 
 export const Disabled: Story = {
-  args: { variant: "default", disabled: true },
+  args: { variant: "default", isDisabled: true },
 }
 
 export const AllVariants: Story = {
@@ -65,7 +65,7 @@ export const AllVariants: Story = {
       <Button size="sm">Small</Button>
       <Button size="lg">Large</Button>
       <Button size="icon">✓</Button>
-      <Button disabled>Disabled</Button>
+      <Button isDisabled>Disabled</Button>
     </div>
   ),
 }

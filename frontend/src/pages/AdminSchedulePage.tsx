@@ -165,7 +165,7 @@ export function AdminSchedulePage() {
                     {message}
                   </p>
                 )}
-                <Button onClick={handleSave} disabled={saving} className="w-full">
+                <Button onClick={handleSave} isDisabled={saving} className="w-full">
                   {saving ? "Saving..." : "Save Working Hours"}
                 </Button>
               </CardContent>

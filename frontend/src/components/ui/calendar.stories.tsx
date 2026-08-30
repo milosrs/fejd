@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
-import { Calendar } from "./calendar"
+import { Calendar, RangeCalendar } from "./calendar"
+import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date"
 
 const meta: Meta<typeof Calendar> = {
   title: "UI/Calendar",
@@ -8,12 +9,14 @@ const meta: Meta<typeof Calendar> = {
     layout: "centered",
   },
   argTypes: {
-    mode: {
+    captionLayout: {
       control: "select",
-      options: ["single", "multiple", "range"],
+      options: ["label", "dropdown"],
     },
-    showOutsideDays: {
-      control: "boolean",
+    numberOfMonths: {
+      control: "number",
+      min: 1,
+      max: 3,
     },
   },
 }
@@ -22,40 +25,30 @@ export default meta
 type Story = StoryObj<typeof Calendar>
 
 export const Default: Story = {
-  args: {
-    mode: "single",
-    showOutsideDays: true,
-  },
+  args: {},
 }
 
 export const WithSelectedDate: Story = {
   args: {
-    mode: "single",
-    showOutsideDays: true,
-    selected: new Date(2026, 6, 22),
+    value: new CalendarDate(2026, 7, 22),
   },
 }
 
-export const DateRange: Story = {
+export const WithDropdownCaption: Story = {
   args: {
-    mode: "range",
-    showOutsideDays: true,
-    selected: {
-      from: new Date(2026, 6, 20),
-      to: new Date(2026, 6, 25),
-    },
+    captionLayout: "dropdown",
   },
 }
 
 export const WithDisabledPast: Story = {
   args: {
-    mode: "single",
-    showOutsideDays: true,
-    disabled: (date: Date) => {
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      return date < today
-    },
+    minValue: today(getLocalTimeZone()),
+  },
+}
+
+export const MultipleMonths: Story = {
+  args: {
+    numberOfMonths: 2,
   },
 }
 
@@ -64,14 +57,23 @@ export const BookingCalendar: Story = {
     <div className="border border-border rounded-lg p-4 max-w-sm">
       <h3 className="text-sm font-medium mb-2">Select a date</h3>
       <Calendar
-        mode="single"
-        showOutsideDays
-        disabled={(date) => {
-          const today = new Date()
-          today.setHours(0, 0, 0, 0)
-          return date < today || date.getDay() === 0
-        }}
+        minValue={today(getLocalTimeZone())}
+        isDateUnavailable={(date) =>
+          new Date(date.year, date.month - 1, date.day).getDay() === 0
+        }
       />
     </div>
+  ),
+}
+
+export const Range: Story = {
+  render: () => (
+    <RangeCalendar
+      minValue={today(getLocalTimeZone())}
+      defaultValue={{
+        start: new CalendarDate(2026, 7, 20),
+        end: new CalendarDate(2026, 7, 25),
+      }}
+    />
   ),
 }

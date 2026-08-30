@@ -111,7 +111,7 @@ export function AdminServicesPage() {
               <Input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="25.00" />
             </div>
             {message && <p className={`text-sm ${message.includes("Failed") ? "text-red-500" : "text-green-600"}`}>{message}</p>}
-            <Button onClick={handleAdd} disabled={adding} className="w-full">
+            <Button onClick={handleAdd} isDisabled={adding} className="w-full">
               {adding ? "Adding..." : "Add Service"}
             </Button>
           </CardContent>

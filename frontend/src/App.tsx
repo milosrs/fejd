@@ -8,6 +8,8 @@ import { MyAppointmentsPage } from "./pages/MyAppointmentsPage"
 import { AdminSchedulePage } from "./pages/AdminSchedulePage"
 import { AdminServicesPage } from "./pages/AdminServicesPage"
 import { DatePickerPage } from "./pages/DatePickerPage"
+import { ThemeProvider } from "#components/theme-provider"
+import { ModeToggle } from "#components/mode-toggle"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -47,6 +49,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
           >
             Logout
           </button>
+          <ModeToggle />
         </header>
       )}
       {children}
@@ -82,22 +85,24 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppInit>
-          <ProtectedRoute>
-            <Routes>
-              <Route path="/" element={<DatePickerPage />} />
-              <Route path="/business/:slug" element={<BusinessPage />} />
-              <Route path="/business/:slug/book" element={<BookingPage />} />
-              <Route path="/my/appointments" element={<MyAppointmentsPage />} />
-              <Route path="/admin/business/:businessId/schedule" element={<AdminSchedulePage />} />
-              <Route path="/admin/business/:businessId/services" element={<AdminServicesPage />} />
-            </Routes>
-          </ProtectedRoute>
-        </AppInit>
-      </BrowserRouter>
-    </QueryClientProvider>
+    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AppInit>
+            <ProtectedRoute>
+              <Routes>
+                <Route path="/" element={<DatePickerPage />} />
+                <Route path="/business/:slug" element={<BusinessPage />} />
+                <Route path="/business/:slug/book" element={<BookingPage />} />
+                <Route path="/my/appointments" element={<MyAppointmentsPage />} />
+                <Route path="/admin/business/:businessId/schedule" element={<AdminSchedulePage />} />
+                <Route path="/admin/business/:businessId/services" element={<AdminServicesPage />} />
+              </Routes>
+            </ProtectedRoute>
+          </AppInit>
+        </BrowserRouter>
+      </QueryClientProvider>
+    </ThemeProvider>
   )
 }
 
