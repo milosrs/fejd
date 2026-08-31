@@ -8,6 +8,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -22,7 +23,7 @@ func NewAppointmentStore(pool *pgxpool.Pool) *AppointmentStore {
 func (s *AppointmentStore) GetConflictingAppointments(ctx context.Context, businessID, businessUserID uuid.UUID, from, to time.Time) ([]models.Appointment, error) {
 	sql, args, err := psql.
 		Select("id", "business_id", "service_id", "business_user_id", "customer_user_id",
-			"start_time", "end_time", "status", "created_at").
+			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
 		From("appointments").
 		Where(sq.Eq{"business_id": businessID, "business_user_id": businessUserID}).
 		Where(sq.NotEq{"status": []string{string(models.AppointmentStatusCancelled), string(models.AppointmentStatusNoShow)}}).
@@ -42,12 +43,11 @@ func (s *AppointmentStore) GetConflictingAppointments(ctx context.Context, busin
 
 	var appointments []models.Appointment
 	for rows.Next() {
-		var a models.Appointment
-		if err := rows.Scan(&a.ID, &a.BusinessID, &a.ServiceID, &a.BusinessUserID,
-			&a.CustomerUserID, &a.StartTime, &a.EndTime, &a.Status, &a.CreatedAt); err != nil {
+		a, err := scanAppointment(rows)
+		if err != nil {
 			return nil, fmt.Errorf("failed to scan appointment: %w", err)
 		}
-		appointments = append(appointments, a)
+		appointments = append(appointments, *a)
 	}
 	return appointments, nil
 }
@@ -58,9 +58,9 @@ func (s *AppointmentStore) Create(ctx context.Context, a *models.Appointment) er
 	}
 	sql, args, err := psql.
 		Insert("appointments").
-		Columns("id", "business_id", "service_id", "business_user_id", "customer_user_id", "start_time", "end_time", "status").
+		Columns("id", "business_id", "service_id", "business_user_id", "customer_user_id", "start_time", "end_time", "status", "created_by", "cancellation_reason").
 		Values(a.ID, a.BusinessID, a.ServiceID, a.BusinessUserID, a.CustomerUserID,
-			a.StartTime, a.EndTime, a.Status).
+			a.StartTime, a.EndTime, a.Status, a.CreatedBy, nullableString(a.CancellationReason)).
 		Suffix("RETURNING created_at").
 		ToSql()
 	if err != nil {
@@ -70,10 +70,28 @@ func (s *AppointmentStore) Create(ctx context.Context, a *models.Appointment) er
 	return s.pool.QueryRow(ctx, sql, args...).Scan(&a.CreatedAt)
 }
 
+func (s *AppointmentStore) CreateTx(ctx context.Context, tx pgx.Tx, a *models.Appointment) error {
+	if a.ID == uuid.Nil {
+		a.ID = uuid.New()
+	}
+	sql, args, err := psql.
+		Insert("appointments").
+		Columns("id", "business_id", "service_id", "business_user_id", "customer_user_id", "start_time", "end_time", "status", "created_by", "cancellation_reason").
+		Values(a.ID, a.BusinessID, a.ServiceID, a.BusinessUserID, a.CustomerUserID,
+			a.StartTime, a.EndTime, a.Status, a.CreatedBy, nullableString(a.CancellationReason)).
+		Suffix("RETURNING created_at").
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	return tx.QueryRow(ctx, sql, args...).Scan(&a.CreatedAt)
+}
+
 func (s *AppointmentStore) ListByCustomer(ctx context.Context, customerUserID string) ([]models.Appointment, error) {
 	sql, args, err := psql.
 		Select("id", "business_id", "service_id", "business_user_id", "customer_user_id",
-			"start_time", "end_time", "status", "created_at").
+			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
 		From("appointments").
 		Where(sq.Eq{"customer_user_id": customerUserID}).
 		OrderBy("start_time DESC").
@@ -90,12 +108,11 @@ func (s *AppointmentStore) ListByCustomer(ctx context.Context, customerUserID st
 
 	var appointments []models.Appointment
 	for rows.Next() {
-		var a models.Appointment
-		if err := rows.Scan(&a.ID, &a.BusinessID, &a.ServiceID, &a.BusinessUserID,
-			&a.CustomerUserID, &a.StartTime, &a.EndTime, &a.Status, &a.CreatedAt); err != nil {
+		a, err := scanAppointment(rows)
+		if err != nil {
 			return nil, fmt.Errorf("failed to scan appointment: %w", err)
 		}
-		appointments = append(appointments, a)
+		appointments = append(appointments, *a)
 	}
 	return appointments, nil
 }
@@ -103,7 +120,7 @@ func (s *AppointmentStore) ListByCustomer(ctx context.Context, customerUserID st
 func (s *AppointmentStore) ListByBusinessUser(ctx context.Context, businessUserID uuid.UUID, from, to time.Time) ([]models.Appointment, error) {
 	sql, args, err := psql.
 		Select("id", "business_id", "service_id", "business_user_id", "customer_user_id",
-			"start_time", "end_time", "status", "created_at").
+			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
 		From("appointments").
 		Where(sq.Eq{"business_user_id": businessUserID}).
 		Where(sq.GtOrEq{"start_time": from}).
@@ -122,20 +139,20 @@ func (s *AppointmentStore) ListByBusinessUser(ctx context.Context, businessUserI
 
 	var appointments []models.Appointment
 	for rows.Next() {
-		var a models.Appointment
-		if err := rows.Scan(&a.ID, &a.BusinessID, &a.ServiceID, &a.BusinessUserID,
-			&a.CustomerUserID, &a.StartTime, &a.EndTime, &a.Status, &a.CreatedAt); err != nil {
+		a, err := scanAppointment(rows)
+		if err != nil {
 			return nil, fmt.Errorf("failed to scan appointment: %w", err)
 		}
-		appointments = append(appointments, a)
+		appointments = append(appointments, *a)
 	}
 	return appointments, nil
 }
 
-func (s *AppointmentStore) Cancel(ctx context.Context, id uuid.UUID, customerUserID string) error {
+func (s *AppointmentStore) Cancel(ctx context.Context, id uuid.UUID, customerUserID string, reason string) error {
 	sql, args, err := psql.
 		Update("appointments").
 		Set("status", string(models.AppointmentStatusCancelled)).
+		Set("cancellation_reason", reason).
 		Where(sq.Eq{"id": id, "customer_user_id": customerUserID, "status": string(models.AppointmentStatusConfirmed)}).
 		ToSql()
 	if err != nil {
@@ -144,4 +161,50 @@ func (s *AppointmentStore) Cancel(ctx context.Context, id uuid.UUID, customerUse
 
 	_, err = s.pool.Exec(ctx, sql, args...)
 	return err
+}
+
+func (s *AppointmentStore) Reassign(ctx context.Context, id uuid.UUID, newBusinessUserID uuid.UUID) error {
+	sql, args, err := psql.
+		Update("appointments").
+		Set("business_user_id", newBusinessUserID).
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = s.pool.Exec(ctx, sql, args...)
+	return err
+}
+
+func (s *AppointmentStore) CancelByID(ctx context.Context, id uuid.UUID, reason string) error {
+	sql, args, err := psql.
+		Update("appointments").
+		Set("status", string(models.AppointmentStatusCancelled)).
+		Set("cancellation_reason", reason).
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = s.pool.Exec(ctx, sql, args...)
+	return err
+}
+
+func scanAppointment(row rowScanner) (*models.Appointment, error) {
+	var a models.Appointment
+	if err := row.Scan(&a.ID, &a.BusinessID, &a.ServiceID, &a.BusinessUserID,
+		&a.CustomerUserID, &a.StartTime, &a.EndTime, &a.Status, &a.CreatedBy,
+		&a.CancellationReason, &a.CreatedAt); err != nil {
+		return nil, err
+	}
+	return &a, nil
+}
+
+func nullableString(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }

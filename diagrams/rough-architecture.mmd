@@ -1,0 +1,40 @@
+---
+config:
+  layout: fixed
+---
+flowchart TB
+    n1["Employee"] -- "1..N" --> n2["WorkingHours"] & n28["ServiceID"]
+    n1 --> n3(("Name")) & n4(("Surname")) & n6(("Username")) & n16(("ProfilePicture"))
+    n1 -- "0..N" --> n8["Reservation"]
+    n9["Salon"] -- "1..N" --> n1 & n11["Employee"]
+    n9 -- "0..N" --> n14["WorkingDay"] & n12["Customer"]
+    n9 -- "1..1" --> n10["Owner (admin of salon)"]
+    n14 --> n15["WorkingHours"] & n1
+    n10 -- "is-an" --> n11
+    n10 -- "is-a" --> n12
+    n11 -- "is-a" --> n12
+    n8 --> n17(("CreatedBy")) & n19(("CreatedAt")) & n20(("Cancelled")) & n21(("Cancellation<br>Reason")) & n29(("TimeSlot"))
+    n8 -- Linked to --> n18["Service"] & n39["Employee"]
+    n22["Service"] --> n23(("Name")) & n24(("Description")) & n25(("Price")) & n26(("Duration")) & n27(("Picture"))
+    n9 -- Offers --> n22
+    n15 -- "1..N" --> n30["TimeSlots"]
+    n32["Customer"] --> n34(("Name")) & n35(("Surname")) & n36(("Username")) & n37(("ProfilePicture")) & n38(("Birthday"))
+    n32 -- Creates max 1 per day --> n8
+    n13["hex: role<br>rounded: entity<br>circle: property"]
+
+    n1@{ shape: rounded}
+    n2@{ shape: rounded}
+    n28@{ shape: rounded}
+    n8@{ shape: rounded}
+    n9@{ shape: rounded}
+    n11@{ shape: hex}
+    n14@{ shape: rounded}
+    n12@{ shape: hex}
+    n10@{ shape: hex}
+    n15@{ shape: rounded}
+    n18@{ shape: rounded}
+    n39@{ shape: rounded}
+    n22@{ shape: rounded}
+    n30@{ shape: rounded}
+    n32@{ shape: rounded}
+    n13@{ shape: text}

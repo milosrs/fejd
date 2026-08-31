@@ -93,14 +93,20 @@ func (h *AppointmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	customerUserID := userID
+	if body.CustomerUserID != "" {
+		customerUserID = body.CustomerUserID
+	}
+
 	appointment := &models.Appointment{
 		BusinessID:     businessID,
 		ServiceID:      serviceID,
 		BusinessUserID: businessUserID,
-		CustomerUserID: userID,
+		CustomerUserID: customerUserID,
 		StartTime:      startTime,
 		EndTime:        startTime.Add(time.Duration(svc.DurationMinutes) * time.Minute),
 		Status:         models.AppointmentStatusConfirmed,
+		CreatedBy:      userID,
 	}
 
 	if err := h.slotService.BookAppointment(r.Context(), appointment); err != nil {
@@ -160,7 +166,10 @@ func (h *AppointmentHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.appointments.Cancel(r.Context(), appointmentID, userID); err != nil {
+	var body CancelAppointmentRequest
+	_ = json.NewDecoder(r.Body).Decode(&body)
+
+	if err := h.appointments.Cancel(r.Context(), appointmentID, userID, body.CancellationReason); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

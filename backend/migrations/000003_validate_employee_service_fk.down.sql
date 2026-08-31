@@ -1,0 +1,2 @@
+-- No-op: validation cannot be "un-done"; the constraint remains NOT VALID for
+-- new rows only if this is rolled back before any data is reconciled.

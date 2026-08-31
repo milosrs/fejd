@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/store"
@@ -9,15 +10,20 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type SlotService struct {
-	appointments    *store.AppointmentStore
-	workingHours    *store.WorkingHoursStore
-	overrides       *store.WorkingHoursOverrideStore
-	services        *store.ServiceStore
-	businessUser    *store.BusinessUserStore
-	hub             *sse.Hub
+	appointments     *store.AppointmentStore
+	workingHours     *store.WorkingHoursStore
+	overrides        *store.WorkingHoursOverrideStore
+	services         *store.ServiceStore
+	businessUser     *store.BusinessUserStore
+	employeeServices *store.EmployeeServiceStore
+	unavailability   *store.EmployeeUnavailabilityStore
+	hub              *sse.Hub
+	pool             *pgxpool.Pool
 }
 
 func NewSlotService(
@@ -26,15 +32,21 @@ func NewSlotService(
 	overrides *store.WorkingHoursOverrideStore,
 	services *store.ServiceStore,
 	businessUser *store.BusinessUserStore,
+	employeeServices *store.EmployeeServiceStore,
+	unavailability *store.EmployeeUnavailabilityStore,
 	hub *sse.Hub,
+	pool *pgxpool.Pool,
 ) *SlotService {
 	return &SlotService{
-		appointments: appointments,
-		workingHours: workingHours,
-		overrides:    overrides,
-		services:     services,
-		businessUser: businessUser,
-		hub:          hub,
+		appointments:     appointments,
+		workingHours:     workingHours,
+		overrides:        overrides,
+		services:         services,
+		businessUser:     businessUser,
+		employeeServices: employeeServices,
+		unavailability:   unavailability,
+		hub:              hub,
+		pool:             pool,
 	}
 }
 
@@ -52,6 +64,16 @@ func (s *SlotService) GetAvailableSlots(
 
 	if svc.BusinessID != businessID {
 		return nil, fmt.Errorf("service does not belong to business")
+	}
+
+	bu, err := s.businessUser.GetByID(ctx, businessUserID)
+	if err != nil || !bu.Active {
+		return nil, nil
+	}
+
+	offers, err := s.employeeServices.OffersService(ctx, businessUserID, serviceID)
+	if err != nil || !offers {
+		return nil, nil
 	}
 
 	dayOfWeek := int(date.Weekday())
@@ -101,9 +123,17 @@ func (s *SlotService) GetAvailableSlots(
 		return nil, fmt.Errorf("failed to get existing appointments: %w", err)
 	}
 
-	busySlots := make([]models.TimeSlot, 0, len(existing))
+	unavail, err := s.unavailability.ListOverlapping(ctx, businessUserID, dayStart, dayEnd)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get unavailability: %w", err)
+	}
+
+	busySlots := make([]models.TimeSlot, 0, len(existing)+len(unavail))
 	for _, a := range existing {
 		busySlots = append(busySlots, models.TimeSlot{StartTime: a.StartTime, EndTime: a.EndTime})
+	}
+	for _, u := range unavail {
+		busySlots = append(busySlots, models.TimeSlot{StartTime: u.StartTime, EndTime: u.EndTime})
 	}
 
 	slots := computeSlots(dayStart, dayEnd, duration, busySlots)
@@ -114,6 +144,9 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 	if appointment.Status == "" {
 		appointment.Status = models.AppointmentStatusConfirmed
 	}
+	if appointment.CreatedBy == "" {
+		appointment.CreatedBy = appointment.CustomerUserID
+	}
 
 	svc, err := s.services.GetByID(ctx, appointment.ServiceID)
 	if err != nil {
@@ -123,6 +156,30 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 	expectedEnd := appointment.StartTime.Add(time.Duration(svc.DurationMinutes) * time.Minute)
 	if !appointment.EndTime.Equal(expectedEnd) {
 		return fmt.Errorf("appointment end time does not match service duration")
+	}
+
+	bu, err := s.businessUser.GetByID(ctx, appointment.BusinessUserID)
+	if err != nil {
+		return fmt.Errorf("employee not found: %w", err)
+	}
+	if !bu.Active {
+		return fmt.Errorf("employee is inactive")
+	}
+
+	offers, err := s.employeeServices.OffersService(ctx, appointment.BusinessUserID, appointment.ServiceID)
+	if err != nil {
+		return fmt.Errorf("failed to check employee services: %w", err)
+	}
+	if !offers {
+		return fmt.Errorf("employee does not offer this service")
+	}
+
+	unavail, err := s.unavailability.ListOverlapping(ctx, appointment.BusinessUserID, appointment.StartTime, appointment.EndTime)
+	if err != nil {
+		return fmt.Errorf("failed to check unavailability: %w", err)
+	}
+	if len(unavail) > 0 {
+		return fmt.Errorf("employee unavailable at this time")
 	}
 
 	existing, err := s.appointments.GetConflictingAppointments(ctx,
@@ -136,12 +193,29 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 		return fmt.Errorf("time slot is no longer available")
 	}
 
-	if err := s.appointments.Create(ctx, appointment); err != nil {
-		return fmt.Errorf("failed to create appointment: %w", err)
+	// Serialize per-employee writes. The exclusion constraint is the real
+	// booking-vs-booking guard; this advisory lock closes the race with
+	// unavailability/deactivation writes, which must take the same lock.
+	tx, err := s.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("failed to begin booking transaction: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))", appointment.BusinessUserID.String()); err != nil {
+		return fmt.Errorf("failed to acquire booking lock: %w", err)
+	}
+
+	if err := s.appointments.CreateTx(ctx, tx, appointment); err != nil {
+		return mapAppointmentError(err)
+	}
+
+	if err := tx.Commit(ctx); err != nil {
+		return fmt.Errorf("failed to commit booking: %w", err)
 	}
 
 	s.hub.Publish(appointment.BusinessID.String(), map[string]any{
-		"type":            "appointment_booked",
+		"type":             "appointment_booked",
 		"business_user_id": appointment.BusinessUserID.String(),
 		"start_time":       appointment.StartTime.Format(time.RFC3339),
 		"end_time":         appointment.EndTime.Format(time.RFC3339),
@@ -156,6 +230,21 @@ func (s *SlotService) PublishSlotUpdate(businessID uuid.UUID, businessUserID uui
 		"business_user_id": businessUserID.String(),
 		"date":             date.Format("2006-01-02"),
 	})
+}
+
+func mapAppointmentError(err error) error {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case "23P01":
+			return fmt.Errorf("time slot is no longer available")
+		case "23505":
+			return fmt.Errorf("already booked today")
+		case "23503":
+			return fmt.Errorf("employee does not offer this service")
+		}
+	}
+	return err
 }
 
 func computeSlots(dayStart, dayEnd time.Time, slotDuration time.Duration, busySlots []models.TimeSlot) []models.TimeSlot {

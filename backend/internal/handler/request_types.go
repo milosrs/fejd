@@ -7,6 +7,11 @@ type CreateAppointmentRequest struct {
 	ServiceID      string `json:"service_id" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 	BusinessUserID string `json:"business_user_id" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 	StartTime      string `json:"start_time" validate:"required" example:"2024-01-01T09:00:00Z"`
+	CustomerUserID string `json:"customer_user_id,omitempty" example:"550e8400-e29b-41d4-a716-446655440000"`
+}
+
+type CancelAppointmentRequest struct {
+	CancellationReason string `json:"cancellation_reason,omitempty" example:"unexpected absence"`
 }
 
 type SetWorkingHoursRequest struct {
@@ -22,8 +27,8 @@ type MessageResponse struct {
 }
 
 type BusinessResponse struct {
-	Business  models.Business      `json:"business" validate:"required"`
-	Services  []models.Service     `json:"services" validate:"required"`
+	Business  models.Business       `json:"business" validate:"required"`
+	Services  []models.Service      `json:"services" validate:"required"`
 	Employees []models.BusinessUser `json:"employees" validate:"required"`
 }
 

@@ -56,11 +56,12 @@ func setupTestDB(t *testing.T) *testDB {
 		t.Fatalf("failed to ping database: %v", err)
 	}
 
-	migrationSQL := readMigrationFile(t)
-
-	if _, err := pool.Exec(ctx, migrationSQL); err != nil {
-		pool.Close()
-		t.Fatalf("failed to run migration: %v", err)
+	for _, name := range []string{"000001_initial_schema.up.sql", "000002_schema_v2.up.sql"} {
+		migrationSQL := readMigrationFile(t, name)
+		if _, err := pool.Exec(ctx, migrationSQL); err != nil {
+			pool.Close()
+			t.Fatalf("failed to run migration %s: %v", name, err)
+		}
 	}
 
 	return &testDB{
@@ -74,15 +75,15 @@ func setupTestDB(t *testing.T) *testDB {
 	}
 }
 
-func readMigrationFile(t *testing.T) string {
+func readMigrationFile(t *testing.T, name string) string {
 	t.Helper()
 
 	_, filename, _, _ := runtime.Caller(0)
 	dir := filepath.Dir(filename)
 
 	candidates := []string{
-		filepath.Join(dir, "..", "..", "migrations", "000001_initial_schema.up.sql"),
-		filepath.Join(dir, "..", "..", "..", "backend", "migrations", "000001_initial_schema.up.sql"),
+		filepath.Join(dir, "..", "..", "migrations", name),
+		filepath.Join(dir, "..", "..", "..", "backend", "migrations", name),
 	}
 
 	for _, p := range candidates {

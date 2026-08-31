@@ -24,8 +24,8 @@ import (
 	"fejd-backend/auth"
 	_ "fejd-backend/docs"
 	"fejd-backend/internal/db"
-	customMiddleware "fejd-backend/internal/middleware"
 	"fejd-backend/internal/handler"
+	customMiddleware "fejd-backend/internal/middleware"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/store"
@@ -70,12 +70,14 @@ func main() {
 	appointmentStore := store.NewAppointmentStore(pool)
 	workingHoursStore := store.NewWorkingHoursStore(pool)
 	overrideStore := store.NewWorkingHoursOverrideStore(pool)
+	employeeServiceStore := store.NewEmployeeServiceStore(pool)
+	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
 
 	hub := sse.NewHub()
 
 	slotService := service.NewSlotService(
 		appointmentStore, workingHoursStore, overrideStore,
-		serviceStore, buStore, hub,
+		serviceStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
 	)
 
 	workingHoursService := service.NewWorkingHoursService(
