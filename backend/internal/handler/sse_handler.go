@@ -2,6 +2,7 @@ package handler
 
 import (
 	"fejd-backend/internal/sse"
+	"fejd-backend/internal/store"
 	"fmt"
 	"net/http"
 
@@ -9,15 +10,22 @@ import (
 )
 
 type SSEHandler struct {
-	hub *sse.Hub
+	hub      *sse.Hub
+	business *store.BusinessStore
 }
 
-func NewSSEHandler(hub *sse.Hub) *SSEHandler {
-	return &SSEHandler{hub: hub}
+func NewSSEHandler(hub *sse.Hub, business *store.BusinessStore) *SSEHandler {
+	return &SSEHandler{hub: hub, business: business}
 }
 
 func (h *SSEHandler) StreamSlots(w http.ResponseWriter, r *http.Request) {
 	businessSlug := chi.URLParam(r, "slug")
+
+	b, err := h.business.GetBySlug(r.Context(), businessSlug)
+	if err != nil {
+		http.Error(w, "business not found", http.StatusNotFound)
+		return
+	}
 
 	flusher, ok := w.(http.Flusher)
 	if !ok {
@@ -30,8 +38,9 @@ func (h *SSEHandler) StreamSlots(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Connection", "keep-alive")
 	w.Header().Set("Access-Control-Allow-Origin", "*")
 
-	ch := h.hub.Subscribe(businessSlug)
-	defer h.hub.Unsubscribe(businessSlug, ch)
+	businessID := b.ID.String()
+	ch := h.hub.Subscribe(businessID)
+	defer h.hub.Unsubscribe(businessID, ch)
 
 	fmt.Fprintf(w, "event: connected\ndata: {\"status\":\"connected\"}\n\n")
 	flusher.Flush()

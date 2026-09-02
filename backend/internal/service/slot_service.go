@@ -3,6 +3,8 @@ package service
 import (
 	"context"
 	"errors"
+	"fejd-backend/internal/concurrency"
+	"fejd-backend/internal/db"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/store"
@@ -10,6 +12,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
@@ -83,17 +86,18 @@ func (s *SlotService) GetAvailableSlots(
 		return nil, nil
 	}
 
-	var startTime, endTime string
+	var startTime, endTime time.Time
+	found := false
 	if override != nil && override.StartTime != nil && override.EndTime != nil {
 		startTime = *override.StartTime
 		endTime = *override.EndTime
+		found = true
 	} else {
 		hours, err := s.workingHours.GetByBusinessUser(ctx, businessUserID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to get working hours: %w", err)
 		}
 
-		found := false
 		for _, wh := range hours {
 			if wh.DayOfWeek == dayOfWeek {
 				startTime = wh.StartTime
@@ -102,20 +106,13 @@ func (s *SlotService) GetAvailableSlots(
 				break
 			}
 		}
-		if !found {
-			return nil, nil
-		}
+	}
+	if !found {
+		return nil, nil
 	}
 
-	dateStr := date.Format("2006-01-02")
-	dayStart, err := time.Parse("2006-01-02 15:04:05", dateStr+" "+startTime+":00")
-	if err != nil {
-		return nil, fmt.Errorf("invalid start time: %w", err)
-	}
-	dayEnd, err := time.Parse("2006-01-02 15:04:05", dateStr+" "+endTime+":00")
-	if err != nil {
-		return nil, fmt.Errorf("invalid end time: %w", err)
-	}
+	dayStart := time.Date(date.Year(), date.Month(), date.Day(), startTime.Hour(), startTime.Minute(), startTime.Second(), 0, date.Location())
+	dayEnd := time.Date(date.Year(), date.Month(), date.Day(), endTime.Hour(), endTime.Minute(), endTime.Second(), 0, date.Location())
 
 	duration := time.Duration(svc.DurationMinutes) * time.Minute
 	existing, err := s.appointments.GetConflictingAppointments(ctx, businessID, businessUserID, dayStart, dayEnd)
@@ -194,24 +191,21 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 	}
 
 	// Serialize per-employee writes. The exclusion constraint is the real
-	// booking-vs-booking guard; this advisory lock closes the race with
-	// unavailability/deactivation writes, which must take the same lock.
-	tx, err := s.pool.Begin(ctx)
+	// booking-vs-booking guard; the advisory lock closes the race with
+	// unavailability/deactivation writes, which take the same lock.
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, appointment.BusinessUserID); err != nil {
+			return fmt.Errorf("failed to acquire booking lock: %w", err)
+		}
+
+		if err := s.appointments.Create(ctx, tx, appointment); err != nil {
+			return mapAppointmentError(err)
+		}
+
+		return nil
+	})
 	if err != nil {
-		return fmt.Errorf("failed to begin booking transaction: %w", err)
-	}
-	defer tx.Rollback(ctx)
-
-	if _, err := tx.Exec(ctx, "SELECT pg_advisory_xact_lock(hashtextextended($1::text, 0))", appointment.BusinessUserID.String()); err != nil {
-		return fmt.Errorf("failed to acquire booking lock: %w", err)
-	}
-
-	if err := s.appointments.CreateTx(ctx, tx, appointment); err != nil {
-		return mapAppointmentError(err)
-	}
-
-	if err := tx.Commit(ctx); err != nil {
-		return fmt.Errorf("failed to commit booking: %w", err)
+		return err
 	}
 
 	s.hub.Publish(appointment.BusinessID.String(), map[string]any{
@@ -228,8 +222,85 @@ func (s *SlotService) PublishSlotUpdate(businessID uuid.UUID, businessUserID uui
 	s.hub.Publish(businessID.String(), map[string]any{
 		"type":             "slots_updated",
 		"business_user_id": businessUserID.String(),
-		"date":             date.Format("2006-01-02"),
+		"date":             date.Format(time.DateOnly),
 	})
+}
+
+func (s *SlotService) publishSlotsChanged(businessID, businessUserID uuid.UUID) {
+	s.hub.Publish(businessID.String(), map[string]any{
+		"type":             "slots_updated",
+		"business_user_id": businessUserID.String(),
+	})
+}
+
+// SetEmployeeServices replaces the set of services an employee offers.
+func (s *SlotService) SetEmployeeServices(ctx context.Context, businessID uuid.UUID, userID string, serviceIDs []uuid.UUID) error {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	if err := s.employeeServices.ReplaceByBusinessUser(ctx, bu.ID, serviceIDs); err != nil {
+		return fmt.Errorf("failed to set employee services: %w", err)
+	}
+
+	s.publishSlotsChanged(businessID, bu.ID)
+	return nil
+}
+
+// AddEmployeeUnavailability marks an employee unavailable (e.g. vacation). The
+// write takes the same per-employee advisory lock as booking so it serializes
+// against concurrent bookings.
+func (s *SlotService) AddEmployeeUnavailability(ctx context.Context, businessID uuid.UUID, userID string, u *models.EmployeeUnavailability) error {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+	u.BusinessUserID = bu.ID
+
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, bu.ID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+
+		if err := s.unavailability.Create(ctx, tx, u); err != nil {
+			return fmt.Errorf("failed to create unavailability: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, bu.ID)
+	return nil
+}
+
+// DeleteEmployeeUnavailability removes an unavailability block.
+func (s *SlotService) DeleteEmployeeUnavailability(ctx context.Context, businessID uuid.UUID, userID string, unavailabilityID uuid.UUID) error {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, bu.ID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+
+		if err := s.unavailability.Delete(ctx, tx, unavailabilityID); err != nil {
+			return fmt.Errorf("failed to delete unavailability: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, bu.ID)
+	return nil
 }
 
 func mapAppointmentError(err error) error {

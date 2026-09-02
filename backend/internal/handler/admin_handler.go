@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
@@ -25,6 +26,7 @@ type AdminHandler struct {
 	serviceStore        *store.ServiceStore
 	workingHoursService *service.WorkingHoursService
 	appointmentStore    *store.AppointmentStore
+	slotService         *service.SlotService
 }
 
 func NewAdminHandler(
@@ -33,6 +35,7 @@ func NewAdminHandler(
 	serviceStore *store.ServiceStore,
 	workingHoursService *service.WorkingHoursService,
 	appointmentStore *store.AppointmentStore,
+	slotService *service.SlotService,
 ) *AdminHandler {
 	return &AdminHandler{
 		businessStore:       businessStore,
@@ -40,6 +43,7 @@ func NewAdminHandler(
 		serviceStore:        serviceStore,
 		workingHoursService: workingHoursService,
 		appointmentStore:    appointmentStore,
+		slotService:         slotService,
 	}
 }
 
@@ -75,8 +79,8 @@ func (h *AdminHandler) GetWorkingHours(w http.ResponseWriter, r *http.Request) {
 	overrides, _ := h.workingHoursService.GetOverrides(r.Context(), businessID, targetUserID, from, to)
 
 	writeJSON(w, http.StatusOK, WorkingHoursResponse{
-		WorkingHours: hours,
-		Overrides:    overrides,
+		WorkingHours: dto.WorkingHoursFromModels(hours),
+		Overrides:    dto.WorkingHoursOverridesFromModels(overrides),
 	})
 }
 
@@ -109,7 +113,16 @@ func (h *AdminHandler) SetWorkingHours(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.workingHoursService.SetWeeklyHours(r.Context(), businessID, targetUserID, body.WorkingHours); err != nil {
+	hours := make([]models.WorkingHours, len(body.WorkingHours))
+	for i, wh := range body.WorkingHours {
+		hours[i] = models.WorkingHours{
+			DayOfWeek: wh.DayOfWeek,
+			StartTime: wh.StartTime,
+			EndTime:   wh.EndTime,
+		}
+	}
+
+	if err := h.workingHoursService.SetWeeklyHours(r.Context(), businessID, targetUserID, hours); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -125,8 +138,8 @@ func (h *AdminHandler) SetWorkingHours(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
 // @Param        userID path string true "User ID (Keycloak sub)"
-// @Param        override body models.WorkingHoursOverride true "Override details"
-// @Success      201 {object} models.WorkingHoursOverride
+// @Param        override body WorkingHoursOverrideInput true "Override details"
+// @Success      201 {object} dto.WorkingHoursOverride
 // @Failure      400 {object} ErrorResponse
 // @Failure      401 {object} ErrorResponse
 // @Security     BearerAuth
@@ -140,10 +153,18 @@ func (h *AdminHandler) AddOverride(w http.ResponseWriter, r *http.Request) {
 
 	targetUserID := chi.URLParam(r, "userID")
 
-	var override models.WorkingHoursOverride
-	if err := json.NewDecoder(r.Body).Decode(&override); err != nil {
+	var body WorkingHoursOverrideInput
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
 		return
+	}
+
+	override := models.WorkingHoursOverride{
+		OverrideDate: body.OverrideDate,
+		StartTime:    body.StartTime,
+		EndTime:      body.EndTime,
+		IsOff:        body.IsOff,
+		Reason:       body.Reason,
 	}
 
 	if err := h.workingHoursService.AddOverride(r.Context(), businessID, targetUserID, &override); err != nil {
@@ -151,7 +172,7 @@ func (h *AdminHandler) AddOverride(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, override)
+	writeJSON(w, http.StatusCreated, dto.WorkingHoursOverrideFromModel(override))
 }
 
 // DeleteOverride godoc
@@ -195,8 +216,8 @@ func (h *AdminHandler) DeleteOverride(w http.ResponseWriter, r *http.Request) {
 // @Accept       json
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
-// @Param        service body models.Service true "Service details"
-// @Success      201 {object} models.Service
+// @Param        service body ServiceInput true "Service details"
+// @Success      201 {object} dto.Service
 // @Failure      400 {object} ErrorResponse
 // @Failure      401 {object} ErrorResponse
 // @Security     BearerAuth
@@ -208,19 +229,28 @@ func (h *AdminHandler) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var svc models.Service
-	if err := json.NewDecoder(r.Body).Decode(&svc); err != nil {
+	var body ServiceInput
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
 		return
 	}
 
-	svc.BusinessID = businessID
-	if err := h.serviceStore.Create(r.Context(), &svc); err != nil {
+	svc := &models.Service{
+		BusinessID:      businessID,
+		Name:            body.Name,
+		DurationMinutes: body.DurationMinutes,
+		Price:           body.Price,
+		Active:          body.Active,
+		Description:     body.Description,
+		PictureID:       body.PictureID,
+	}
+
+	if err := h.serviceStore.Create(r.Context(), svc); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, svc)
+	writeJSON(w, http.StatusCreated, dto.ServiceFromModel(*svc))
 }
 
 // UpdateService godoc
@@ -231,8 +261,8 @@ func (h *AdminHandler) CreateService(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
 // @Param        serviceID path string true "Service UUID"
-// @Param        service body models.Service true "Updated service details"
-// @Success      200 {object} models.Service
+// @Param        service body ServiceInput true "Updated service details"
+// @Success      200 {object} dto.Service
 // @Failure      400 {object} ErrorResponse
 // @Failure      401 {object} ErrorResponse
 // @Security     BearerAuth
@@ -250,20 +280,29 @@ func (h *AdminHandler) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var svc models.Service
-	if err := json.NewDecoder(r.Body).Decode(&svc); err != nil {
+	var body ServiceInput
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
 		return
 	}
 
-	svc.ID = serviceID
-	svc.BusinessID = businessID
-	if err := h.serviceStore.Update(r.Context(), &svc); err != nil {
+	svc := &models.Service{
+		ID:              serviceID,
+		BusinessID:      businessID,
+		Name:            body.Name,
+		DurationMinutes: body.DurationMinutes,
+		Price:           body.Price,
+		Active:          body.Active,
+		Description:     body.Description,
+		PictureID:       body.PictureID,
+	}
+
+	if err := h.serviceStore.Update(r.Context(), svc); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, svc)
+	writeJSON(w, http.StatusOK, dto.ServiceFromModel(*svc))
 }
 
 // DeleteService godoc
@@ -305,7 +344,7 @@ func (h *AdminHandler) DeleteService(w http.ResponseWriter, r *http.Request) {
 // @Tags         admin
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
-// @Success      200 {array} models.BusinessUser
+// @Success      200 {array} dto.BusinessUser
 // @Failure      400 {object} ErrorResponse
 // @Failure      401 {object} ErrorResponse
 // @Security     BearerAuth
@@ -323,5 +362,168 @@ func (h *AdminHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, users)
+	writeJSON(w, http.StatusOK, dto.BusinessUsersFromModels(users))
+}
+
+// RemoveEmployee godoc
+// @Summary      Remove an employee
+// @Description  Soft-deletes an employee: future reservations are reassigned or cancelled.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        userID path string true "User ID (Keycloak sub)"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/employees/{userID} [delete]
+func (h *AdminHandler) RemoveEmployee(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	targetUserID := chi.URLParam(r, "userID")
+
+	bu, err := h.buStore.GetByBusinessAndUser(r.Context(), businessID, targetUserID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "employee not found")
+		return
+	}
+
+	if err := h.slotService.RemoveEmployee(r.Context(), businessID, bu.ID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "employee removed"})
+}
+
+// SetEmployeeServices godoc
+// @Summary      Set employee services
+// @Description  Replaces the set of services an employee offers.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        userID path string true "User ID (Keycloak sub)"
+// @Param        body body SetEmployeeServicesRequest true "Service IDs"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/employees/{userID}/services [put]
+func (h *AdminHandler) SetEmployeeServices(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	targetUserID := chi.URLParam(r, "userID")
+
+	var body SetEmployeeServicesRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	if err := h.slotService.SetEmployeeServices(r.Context(), businessID, targetUserID, body.ServiceIDs); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "employee services updated"})
+}
+
+// AddUnavailability godoc
+// @Summary      Mark an employee unavailable
+// @Description  Blocks a time range (e.g. vacation) for an employee.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        userID path string true "User ID (Keycloak sub)"
+// @Param        body body CreateUnavailabilityRequest true "Unavailability range"
+// @Success      201 {object} dto.EmployeeUnavailability
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/employees/{userID}/unavailability [post]
+func (h *AdminHandler) AddUnavailability(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	targetUserID := chi.URLParam(r, "userID")
+
+	var body CreateUnavailabilityRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	startTime, err := time.Parse(time.RFC3339, body.StartTime)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid start_time format, use RFC3339")
+		return
+	}
+
+	endTime, err := time.Parse(time.RFC3339, body.EndTime)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid end_time format, use RFC3339")
+		return
+	}
+
+	u := &models.EmployeeUnavailability{
+		StartTime: startTime,
+		EndTime:   endTime,
+		Reason:    body.Reason,
+	}
+
+	if err := h.slotService.AddEmployeeUnavailability(r.Context(), businessID, targetUserID, u); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, dto.EmployeeUnavailabilityFromModel(*u))
+}
+
+// DeleteUnavailability godoc
+// @Summary      Remove an unavailability block
+// @Description  Deletes a previously created unavailability range.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        userID path string true "User ID (Keycloak sub)"
+// @Param        unavailabilityID path string true "Unavailability UUID"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/employees/{userID}/unavailability/{unavailabilityID} [delete]
+func (h *AdminHandler) DeleteUnavailability(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	targetUserID := chi.URLParam(r, "userID")
+
+	unavailabilityID, err := uuid.Parse(chi.URLParam(r, "unavailabilityID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid unavailability ID")
+		return
+	}
+
+	if err := h.slotService.DeleteEmployeeUnavailability(r.Context(), businessID, targetUserID, unavailabilityID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "unavailability deleted"})
 }

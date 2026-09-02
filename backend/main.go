@@ -94,10 +94,10 @@ func main() {
 	)
 
 	adminHandler := handler.NewAdminHandler(
-		businessStore, buStore, serviceStore, workingHoursService, appointmentStore,
+		businessStore, buStore, serviceStore, workingHoursService, appointmentStore, slotService,
 	)
 
-	sseHandler := handler.NewSSEHandler(hub)
+	sseHandler := handler.NewSSEHandler(hub, businessStore)
 
 	r := chi.NewRouter()
 
@@ -144,10 +144,14 @@ func main() {
 				r.Use(customMiddleware.RequireBusinessAdmin(buStore))
 
 				r.Get("/employees", adminHandler.GetEmployees)
+				r.Delete("/employees/{userID}", adminHandler.RemoveEmployee)
 				r.Get("/employees/{userID}/working-hours", adminHandler.GetWorkingHours)
 				r.Put("/employees/{userID}/working-hours", adminHandler.SetWorkingHours)
 				r.Post("/employees/{userID}/overrides", adminHandler.AddOverride)
 				r.Delete("/employees/{userID}/overrides/{overrideID}", adminHandler.DeleteOverride)
+				r.Put("/employees/{userID}/services", adminHandler.SetEmployeeServices)
+				r.Post("/employees/{userID}/unavailability", adminHandler.AddUnavailability)
+				r.Delete("/employees/{userID}/unavailability/{unavailabilityID}", adminHandler.DeleteUnavailability)
 				r.Post("/services", adminHandler.CreateService)
 				r.Put("/services/{serviceID}", adminHandler.UpdateService)
 				r.Delete("/services/{serviceID}", adminHandler.DeleteService)

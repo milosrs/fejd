@@ -24,8 +24,8 @@ func (s *WorkingHoursOverrideStore) ListByBusinessUser(ctx context.Context, busi
 		Select("id", "business_user_id", "override_date::text", "start_time::text", "end_time::text", "is_off", "COALESCE(reason, '')").
 		From("working_hours_overrides").
 		Where(sq.Eq{"business_user_id": businessUserID}).
-		Where(sq.GtOrEq{"override_date": from.Format("2006-01-02")}).
-		Where(sq.LtOrEq{"override_date": to.Format("2006-01-02")}).
+		Where(sq.GtOrEq{"override_date": from.Format(time.DateOnly)}).
+		Where(sq.LtOrEq{"override_date": to.Format(time.DateOnly)}).
 		OrderBy("override_date").
 		ToSql()
 	if err != nil {
@@ -40,14 +40,11 @@ func (s *WorkingHoursOverrideStore) ListByBusinessUser(ctx context.Context, busi
 
 	var overrides []models.WorkingHoursOverride
 	for rows.Next() {
-		var o models.WorkingHoursOverride
-		var startTime, endTime *string
-		if err := rows.Scan(&o.ID, &o.BusinessUserID, &o.OverrideDate, &startTime, &endTime, &o.IsOff, &o.Reason); err != nil {
+		o, err := scanOverride(rows)
+		if err != nil {
 			return nil, fmt.Errorf("failed to scan override: %w", err)
 		}
-		o.StartTime = startTime
-		o.EndTime = endTime
-		overrides = append(overrides, o)
+		overrides = append(overrides, *o)
 	}
 	return overrides, nil
 }
@@ -56,21 +53,26 @@ func (s *WorkingHoursOverrideStore) GetByBusinessUserAndDate(ctx context.Context
 	sql, args, err := psql.
 		Select("id", "business_user_id", "override_date::text", "start_time::text", "end_time::text", "is_off", "COALESCE(reason, '')").
 		From("working_hours_overrides").
-		Where(sq.Eq{"business_user_id": businessUserID, "override_date": date.Format("2006-01-02")}).
+		Where(sq.Eq{"business_user_id": businessUserID, "override_date": date.Format(time.DateOnly)}).
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
 
-	var o models.WorkingHoursOverride
-	var startTime, endTime *string
-	err = s.pool.QueryRow(ctx, sql, args...).Scan(&o.ID, &o.BusinessUserID, &o.OverrideDate, &startTime, &endTime, &o.IsOff, &o.Reason)
+	return scanOverride(s.pool.QueryRow(ctx, sql, args...))
+}
+
+func (s *WorkingHoursOverrideStore) GetByID(ctx context.Context, id uuid.UUID) (*models.WorkingHoursOverride, error) {
+	sql, args, err := psql.
+		Select("id", "business_user_id", "override_date::text", "start_time::text", "end_time::text", "is_off", "COALESCE(reason, '')").
+		From("working_hours_overrides").
+		Where(sq.Eq{"id": id}).
+		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("override not found: %w", err)
+		return nil, fmt.Errorf("failed to build query: %w", err)
 	}
-	o.StartTime = startTime
-	o.EndTime = endTime
-	return &o, nil
+
+	return scanOverride(s.pool.QueryRow(ctx, sql, args...))
 }
 
 func (s *WorkingHoursOverrideStore) Create(ctx context.Context, o *models.WorkingHoursOverride) error {
@@ -80,7 +82,7 @@ func (s *WorkingHoursOverrideStore) Create(ctx context.Context, o *models.Workin
 	sql, args, err := psql.
 		Insert("working_hours_overrides").
 		Columns("id", "business_user_id", "override_date", "start_time", "end_time", "is_off", "reason").
-		Values(o.ID, o.BusinessUserID, o.OverrideDate, o.StartTime, o.EndTime, o.IsOff, o.Reason).
+		Values(o.ID, o.BusinessUserID, o.OverrideDate.Format(time.DateOnly), nullableTime(o.StartTime), nullableTime(o.EndTime), o.IsOff, nullableString(o.Reason)).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("failed to build query: %w", err)
@@ -104,4 +106,40 @@ func (s *WorkingHoursOverrideStore) Delete(ctx context.Context, id uuid.UUID) er
 
 	_, err = s.pool.Exec(ctx, sql, args...)
 	return err
+}
+
+func scanOverride(row rowScanner) (*models.WorkingHoursOverride, error) {
+	var o models.WorkingHoursOverride
+	var dateStr string
+	var startStr, endStr *string
+	if err := row.Scan(&o.ID, &o.BusinessUserID, &dateStr, &startStr, &endStr, &o.IsOff, &o.Reason); err != nil {
+		return nil, fmt.Errorf("override not found: %w", err)
+	}
+
+	var err error
+	if o.OverrideDate, err = time.Parse(time.DateOnly, dateStr); err != nil {
+		return nil, fmt.Errorf("failed to parse override date: %w", err)
+	}
+	if startStr != nil {
+		t, err := time.Parse(time.TimeOnly, *startStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse start time: %w", err)
+		}
+		o.StartTime = &t
+	}
+	if endStr != nil {
+		t, err := time.Parse(time.TimeOnly, *endStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse end time: %w", err)
+		}
+		o.EndTime = &t
+	}
+	return &o, nil
+}
+
+func nullableTime(t *time.Time) any {
+	if t == nil {
+		return nil
+	}
+	return t.Format(time.TimeOnly)
 }

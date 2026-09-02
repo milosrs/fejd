@@ -19,7 +19,7 @@ func NewEmployeeUnavailabilityStore(pool *pgxpool.Pool) *EmployeeUnavailabilityS
 	return &EmployeeUnavailabilityStore{pool: pool}
 }
 
-func (s *EmployeeUnavailabilityStore) Create(ctx context.Context, u *models.EmployeeUnavailability) error {
+func (s *EmployeeUnavailabilityStore) Create(ctx context.Context, q Querier, u *models.EmployeeUnavailability) error {
 	if u.ID == uuid.Nil {
 		u.ID = uuid.New()
 	}
@@ -32,11 +32,11 @@ func (s *EmployeeUnavailabilityStore) Create(ctx context.Context, u *models.Empl
 		return fmt.Errorf("failed to build query: %w", err)
 	}
 
-	_, err = s.pool.Exec(ctx, sql, args...)
+	_, err = q.Exec(ctx, sql, args...)
 	return err
 }
 
-func (s *EmployeeUnavailabilityStore) Delete(ctx context.Context, id uuid.UUID) error {
+func (s *EmployeeUnavailabilityStore) Delete(ctx context.Context, q Querier, id uuid.UUID) error {
 	sql, args, err := psql.
 		Delete("employee_unavailability").
 		Where(sq.Eq{"id": id}).
@@ -45,7 +45,7 @@ func (s *EmployeeUnavailabilityStore) Delete(ctx context.Context, id uuid.UUID) 
 		return fmt.Errorf("failed to build query: %w", err)
 	}
 
-	_, err = s.pool.Exec(ctx, sql, args...)
+	_, err = q.Exec(ctx, sql, args...)
 	return err
 }
 

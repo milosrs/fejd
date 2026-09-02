@@ -2,11 +2,14 @@ package service
 
 import (
 	"context"
+	"fejd-backend/internal/concurrency"
+	"fejd-backend/internal/db"
 	"fejd-backend/internal/models"
 	"fmt"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 )
 
 // RemoveEmployee soft-deletes an employee and relocates their future
@@ -26,9 +29,24 @@ func (s *SlotService) RemoveEmployee(ctx context.Context, businessID, businessUs
 		return fmt.Errorf("employee does not belong to business")
 	}
 
-	if err := s.businessUser.SetActive(ctx, businessUserID, false); err != nil {
-		return fmt.Errorf("failed to deactivate employee: %w", err)
+	// Deactivate under the same per-employee advisory lock as booking, so a
+	// concurrent booking cannot slip in between the active check and this write.
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, businessUserID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+
+		if err := s.businessUser.SetActive(ctx, tx, businessUserID, false); err != nil {
+			return fmt.Errorf("failed to deactivate employee: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
 	}
+
+	s.publishSlotsChanged(businessID, businessUserID)
 
 	now := time.Now()
 	future, err := s.appointments.ListByBusinessUser(ctx, businessUserID, now, now.AddDate(1, 0, 0))

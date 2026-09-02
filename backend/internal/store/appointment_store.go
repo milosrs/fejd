@@ -8,7 +8,6 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -52,7 +51,7 @@ func (s *AppointmentStore) GetConflictingAppointments(ctx context.Context, busin
 	return appointments, nil
 }
 
-func (s *AppointmentStore) Create(ctx context.Context, a *models.Appointment) error {
+func (s *AppointmentStore) Create(ctx context.Context, q Querier, a *models.Appointment) error {
 	if a.ID == uuid.Nil {
 		a.ID = uuid.New()
 	}
@@ -67,25 +66,7 @@ func (s *AppointmentStore) Create(ctx context.Context, a *models.Appointment) er
 		return fmt.Errorf("failed to build query: %w", err)
 	}
 
-	return s.pool.QueryRow(ctx, sql, args...).Scan(&a.CreatedAt)
-}
-
-func (s *AppointmentStore) CreateTx(ctx context.Context, tx pgx.Tx, a *models.Appointment) error {
-	if a.ID == uuid.Nil {
-		a.ID = uuid.New()
-	}
-	sql, args, err := psql.
-		Insert("appointments").
-		Columns("id", "business_id", "service_id", "business_user_id", "customer_user_id", "start_time", "end_time", "status", "created_by", "cancellation_reason").
-		Values(a.ID, a.BusinessID, a.ServiceID, a.BusinessUserID, a.CustomerUserID,
-			a.StartTime, a.EndTime, a.Status, a.CreatedBy, nullableString(a.CancellationReason)).
-		Suffix("RETURNING created_at").
-		ToSql()
-	if err != nil {
-		return fmt.Errorf("failed to build query: %w", err)
-	}
-
-	return tx.QueryRow(ctx, sql, args...).Scan(&a.CreatedAt)
+	return q.QueryRow(ctx, sql, args...).Scan(&a.CreatedAt)
 }
 
 func (s *AppointmentStore) ListByCustomer(ctx context.Context, customerUserID string) ([]models.Appointment, error) {

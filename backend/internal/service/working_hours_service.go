@@ -82,24 +82,22 @@ func (s *WorkingHoursService) AddOverride(ctx context.Context, businessID uuid.U
 		return fmt.Errorf("failed to create override: %w", err)
 	}
 
-	date, err := time.Parse("2006-01-02", override.OverrideDate)
-	if err == nil {
-		s.slotService.PublishSlotUpdate(businessID, targetBU.ID, date)
-	}
+	s.slotService.PublishSlotUpdate(businessID, targetBU.ID, override.OverrideDate)
 
 	return nil
 }
 
 func (s *WorkingHoursService) DeleteOverride(ctx context.Context, businessID uuid.UUID, overrideID uuid.UUID) error {
-	override, err := s.overrides.GetByBusinessUserAndDate(ctx, uuid.Nil, time.Now())
+	override, err := s.overrides.GetByID(ctx, overrideID)
 	if err != nil {
 		return fmt.Errorf("override not found: %w", err)
 	}
-	_ = override
 
 	if err := s.overrides.Delete(ctx, overrideID); err != nil {
 		return fmt.Errorf("failed to delete override: %w", err)
 	}
+
+	s.slotService.PublishSlotUpdate(businessID, override.BusinessUserID, override.OverrideDate)
 
 	return nil
 }

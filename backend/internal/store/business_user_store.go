@@ -132,7 +132,7 @@ func (s *BusinessUserStore) Create(ctx context.Context, bu *models.BusinessUser)
 	return err
 }
 
-func (s *BusinessUserStore) SetActive(ctx context.Context, id uuid.UUID, active bool) error {
+func (s *BusinessUserStore) SetActive(ctx context.Context, q Querier, id uuid.UUID, active bool) error {
 	sql, args, err := psql.
 		Update("business_users").
 		Set("active", active).
@@ -142,7 +142,7 @@ func (s *BusinessUserStore) SetActive(ctx context.Context, id uuid.UUID, active 
 		return fmt.Errorf("failed to build query: %w", err)
 	}
 
-	_, err = s.pool.Exec(ctx, sql, args...)
+	_, err = q.Exec(ctx, sql, args...)
 	return err
 }
 

@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"fejd-backend/internal/authutil"
+	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
@@ -44,7 +45,7 @@ func NewAppointmentHandler(
 // @Accept       json
 // @Produce      json
 // @Param        appointment body CreateAppointmentRequest true "Appointment details"
-// @Success      201 {object} models.Appointment
+// @Success      201 {object} dto.Appointment
 // @Failure      400 {object} ErrorResponse
 // @Failure      401 {object} ErrorResponse
 // @Failure      409 {object} ErrorResponse
@@ -63,23 +64,22 @@ func (h *AppointmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	businessID, err := uuid.Parse(body.BusinessID)
-	if err != nil {
+	if body.BusinessID == uuid.Nil {
 		writeError(w, http.StatusBadRequest, "invalid business_id")
 		return
 	}
-
-	serviceID, err := uuid.Parse(body.ServiceID)
-	if err != nil {
+	if body.ServiceID == uuid.Nil {
 		writeError(w, http.StatusBadRequest, "invalid service_id")
 		return
 	}
-
-	businessUserID, err := uuid.Parse(body.BusinessUserID)
-	if err != nil {
+	if body.BusinessUserID == uuid.Nil {
 		writeError(w, http.StatusBadRequest, "invalid business_user_id")
 		return
 	}
+
+	businessID := body.BusinessID
+	serviceID := body.ServiceID
+	businessUserID := body.BusinessUserID
 
 	startTime, err := time.Parse(time.RFC3339, body.StartTime)
 	if err != nil {
@@ -114,7 +114,7 @@ func (h *AppointmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, appointment)
+	writeJSON(w, http.StatusCreated, dto.AppointmentFromModel(*appointment))
 }
 
 // ListMyAppointments godoc
@@ -122,7 +122,7 @@ func (h *AppointmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 // @Description  Returns all appointments for the authenticated customer.
 // @Tags         appointments
 // @Produce      json
-// @Success      200 {array} models.Appointment
+// @Success      200 {array} dto.Appointment
 // @Failure      401 {object} ErrorResponse
 // @Security     BearerAuth
 // @Router       /api/my/appointments [get]
@@ -139,7 +139,7 @@ func (h *AppointmentHandler) ListMyAppointments(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	writeJSON(w, http.StatusOK, appointments)
+	writeJSON(w, http.StatusOK, dto.AppointmentsFromModels(appointments))
 }
 
 // Cancel godoc

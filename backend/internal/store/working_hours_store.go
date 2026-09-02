@@ -4,6 +4,7 @@ import (
 	"context"
 	"fejd-backend/internal/models"
 	"fmt"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
@@ -38,8 +39,15 @@ func (s *WorkingHoursStore) GetByBusinessUser(ctx context.Context, businessUserI
 	var hours []models.WorkingHours
 	for rows.Next() {
 		var wh models.WorkingHours
-		if err := rows.Scan(&wh.ID, &wh.BusinessUserID, &wh.DayOfWeek, &wh.StartTime, &wh.EndTime); err != nil {
+		var startStr, endStr string
+		if err := rows.Scan(&wh.ID, &wh.BusinessUserID, &wh.DayOfWeek, &startStr, &endStr); err != nil {
 			return nil, fmt.Errorf("failed to scan working hours: %w", err)
+		}
+		if wh.StartTime, err = time.Parse(time.TimeOnly, startStr); err != nil {
+			return nil, fmt.Errorf("failed to parse start time: %w", err)
+		}
+		if wh.EndTime, err = time.Parse(time.TimeOnly, endStr); err != nil {
+			return nil, fmt.Errorf("failed to parse end time: %w", err)
 		}
 		hours = append(hours, wh)
 	}
@@ -50,7 +58,7 @@ func (s *WorkingHoursStore) Upsert(ctx context.Context, wh *models.WorkingHours)
 	sql, args, err := psql.
 		Insert("working_hours").
 		Columns("business_user_id", "day_of_week", "start_time", "end_time").
-		Values(wh.BusinessUserID, wh.DayOfWeek, wh.StartTime, wh.EndTime).
+		Values(wh.BusinessUserID, wh.DayOfWeek, wh.StartTime.Format(time.TimeOnly), wh.EndTime.Format(time.TimeOnly)).
 		Suffix("ON CONFLICT (business_user_id, day_of_week) DO UPDATE SET start_time = EXCLUDED.start_time, end_time = EXCLUDED.end_time").
 		ToSql()
 	if err != nil {

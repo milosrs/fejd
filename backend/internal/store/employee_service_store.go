@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"errors"
+	"fejd-backend/internal/db"
 	"fejd-backend/internal/models"
 	"fmt"
 
@@ -46,6 +47,41 @@ func (s *EmployeeServiceStore) Unassign(ctx context.Context, businessUserID, ser
 
 	_, err = s.pool.Exec(ctx, sql, args...)
 	return err
+}
+
+// ReplaceByBusinessUser atomically replaces the set of services an employee
+// offers. Deletion is restricted by the appointments composite FK, so removing
+// a service that existing appointments reference will fail.
+func (s *EmployeeServiceStore) ReplaceByBusinessUser(ctx context.Context, businessUserID uuid.UUID, serviceIDs []uuid.UUID) error {
+	return db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		delSQL, delArgs, err := psql.
+			Delete("employee_services").
+			Where(sq.Eq{"business_user_id": businessUserID}).
+			ToSql()
+		if err != nil {
+			return fmt.Errorf("failed to build delete query: %w", err)
+		}
+		if _, err := tx.Exec(ctx, delSQL, delArgs...); err != nil {
+			return fmt.Errorf("failed to clear employee services: %w", err)
+		}
+
+		for _, sid := range serviceIDs {
+			insSQL, insArgs, err := psql.
+				Insert("employee_services").
+				Columns("business_user_id", "service_id").
+				Values(businessUserID, sid).
+				Suffix("ON CONFLICT DO NOTHING").
+				ToSql()
+			if err != nil {
+				return fmt.Errorf("failed to build insert query: %w", err)
+			}
+			if _, err := tx.Exec(ctx, insSQL, insArgs...); err != nil {
+				return fmt.Errorf("failed to assign service: %w", err)
+			}
+		}
+
+		return nil
+	})
 }
 
 func (s *EmployeeServiceStore) OffersService(ctx context.Context, businessUserID, serviceID uuid.UUID) (bool, error) {

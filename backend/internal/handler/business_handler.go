@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
@@ -54,9 +55,9 @@ func (h *BusinessHandler) GetBusiness(w http.ResponseWriter, r *http.Request) {
 	employees, _ := h.buStore.ListEmployeesByBusiness(r.Context(), b.ID)
 
 	writeJSON(w, http.StatusOK, BusinessResponse{
-		Business:  *b,
-		Services:  services,
-		Employees: employees,
+		Business:  dto.BusinessFromModel(*b),
+		Services:  dto.ServicesFromModels(services),
+		Employees: dto.BusinessUsersFromModels(employees),
 	})
 }
 
@@ -66,7 +67,7 @@ func (h *BusinessHandler) GetBusiness(w http.ResponseWriter, r *http.Request) {
 // @Tags         public
 // @Produce      json
 // @Param        slug path string true "Business slug"
-// @Success      200 {array} models.Service
+// @Success      200 {array} dto.Service
 // @Failure      404 {object} ErrorResponse
 // @Router       /api/business/{slug}/services [get]
 func (h *BusinessHandler) GetServices(w http.ResponseWriter, r *http.Request) {
@@ -83,7 +84,7 @@ func (h *BusinessHandler) GetServices(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, services)
+	writeJSON(w, http.StatusOK, dto.ServicesFromModels(services))
 }
 
 // GetEmployees godoc
@@ -92,7 +93,7 @@ func (h *BusinessHandler) GetServices(w http.ResponseWriter, r *http.Request) {
 // @Tags         public
 // @Produce      json
 // @Param        slug path string true "Business slug"
-// @Success      200 {array} models.BusinessUser
+// @Success      200 {array} dto.BusinessUser
 // @Failure      404 {object} ErrorResponse
 // @Router       /api/business/{slug}/employees [get]
 func (h *BusinessHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
@@ -109,7 +110,7 @@ func (h *BusinessHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, employees)
+	writeJSON(w, http.StatusOK, dto.BusinessUsersFromModels(employees))
 }
 
 // GetAvailableSlots godoc
@@ -163,7 +164,7 @@ func (h *BusinessHandler) GetAvailableSlots(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeJSON(w, http.StatusOK, SlotsResponse{
-		Slots: slots,
+		Slots: dto.TimeSlotsFromModels(slots),
 		Date:  dateStr,
 	})
 }

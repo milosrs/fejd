@@ -7,50 +7,50 @@ import (
 )
 
 type Business struct {
-	ID        uuid.UUID `json:"id" validate:"required"`
-	Name      string    `json:"name" validate:"required" example:"Acme Spa"`
-	Slug      string    `json:"slug" validate:"required" example:"acme-spa"`
-	CreatedAt time.Time `json:"created_at" validate:"required"`
-	UpdatedAt time.Time `json:"updated_at" validate:"required"`
+	ID        uuid.UUID
+	Name      string
+	Slug      string
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 type BusinessUser struct {
-	ID          uuid.UUID `json:"id" validate:"required"`
-	BusinessID  uuid.UUID `json:"business_id" validate:"required"`
-	UserID      string    `json:"user_id" validate:"required"`
-	Role        string    `json:"role" validate:"required" example:"admin"`
-	DisplayName string    `json:"display_name" validate:"required" example:"John Doe"`
-	Active      bool      `json:"active" validate:"required" example:"true"`
+	ID          uuid.UUID
+	BusinessID  uuid.UUID
+	UserID      string
+	Role        string
+	DisplayName string
+	Active      bool
 }
 
 type Service struct {
-	ID              uuid.UUID  `json:"id" validate:"required"`
-	BusinessID      uuid.UUID  `json:"business_id" validate:"required"`
-	Name            string     `json:"name" validate:"required" example:"Massage"`
-	DurationMinutes int        `json:"duration_minutes" validate:"required" example:"60"`
-	Price           float64    `json:"price,omitempty" example:"100.00"`
-	Active          bool       `json:"active" validate:"required" example:"true"`
-	Description     string     `json:"description,omitempty"`
-	PictureID       *uuid.UUID `json:"picture_id,omitempty"`
-	CreatedAt       time.Time  `json:"created_at" validate:"required"`
+	ID              uuid.UUID
+	BusinessID      uuid.UUID
+	Name            string
+	DurationMinutes int
+	Price           float64
+	Active          bool
+	Description     string
+	PictureID       *uuid.UUID
+	CreatedAt       time.Time
 }
 
 type WorkingHours struct {
-	ID             uuid.UUID `json:"id"`
-	BusinessUserID uuid.UUID `json:"business_user_id"`
-	DayOfWeek      int       `json:"day_of_week" validate:"required" example:"1"`
-	StartTime      string    `json:"start_time" validate:"required" example:"09:00"`
-	EndTime        string    `json:"end_time" validate:"required" example:"17:00"`
+	ID             uuid.UUID
+	BusinessUserID uuid.UUID
+	DayOfWeek      int
+	StartTime      time.Time
+	EndTime        time.Time
 }
 
 type WorkingHoursOverride struct {
-	ID             uuid.UUID `json:"id"`
-	BusinessUserID uuid.UUID `json:"business_user_id"`
-	OverrideDate   string    `json:"override_date" validate:"required" example:"2024-12-25"`
-	StartTime      *string   `json:"start_time,omitempty" example:"10:00"`
-	EndTime        *string   `json:"end_time,omitempty" example:"14:00"`
-	IsOff          bool      `json:"is_off" validate:"required" example:"false"`
-	Reason         string    `json:"reason,omitempty" example:"Christmas hours"`
+	ID             uuid.UUID
+	BusinessUserID uuid.UUID
+	OverrideDate   time.Time
+	StartTime      *time.Time
+	EndTime        *time.Time
+	IsOff          bool
+	Reason         string
 }
 
 type AppointmentStatus string
@@ -64,43 +64,43 @@ const (
 )
 
 type Appointment struct {
-	ID                 uuid.UUID         `json:"id" validate:"required"`
-	BusinessID         uuid.UUID         `json:"business_id" validate:"required"`
-	ServiceID          uuid.UUID         `json:"service_id" validate:"required"`
-	BusinessUserID     uuid.UUID         `json:"business_user_id" validate:"required"`
-	CustomerUserID     string            `json:"customer_user_id" validate:"required"`
-	StartTime          time.Time         `json:"start_time" validate:"required"`
-	EndTime            time.Time         `json:"end_time" validate:"required"`
-	Status             AppointmentStatus `json:"status" validate:"required" example:"confirmed"`
-	CreatedBy          string            `json:"created_by" validate:"required"`
-	CancellationReason string            `json:"cancellation_reason,omitempty"`
-	CreatedAt          time.Time         `json:"created_at" validate:"required"`
+	ID                 uuid.UUID
+	BusinessID         uuid.UUID
+	ServiceID          uuid.UUID
+	BusinessUserID     uuid.UUID
+	CustomerUserID     string
+	StartTime          time.Time
+	EndTime            time.Time
+	Status             AppointmentStatus
+	CreatedBy          string
+	CancellationReason string
+	CreatedAt          time.Time
 }
 
 type TimeSlot struct {
-	StartTime time.Time `json:"start_time" validate:"required"`
-	EndTime   time.Time `json:"end_time" validate:"required"`
+	StartTime time.Time
+	EndTime   time.Time
 }
 
 type Image struct {
-	ID          uuid.UUID `json:"id" validate:"required"`
-	Storage     string    `json:"storage" validate:"required" example:"minio"`
-	ObjectKey   string    `json:"object_key,omitempty"`
-	Data        []byte    `json:"-"`
-	URL         string    `json:"url,omitempty"`
-	ContentType string    `json:"content_type,omitempty"`
-	CreatedAt   time.Time `json:"created_at" validate:"required"`
+	ID          uuid.UUID
+	Storage     string
+	ObjectKey   string
+	Data        []byte
+	URL         string
+	ContentType string
+	CreatedAt   time.Time
 }
 
 type EmployeeService struct {
-	BusinessUserID uuid.UUID `json:"business_user_id" validate:"required"`
-	ServiceID      uuid.UUID `json:"service_id" validate:"required"`
+	BusinessUserID uuid.UUID
+	ServiceID      uuid.UUID
 }
 
 type EmployeeUnavailability struct {
-	ID             uuid.UUID `json:"id" validate:"required"`
-	BusinessUserID uuid.UUID `json:"business_user_id" validate:"required"`
-	StartTime      time.Time `json:"start_time" validate:"required"`
-	EndTime        time.Time `json:"end_time" validate:"required"`
-	Reason         string    `json:"reason,omitempty"`
+	ID             uuid.UUID
+	BusinessUserID uuid.UUID
+	StartTime      time.Time
+	EndTime        time.Time
+	Reason         string
 }
