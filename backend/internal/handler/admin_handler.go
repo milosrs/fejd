@@ -27,6 +27,7 @@ type AdminHandler struct {
 	workingHoursService *service.WorkingHoursService
 	appointmentStore    *store.AppointmentStore
 	slotService         *service.SlotService
+	imageService        *service.ImageService
 }
 
 func NewAdminHandler(
@@ -36,6 +37,7 @@ func NewAdminHandler(
 	workingHoursService *service.WorkingHoursService,
 	appointmentStore *store.AppointmentStore,
 	slotService *service.SlotService,
+	imageService *service.ImageService,
 ) *AdminHandler {
 	return &AdminHandler{
 		businessStore:       businessStore,
@@ -44,6 +46,7 @@ func NewAdminHandler(
 		workingHoursService: workingHoursService,
 		appointmentStore:    appointmentStore,
 		slotService:         slotService,
+		imageService:        imageService,
 	}
 }
 
@@ -330,7 +333,18 @@ func (h *AdminHandler) DeleteService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	svc, err := h.serviceStore.GetByID(r.Context(), serviceID)
+	if err != nil || svc.BusinessID != businessID {
+		writeError(w, http.StatusNotFound, "service not found")
+		return
+	}
+
 	if err := h.serviceStore.Delete(r.Context(), serviceID, businessID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	if err := h.imageService.UnlinkAndMaybeDeleteAll(r.Context(), "service", serviceID); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

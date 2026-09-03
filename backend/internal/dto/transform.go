@@ -92,6 +92,15 @@ func EmployeeUnavailabilityFromModel(m models.EmployeeUnavailability) EmployeeUn
 	}
 }
 
+func ImageFromModel(m models.Image) Image {
+	return Image{
+		ID:          m.ID,
+		URL:         "/api/images/" + m.ID.String(),
+		ContentType: m.ContentType,
+		CreatedAt:   m.CreatedAt,
+	}
+}
+
 func BusinessUsersFromModels(ms []models.BusinessUser) []BusinessUser {
 	out := make([]BusinessUser, len(ms))
 	for i, m := range ms {

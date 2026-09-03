@@ -95,6 +95,26 @@ func (s *ServiceStore) Update(ctx context.Context, svc *models.Service) error {
 	return err
 }
 
+func (s *ServiceStore) SetPicture(ctx context.Context, serviceID, businessID, imageID uuid.UUID) error {
+	sql, args, err := psql.
+		Update("services").
+		Set("picture_id", imageID).
+		Where(sq.Eq{"id": serviceID, "business_id": businessID}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	tag, err := s.pool.Exec(ctx, sql, args...)
+	if err != nil {
+		return err
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("service not found")
+	}
+	return nil
+}
+
 func (s *ServiceStore) Delete(ctx context.Context, id, businessID uuid.UUID) error {
 	sql, args, err := psql.
 		Delete("services").

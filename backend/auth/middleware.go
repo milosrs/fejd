@@ -51,6 +51,46 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 	})
 }
 
+// OptionalAuthenticate validates the bearer token when present but never
+// rejects the request: a valid token populates the usual context keys, an
+// invalid token sets ContextKeyAuthInvalid, and a missing token leaves the
+// request anonymous. The handler decides whether auth matters.
+func (m *Middleware) OptionalAuthenticate(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		tokenString, err := ExtractBearerToken(r)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		claims, err := m.jwksClient.ValidateToken(tokenString)
+		if err != nil {
+			ctx := context.WithValue(r.Context(), ContextKeyAuthInvalid, true)
+			next.ServeHTTP(w, r.WithContext(ctx))
+			return
+		}
+
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, ContextKeyClaims, claims)
+		ctx = context.WithValue(ctx, ContextKeyUserID, claims.Subject)
+
+		var roles []string
+		if realmRoles, exists := claims.RealmAccess["roles"]; exists {
+			roles = append(roles, realmRoles...)
+		}
+		ctx = context.WithValue(ctx, ContextKeyRoles, roles)
+
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+func IsAuthInvalidFromRequest(r *http.Request) bool {
+	if invalid, ok := r.Context().Value(ContextKeyAuthInvalid).(bool); ok {
+		return invalid
+	}
+	return false
+}
+
 func (m *Middleware) RequireRole(role string) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

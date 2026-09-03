@@ -23,11 +23,13 @@ import (
 
 	"fejd-backend/auth"
 	_ "fejd-backend/docs"
+	"fejd-backend/internal/config"
 	"fejd-backend/internal/db"
 	"fejd-backend/internal/handler"
 	customMiddleware "fejd-backend/internal/middleware"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/sse"
+	"fejd-backend/internal/storage"
 	"fejd-backend/internal/store"
 
 	"github.com/go-chi/chi/v5"
@@ -54,12 +56,12 @@ func main() {
 	realm := getEnv("KEYCLOAK_REALM", "fejd")
 	clientID := getEnv("KEYCLOAK_CLIENT_ID", "fejd-backend")
 
-	config := auth.KeycloakConfig{
+	keycloakConfig := auth.KeycloakConfig{
 		RealmURL: fmt.Sprintf("%s/realms/%s", keycloakURL, realm),
 		ClientID: clientID,
 	}
 
-	authMiddleware, err := auth.NewMiddleware(config)
+	authMiddleware, err := auth.NewMiddleware(keycloakConfig)
 	if err != nil {
 		log.Fatalf("Failed to initialize authentication middleware: %v", err)
 	}
@@ -72,6 +74,23 @@ func main() {
 	overrideStore := store.NewWorkingHoursOverrideStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
 	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
+	imageStore := store.NewImageStore(pool)
+	imageLinkStore := store.NewImageLinkStore(pool)
+
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+
+	var imageStorage storage.ImageStorage
+	if cfg.ImageStorage.Backend != config.BackendPostgres {
+		imageStorage, err = storage.NewFromConfig(cfg.ImageStorage)
+		if err != nil {
+			log.Fatalf("Failed to initialize image storage: %v", err)
+		}
+	}
+
+	imageService := service.NewImageService(cfg.ImageStorage, imageStorage, imageStore, imageLinkStore, buStore, pool)
 
 	hub := sse.NewHub()
 
@@ -94,10 +113,12 @@ func main() {
 	)
 
 	adminHandler := handler.NewAdminHandler(
-		businessStore, buStore, serviceStore, workingHoursService, appointmentStore, slotService,
+		businessStore, buStore, serviceStore, workingHoursService, appointmentStore, slotService, imageService,
 	)
 
 	sseHandler := handler.NewSSEHandler(hub, businessStore)
+
+	imageHandler := handler.NewImageHandler(imageService, serviceStore, buStore)
 
 	r := chi.NewRouter()
 
@@ -113,6 +134,7 @@ func main() {
 		AllowCredentials: true,
 		MaxAge:           300,
 	}))
+	r.Use(customMiddleware.MaxBodyBytes(cfg.ImageStorage.MaxUploadBytes))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
@@ -155,8 +177,19 @@ func main() {
 				r.Post("/services", adminHandler.CreateService)
 				r.Put("/services/{serviceID}", adminHandler.UpdateService)
 				r.Delete("/services/{serviceID}", adminHandler.DeleteService)
+				r.Post("/images", imageHandler.UploadBusinessImage)
+				r.Post("/services/{serviceID}/image", imageHandler.UploadServiceImage)
 			})
 		})
+
+		r.Group(func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+
+			r.Post("/admin/business/{businessID}/employees/{userID}/image", imageHandler.UploadEmployeeImage)
+			r.Delete("/admin/business/{businessID}/images/{imageID}", imageHandler.DeleteImage)
+		})
+
+		r.With(authMiddleware.OptionalAuthenticate).Get("/images/{imageID}", imageHandler.GetImage)
 
 		r.Get("/sse/business/{slug}/slots", sseHandler.StreamSlots)
 	})

@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fejd-backend/auth"
 	"fejd-backend/internal/store"
 	"net/http"
 
@@ -35,9 +36,22 @@ func RequireBusinessAdmin(buStore *store.BusinessUserStore) func(http.Handler) h
 }
 
 func getUserIDFromCtx(r *http.Request) string {
-	type ctxKey string
-	if userID, ok := r.Context().Value(ctxKey("user_id")).(string); ok {
-		return userID
+	return auth.GetUserIDFromRequest(r)
+}
+
+// MaxBodyBytes rejects requests whose body exceeds limit before any handler
+// reads it. A declared Content-Length over the limit is rejected immediately;
+// bodies without a known length (chunked) are wrapped with http.MaxBytesReader
+// so reads are capped at the same limit.
+func MaxBodyBytes(limit int64) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.ContentLength > limit {
+				http.Error(w, `{"error":"request body too large"}`, http.StatusRequestEntityTooLarge)
+				return
+			}
+			r.Body = http.MaxBytesReader(w, r.Body, limit)
+			next.ServeHTTP(w, r)
+		})
 	}
-	return ""
 }

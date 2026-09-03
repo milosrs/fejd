@@ -84,12 +84,30 @@ type TimeSlot struct {
 
 type Image struct {
 	ID          uuid.UUID
+	BusinessID  uuid.UUID
 	Storage     string
 	ObjectKey   string
 	Data        []byte
 	URL         string
 	ContentType string
 	CreatedAt   time.Time
+}
+
+type Visibility string
+
+const (
+	VisibilityPublic  Visibility = "public"
+	VisibilityPrivate Visibility = "private"
+)
+
+type ImageLink struct {
+	ID         uuid.UUID
+	ImageID    uuid.UUID
+	EntityType string
+	EntityID   uuid.UUID
+	Purpose    string
+	Visibility Visibility
+	CreatedAt  time.Time
 }
 
 type EmployeeService struct {

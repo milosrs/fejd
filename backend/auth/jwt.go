@@ -23,9 +23,10 @@ type Claims struct {
 type ContextKey string
 
 const (
-	ContextKeyClaims ContextKey = "claims"
-	ContextKeyUserID ContextKey = "user_id"
-	ContextKeyRoles  ContextKey = "roles"
+	ContextKeyClaims      ContextKey = "claims"
+	ContextKeyUserID      ContextKey = "user_id"
+	ContextKeyRoles       ContextKey = "roles"
+	ContextKeyAuthInvalid ContextKey = "auth_invalid"
 )
 
 type KeycloakConfig struct {

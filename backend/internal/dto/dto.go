@@ -79,3 +79,10 @@ type EmployeeUnavailability struct {
 	EndTime        time.Time `json:"end_time"`
 	Reason         string    `json:"reason,omitempty"`
 }
+
+type Image struct {
+	ID          uuid.UUID `json:"id"`
+	URL         string    `json:"url"`
+	ContentType string    `json:"content_type,omitempty"`
+	CreatedAt   time.Time `json:"created_at"`
+}

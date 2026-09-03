@@ -26,3 +26,26 @@ func HasRole(r *http.Request, role string) bool {
 	}
 	return false
 }
+
+type AuthStatus int
+
+const (
+	AuthAnonymous AuthStatus = iota
+	AuthInvalid
+	AuthValid
+)
+
+type AuthResult struct {
+	Status AuthStatus
+	UserID string
+}
+
+func AuthStatusOf(r *http.Request) AuthResult {
+	if userID := auth.GetUserIDFromRequest(r); userID != "" {
+		return AuthResult{Status: AuthValid, UserID: userID}
+	}
+	if auth.IsAuthInvalidFromRequest(r) {
+		return AuthResult{Status: AuthInvalid}
+	}
+	return AuthResult{Status: AuthAnonymous}
+}

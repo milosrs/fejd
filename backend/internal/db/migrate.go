@@ -12,6 +12,9 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
+// RunMigrations applies all pending migrations to the database configured by
+// DATABASE_URL, using the migrations directory relative to the working
+// directory (file://migrations).
 func RunMigrations() error {
 	databaseURL := os.Getenv("DATABASE_URL")
 	if databaseURL == "" {
@@ -24,16 +27,20 @@ func RunMigrations() error {
 	}
 	defer db.Close()
 
+	return Migrate(db, "file://migrations")
+}
+
+// Migrate applies all up migrations from the given file source URL (e.g.
+// "file://migrations" or "file:///absolute/path/to/migrations") to the
+// database. It is shared by startup and by tests so the same migrations run
+// everywhere, with no manually maintained list.
+func Migrate(db *sql.DB, sourceURL string) error {
 	driver, err := postgres.WithInstance(db, &postgres.Config{})
 	if err != nil {
 		return fmt.Errorf("failed to create migration driver: %w", err)
 	}
 
-	m, err := migrate.NewWithDatabaseInstance(
-		"file://migrations",
-		"postgres",
-		driver,
-	)
+	m, err := migrate.NewWithDatabaseInstance(sourceURL, "postgres", driver)
 	if err != nil {
 		return fmt.Errorf("failed to create migrator: %w", err)
 	}
