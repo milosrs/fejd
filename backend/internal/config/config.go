@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
+	"time"
 )
 
 // Backend selects where image bytes are stored.
@@ -44,9 +46,40 @@ type StorageConfig struct {
 	MaxUploadBytes int64
 }
 
+// KeycloakConfig holds connection and admin settings for Keycloak.
+type KeycloakConfig struct {
+	AdminURL          string
+	Realm             string
+	Audiences         []string
+	AdminClientID     string
+	AdminClientSecret string
+}
+
+// JobsConfig holds scheduled-job settings.
+type JobsConfig struct {
+	PendingScanInterval time.Duration
+	CleanupInterval     time.Duration
+	RunJobs             bool
+	InviteExpiryHours   int
+	InviteRedirectURI   string
+}
+
+// EmailConfig holds SMTP settings and the superadmin notification target.
+type EmailConfig struct {
+	SMTPHost              string
+	SMTPPort              int
+	SMTPUser              string
+	SMTPPass              string
+	SMTPFrom              string
+	SuperadminNotifyEmail string
+}
+
 // Config is the typed view of the service environment configuration.
 type Config struct {
 	ImageStorage StorageConfig
+	Keycloak     KeycloakConfig
+	Jobs         JobsConfig
+	Email        EmailConfig
 }
 
 // Load reads configuration from environment variables, applies defaults, and
@@ -73,6 +106,28 @@ func Load() (*Config, error) {
 				UseSSL:    getEnvBool("S3_USE_SSL", true),
 			},
 			MaxUploadBytes: getEnvInt("IMAGE_MAX_UPLOAD_MB", 10) * 1024 * 1024,
+		},
+		Keycloak: KeycloakConfig{
+			AdminURL:          getEnv("KEYCLOAK_URL", "http://localhost:9090"),
+			Realm:             getEnv("KEYCLOAK_REALM", "fejd"),
+			Audiences:         splitCSV(getEnv("KEYCLOAK_AUDIENCES", "salon-mobile,fejd-frontend")),
+			AdminClientID:     getEnv("KEYCLOAK_ADMIN_CLIENT_ID", "fejd-admin"),
+			AdminClientSecret: getEnv("KEYCLOAK_ADMIN_CLIENT_SECRET", ""),
+		},
+		Jobs: JobsConfig{
+			PendingScanInterval: getEnvDuration("PENDING_SCAN_INTERVAL", 15*time.Minute),
+			CleanupInterval:     getEnvDuration("CLEANUP_INTERVAL", time.Hour),
+			RunJobs:             getEnvBool("RUN_JOBS", true),
+			InviteExpiryHours:   int(getEnvInt("INVITE_EXPIRY_HOURS", 48)),
+			InviteRedirectURI:   getEnv("INVITE_REDIRECT_URI", ""),
+		},
+		Email: EmailConfig{
+			SMTPHost:              getEnv("SMTP_HOST", ""),
+			SMTPPort:              int(getEnvInt("SMTP_PORT", 587)),
+			SMTPUser:              getEnv("SMTP_USER", ""),
+			SMTPPass:              getEnv("SMTP_PASS", ""),
+			SMTPFrom:              getEnv("SMTP_FROM", ""),
+			SuperadminNotifyEmail: getEnv("SUPERADMIN_NOTIFY_EMAIL", ""),
 		},
 	}
 
@@ -105,6 +160,14 @@ func (c *Config) validate() error {
 		}
 	}
 
+	if len(c.Keycloak.Audiences) == 0 {
+		return fmt.Errorf("KEYCLOAK_AUDIENCES must contain at least one audience")
+	}
+
+	if c.Jobs.InviteExpiryHours <= 0 {
+		return fmt.Errorf("INVITE_EXPIRY_HOURS must be greater than zero")
+	}
+
 	return nil
 }
 
@@ -131,4 +194,24 @@ func getEnvInt(key string, def int64) int64 {
 		}
 	}
 	return def
+}
+
+func getEnvDuration(key string, def time.Duration) time.Duration {
+	if v := os.Getenv(key); v != "" {
+		if d, err := time.ParseDuration(v); err == nil {
+			return d
+		}
+	}
+	return def
+}
+
+func splitCSV(v string) []string {
+	parts := strings.Split(v, ",")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if s := strings.TrimSpace(p); s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
