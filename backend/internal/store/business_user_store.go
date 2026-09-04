@@ -163,3 +163,22 @@ func (s *BusinessUserStore) IsAdmin(ctx context.Context, businessID uuid.UUID, u
 	}
 	return true, nil
 }
+
+func (s *BusinessUserStore) HasAdminBusiness(ctx context.Context, q Querier, userID string) (bool, error) {
+	sql, args, err := psql.
+		Select("1").
+		From("business_users").
+		Where(sq.Eq{"user_id": userID, "role": "admin"}).
+		Prefix("SELECT EXISTS (").
+		Suffix(")").
+		ToSql()
+	if err != nil {
+		return false, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var exists bool
+	if err := q.QueryRow(ctx, sql, args...).Scan(&exists); err != nil {
+		return false, fmt.Errorf("failed to check admin business: %w", err)
+	}
+	return exists, nil
+}

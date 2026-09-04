@@ -98,3 +98,22 @@ func (s *BusinessStore) Create(ctx context.Context, b *models.Business) error {
 
 	return s.pool.QueryRow(ctx, sql, args...).Scan(&b.CreatedAt, &b.UpdatedAt)
 }
+
+func (s *BusinessStore) SlugExists(ctx context.Context, q Querier, slug string) (bool, error) {
+	sql, args, err := psql.
+		Select("1").
+		From("businesses").
+		Where(sq.Eq{"slug": slug}).
+		Prefix("SELECT EXISTS (").
+		Suffix(")").
+		ToSql()
+	if err != nil {
+		return false, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var exists bool
+	if err := q.QueryRow(ctx, sql, args...).Scan(&exists); err != nil {
+		return false, fmt.Errorf("failed to check slug: %w", err)
+	}
+	return exists, nil
+}

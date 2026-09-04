@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestAudienceAllowed(t *testing.T) {
@@ -24,9 +25,7 @@ func TestAudienceAllowed(t *testing.T) {
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			if got := audienceAllowed(tc.aud, tc.allowed); got != tc.want {
-				t.Fatalf("audienceAllowed(%v, %v) = %v, want %v", tc.aud, tc.allowed, got, tc.want)
-			}
+			assert.Equal(t, tc.want, audienceAllowed(tc.aud, tc.allowed))
 		})
 	}
 }

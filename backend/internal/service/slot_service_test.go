@@ -1,9 +1,12 @@
 package service
 
 import (
-	"fejd-backend/internal/models"
 	"testing"
 	"time"
+
+	"fejd-backend/internal/models"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func futureDay() time.Time {
@@ -18,14 +21,8 @@ func TestComputeSlots(t *testing.T) {
 
 	slots := computeSlots(dayStart, dayEnd, duration, nil)
 
-	expectedSlotCount := 16
-	if len(slots) != expectedSlotCount {
-		t.Errorf("expected %d slots, got %d", expectedSlotCount, len(slots))
-	}
-
-	if !slots[0].StartTime.Equal(dayStart) {
-		t.Errorf("first slot should start at %v, got %v", dayStart, slots[0].StartTime)
-	}
+	assert.Len(t, slots, 16)
+	assert.True(t, slots[0].StartTime.Equal(dayStart))
 }
 
 func TestComputeSlotsWithBusy(t *testing.T) {
@@ -45,12 +42,8 @@ func TestComputeSlotsWithBusy(t *testing.T) {
 	slots := computeSlots(dayStart, dayEnd, duration, busySlots)
 
 	for _, slot := range slots {
-		if slot.StartTime.Equal(busyStart) {
-			t.Error("slot at busy time should not be available")
-		}
-		if slot.StartTime.Equal(busyStart.Add(30 * time.Minute)) {
-			t.Error("slot overlapping busy period should not be available")
-		}
+		assert.False(t, slot.StartTime.Equal(busyStart), "slot at busy time should not be available")
+		assert.False(t, slot.StartTime.Equal(busyStart.Add(30*time.Minute)), "slot overlapping busy period should not be available")
 	}
 }
 
@@ -61,10 +54,7 @@ func TestComputeSlotsWithHourDuration(t *testing.T) {
 
 	slots := computeSlots(dayStart, dayEnd, duration, nil)
 
-	expectedSlotCount := 8
-	if len(slots) != expectedSlotCount {
-		t.Errorf("expected %d hour-long slots, got %d", expectedSlotCount, len(slots))
-	}
+	assert.Len(t, slots, 8)
 }
 
 func TestComputeSlotsEmptyRange(t *testing.T) {
@@ -74,7 +64,5 @@ func TestComputeSlotsEmptyRange(t *testing.T) {
 
 	slots := computeSlots(dayStart, dayEnd, duration, nil)
 
-	if len(slots) != 0 {
-		t.Errorf("expected 0 slots for empty range, got %d", len(slots))
-	}
+	assert.Empty(t, slots)
 }

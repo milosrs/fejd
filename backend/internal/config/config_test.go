@@ -1,9 +1,11 @@
 package config
 
 import (
-	"reflect"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestLoadDefaults(t *testing.T) {
@@ -12,33 +14,23 @@ func TestLoadDefaults(t *testing.T) {
 	t.Setenv("MINIO_BUCKET", "bucket")
 
 	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if cfg.ImageStorage.Backend != BackendMinio {
-		t.Fatalf("expected minio backend, got %q", cfg.ImageStorage.Backend)
-	}
-	if cfg.ImageStorage.MaxUploadBytes != 10*1024*1024 {
-		t.Fatalf("expected default max upload of 10MiB, got %d", cfg.ImageStorage.MaxUploadBytes)
-	}
-	if cfg.ImageStorage.Minio.Endpoint != "localhost:9000" {
-		t.Fatalf("unexpected endpoint: %q", cfg.ImageStorage.Minio.Endpoint)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, BackendMinio, cfg.ImageStorage.Backend)
+	assert.Equal(t, int64(10*1024*1024), cfg.ImageStorage.MaxUploadBytes)
+	assert.Equal(t, "localhost:9000", cfg.ImageStorage.Minio.Endpoint)
 }
 
 func TestLoadRejectsUnknownBackend(t *testing.T) {
 	t.Setenv("IMAGE_STORAGE_BACKEND", "bogus")
-	if _, err := Load(); err == nil {
-		t.Fatal("expected error for unknown backend")
-	}
+	_, err := Load()
+	require.Error(t, err)
 }
 
 func TestLoadRejectsIncompleteS3(t *testing.T) {
 	t.Setenv("IMAGE_STORAGE_BACKEND", "s3")
 	t.Setenv("S3_REGION", "eu-west-1")
-	if _, err := Load(); err == nil {
-		t.Fatal("expected error for incomplete s3 config")
-	}
+	_, err := Load()
+	require.Error(t, err)
 }
 
 func TestLoadS3(t *testing.T) {
@@ -49,12 +41,8 @@ func TestLoadS3(t *testing.T) {
 	t.Setenv("S3_SECRET_KEY", "secret")
 
 	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if cfg.ImageStorage.S3.Region != "eu-west-1" {
-		t.Fatalf("unexpected region: %q", cfg.ImageStorage.S3.Region)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "eu-west-1", cfg.ImageStorage.S3.Region)
 }
 
 func TestLoadRejectsNonPositiveMaxUpload(t *testing.T) {
@@ -63,88 +51,57 @@ func TestLoadRejectsNonPositiveMaxUpload(t *testing.T) {
 	t.Setenv("MINIO_BUCKET", "bucket")
 	t.Setenv("IMAGE_MAX_UPLOAD_MB", "0")
 
-	if _, err := Load(); err == nil {
-		t.Fatal("expected error for non-positive max upload size")
-	}
+	_, err := Load()
+	require.Error(t, err)
 }
 
 func TestLoadKeycloakDefaults(t *testing.T) {
 	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if cfg.Keycloak.AdminURL != "http://localhost:9090" {
-		t.Fatalf("unexpected admin url: %q", cfg.Keycloak.AdminURL)
-	}
-	if cfg.Keycloak.Realm != "fejd" {
-		t.Fatalf("unexpected realm: %q", cfg.Keycloak.Realm)
-	}
-	want := []string{"salon-mobile", "fejd-frontend"}
-	if !reflect.DeepEqual(cfg.Keycloak.Audiences, want) {
-		t.Fatalf("unexpected audiences: %v", cfg.Keycloak.Audiences)
-	}
-	if cfg.Keycloak.AdminClientID != "fejd-admin" {
-		t.Fatalf("unexpected admin client id: %q", cfg.Keycloak.AdminClientID)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:9090", cfg.Keycloak.AdminURL)
+	assert.Equal(t, "fejd", cfg.Keycloak.Realm)
+	assert.Equal(t, []string{"salon-mobile", "fejd-frontend"}, cfg.Keycloak.Audiences)
+	assert.Equal(t, "fejd-admin", cfg.Keycloak.AdminClientID)
 }
 
 func TestLoadKeycloakAudiencesParsing(t *testing.T) {
 	t.Setenv("KEYCLOAK_AUDIENCES", " a, b , c ")
 
 	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	want := []string{"a", "b", "c"}
-	if !reflect.DeepEqual(cfg.Keycloak.Audiences, want) {
-		t.Fatalf("unexpected audiences: %v", cfg.Keycloak.Audiences)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, []string{"a", "b", "c"}, cfg.Keycloak.Audiences)
 }
 
 func TestLoadJobsDefaults(t *testing.T) {
 	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if !cfg.Jobs.RunJobs {
-		t.Fatal("expected RunJobs default true")
-	}
-	if cfg.Jobs.InviteExpiryHours != 48 {
-		t.Fatalf("unexpected invite expiry hours: %d", cfg.Jobs.InviteExpiryHours)
-	}
-	if cfg.Jobs.PendingScanInterval != 15*time.Minute {
-		t.Fatalf("unexpected pending scan interval: %v", cfg.Jobs.PendingScanInterval)
-	}
-	if cfg.Jobs.CleanupInterval != time.Hour {
-		t.Fatalf("unexpected cleanup interval: %v", cfg.Jobs.CleanupInterval)
-	}
+	require.NoError(t, err)
+	assert.True(t, cfg.Jobs.RunJobs)
+	assert.Equal(t, 48, cfg.Jobs.InviteExpiryHours)
+	assert.Equal(t, 15*time.Minute, cfg.Jobs.PendingScanInterval)
+	assert.Equal(t, time.Hour, cfg.Jobs.CleanupInterval)
 }
 
 func TestLoadEmailDefaults(t *testing.T) {
 	cfg, err := Load()
-	if err != nil {
-		t.Fatalf("unexpected error: %v", err)
-	}
-	if cfg.Email.SMTPPort != 587 {
-		t.Fatalf("unexpected smtp port: %d", cfg.Email.SMTPPort)
-	}
-	if cfg.Email.SMTPHost != "" || cfg.Email.SMTPUser != "" || cfg.Email.SMTPPass != "" || cfg.Email.SMTPFrom != "" || cfg.Email.SuperadminNotifyEmail != "" {
-		t.Fatal("expected empty smtp defaults")
-	}
+	require.NoError(t, err)
+	assert.Equal(t, 587, cfg.Email.SMTPPort)
+	assert.Empty(t, cfg.Email.SMTPHost)
+	assert.Empty(t, cfg.Email.SMTPUser)
+	assert.Empty(t, cfg.Email.SMTPPass)
+	assert.Empty(t, cfg.Email.SMTPFrom)
+	assert.Empty(t, cfg.Email.SuperadminNotifyEmail)
 }
 
 func TestLoadRejectsEmptyAudiences(t *testing.T) {
 	t.Setenv("KEYCLOAK_AUDIENCES", " , ")
 
-	if _, err := Load(); err == nil {
-		t.Fatal("expected error for empty audiences")
-	}
+	_, err := Load()
+	require.Error(t, err)
 }
 
 func TestLoadRejectsNonPositiveInviteExpiry(t *testing.T) {
 	t.Setenv("INVITE_EXPIRY_HOURS", "0")
 
-	if _, err := Load(); err == nil {
-		t.Fatal("expected error for non-positive invite expiry")
-	}
+	_, err := Load()
+	require.Error(t, err)
 }

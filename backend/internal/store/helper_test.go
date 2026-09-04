@@ -13,6 +13,7 @@ import (
 	"fejd-backend/internal/db"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -40,35 +41,29 @@ func setupTestDB(t *testing.T) *testDB {
 			return nil
 		}),
 	)
-	if err != nil {
-		t.Fatalf("failed to start postgres container: %v", err)
-	}
+	require.NoError(t, err)
 
 	connStr, err := pgContainer.ConnectionString(ctx, "sslmode=disable")
-	if err != nil {
-		t.Fatalf("failed to get connection string: %v", err)
-	}
+	require.NoError(t, err)
 
 	pool, err := pgxpool.New(ctx, connStr)
-	if err != nil {
-		t.Fatalf("failed to create pool: %v", err)
-	}
+	require.NoError(t, err)
 
 	if err := pool.Ping(ctx); err != nil {
 		pool.Close()
-		t.Fatalf("failed to ping database: %v", err)
+		require.FailNow(t, "failed to ping database: %v", err)
 	}
 
 	sqlDB, err := sql.Open("pgx", connStr)
 	if err != nil {
 		pool.Close()
-		t.Fatalf("failed to open database for migrations: %v", err)
+		require.FailNow(t, "failed to open database for migrations: %v", err)
 	}
 
 	if err := db.Migrate(sqlDB, "file://"+locateMigrationsDir(t)); err != nil {
 		sqlDB.Close()
 		pool.Close()
-		t.Fatalf("failed to run migrations: %v", err)
+		require.FailNow(t, "failed to run migrations: %v", err)
 	}
 	sqlDB.Close()
 
@@ -104,6 +99,6 @@ func locateMigrationsDir(t *testing.T) string {
 		}
 	}
 
-	t.Fatalf("could not find migrations directory, tried: %v", candidates)
+	require.FailNow(t, "could not find migrations directory", "tried: %v", candidates)
 	return ""
 }

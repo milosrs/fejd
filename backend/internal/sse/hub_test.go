@@ -5,23 +5,23 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHubSubscribeUnsubscribe(t *testing.T) {
 	hub := NewHub()
 
 	ch := hub.Subscribe("business-1")
-	if ch == nil {
-		t.Fatal("expected non-nil channel")
-	}
+	require.NotNil(t, ch)
 
 	hub.Unsubscribe("business-1", ch)
 
 	hub.mu.RLock()
 	defer hub.mu.RUnlock()
-	if _, ok := hub.subscribers["business-1"]; ok {
-		t.Error("expected subscribers for business-1 to be removed")
-	}
+	_, ok := hub.subscribers["business-1"]
+	assert.False(t, ok)
 }
 
 func TestHubPublish(t *testing.T) {
@@ -38,15 +38,11 @@ func TestHubPublish(t *testing.T) {
 		select {
 		case data := <-ch:
 			var decoded map[string]string
-			if err := json.Unmarshal(data, &decoded); err != nil {
-				t.Errorf("failed to unmarshal: %v", err)
-				return
-			}
-			if decoded["type"] != "slots_updated" {
-				t.Errorf("expected type 'slots_updated', got '%s'", decoded["type"])
+			if assert.NoError(t, json.Unmarshal(data, &decoded)) {
+				assert.Equal(t, "slots_updated", decoded["type"])
 			}
 		case <-time.After(1 * time.Second):
-			t.Error("timed out waiting for event")
+			assert.Fail(t, "timed out waiting for event")
 		}
 	}()
 
@@ -71,7 +67,7 @@ func TestHubPublishToMultipleSubscribers(t *testing.T) {
 		select {
 		case <-ch:
 		case <-time.After(1 * time.Second):
-			t.Error("timed out waiting for event")
+			assert.Fail(t, "timed out waiting for event")
 		}
 	}
 
@@ -98,7 +94,7 @@ func TestHubPublishDifferentBusinesses(t *testing.T) {
 		select {
 		case <-ch1:
 		case <-time.After(500 * time.Millisecond):
-			t.Error("subscriber 1 should have received event")
+			assert.Fail(t, "subscriber 1 should have received event")
 		}
 	}()
 
@@ -107,7 +103,7 @@ func TestHubPublishDifferentBusinesses(t *testing.T) {
 
 	select {
 	case <-ch2:
-		t.Error("subscriber 2 should NOT have received event for business-1")
+		assert.Fail(t, "subscriber 2 should NOT have received event for business-1")
 	case <-time.After(200 * time.Millisecond):
 	}
 

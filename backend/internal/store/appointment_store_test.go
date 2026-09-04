@@ -10,6 +10,8 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func seedBooking(t *testing.T, db *testDB) (businessID, buID, serviceID uuid.UUID) {
@@ -22,9 +24,8 @@ func seedBooking(t *testing.T, db *testDB) (businessID, buID, serviceID uuid.UUI
 
 	mustExec := func(sql string, args ...any) {
 		t.Helper()
-		if _, err := db.pool.Exec(ctx, sql, args...); err != nil {
-			t.Fatalf("seed failed: %v", err)
-		}
+		_, err := db.pool.Exec(ctx, sql, args...)
+		require.NoError(t, err)
 	}
 
 	mustExec(`INSERT INTO businesses (id, name, slug) VALUES ($1, 'Concurrency', 'concurrency')`, businessID)
@@ -72,13 +73,9 @@ func TestConcurrentBookingSameSlotSingleWinner(t *testing.T) {
 			continue
 		}
 		var pgErr *pgconn.PgError
-		if !errors.As(err, &pgErr) || pgErr.Code != "23P01" {
-			t.Errorf("expected exclusion violation (23P01), got %v", err)
-		}
+		assert.True(t, errors.As(err, &pgErr) && pgErr.Code == "23P01", "expected exclusion violation (23P01), got %v", err)
 	}
-	if successes != 1 {
-		t.Fatalf("expected exactly 1 successful booking, got %d", successes)
-	}
+	assert.Equal(t, 1, successes)
 }
 
 // TestAppointmentDailyCap verifies the "max 1 booking per customer per salon
@@ -102,26 +99,17 @@ func TestAppointmentDailyCap(t *testing.T) {
 		return err
 	}
 
-	if err := insert(slot1, "confirmed"); err != nil {
-		t.Fatalf("first booking should succeed: %v", err)
-	}
+	require.NoError(t, insert(slot1, "confirmed"))
 
 	err := insert(slot2, "confirmed")
-	if err == nil {
-		t.Fatal("expected second same-day booking to fail with 23505")
-	}
+	require.Error(t, err)
 	var pgErr *pgconn.PgError
-	if !errors.As(err, &pgErr) || pgErr.Code != "23505" {
-		t.Fatalf("expected 23505, got %v", err)
-	}
+	require.True(t, errors.As(err, &pgErr) && pgErr.Code == "23505", "expected 23505, got %v", err)
 
 	// Cancel the first booking; the day is freed for the customer.
-	if _, err := db.pool.Exec(ctx,
-		`UPDATE appointments SET status = 'cancelled' WHERE customer_user_id = 'customer-1' AND status = 'confirmed'`); err != nil {
-		t.Fatalf("cancel failed: %v", err)
-	}
+	_, err = db.pool.Exec(ctx,
+		`UPDATE appointments SET status = 'cancelled' WHERE customer_user_id = 'customer-1' AND status = 'confirmed'`)
+	require.NoError(t, err)
 
-	if err := insert(slot2, "confirmed"); err != nil {
-		t.Fatalf("rebooking after cancel should succeed: %v", err)
-	}
+	require.NoError(t, insert(slot2, "confirmed"))
 }
