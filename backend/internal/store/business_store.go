@@ -82,7 +82,7 @@ func (s *BusinessStore) ListByUser(ctx context.Context, userID string) ([]models
 	return businesses, nil
 }
 
-func (s *BusinessStore) Create(ctx context.Context, b *models.Business) error {
+func (s *BusinessStore) Create(ctx context.Context, q Querier, b *models.Business) error {
 	if b.ID == uuid.Nil {
 		b.ID = uuid.New()
 	}
@@ -96,7 +96,7 @@ func (s *BusinessStore) Create(ctx context.Context, b *models.Business) error {
 		return fmt.Errorf("failed to build query: %w", err)
 	}
 
-	return s.pool.QueryRow(ctx, sql, args...).Scan(&b.CreatedAt, &b.UpdatedAt)
+	return q.QueryRow(ctx, sql, args...).Scan(&b.CreatedAt, &b.UpdatedAt)
 }
 
 func (s *BusinessStore) SlugExists(ctx context.Context, q Querier, slug string) (bool, error) {

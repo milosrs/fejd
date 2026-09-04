@@ -112,7 +112,7 @@ func (s *BusinessUserStore) ListEmployeesByBusiness(ctx context.Context, busines
 	return users, nil
 }
 
-func (s *BusinessUserStore) Create(ctx context.Context, bu *models.BusinessUser) error {
+func (s *BusinessUserStore) Create(ctx context.Context, q Querier, bu *models.BusinessUser) error {
 	if bu.ID == uuid.Nil {
 		bu.ID = uuid.New()
 	}
@@ -128,7 +128,7 @@ func (s *BusinessUserStore) Create(ctx context.Context, bu *models.BusinessUser)
 		return fmt.Errorf("failed to build query: %w", err)
 	}
 
-	_, err = s.pool.Exec(ctx, sql, args...)
+	_, err = q.Exec(ctx, sql, args...)
 	return err
 }
 

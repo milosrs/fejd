@@ -116,6 +116,8 @@ func main() {
 
 	imageHandler := handler.NewImageHandler(imageService, serviceStore, buStore)
 
+	meHandler := handler.NewMeHandler(businessStore, buStore, pool)
+
 	r := chi.NewRouter()
 
 	r.Use(chiMiddleware.Logger)
@@ -145,6 +147,17 @@ func main() {
 			r.Get("/services", businessHandler.GetServices)
 			r.Get("/employees", businessHandler.GetEmployees)
 			r.Get("/slots", businessHandler.GetAvailableSlots)
+		})
+
+		r.Route("/me", func(r chi.Router) {
+			r.Use(authMiddleware.Authenticate)
+
+			r.Get("/", meHandler.GetMe)
+
+			r.Group(func(r chi.Router) {
+				r.Use(authMiddleware.RequireApproved)
+				r.Post("/business", meHandler.CreateBusiness)
+			})
 		})
 
 		r.Group(func(r chi.Router) {

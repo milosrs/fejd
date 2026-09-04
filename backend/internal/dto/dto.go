@@ -14,6 +14,13 @@ type Business struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+// Me is the authenticated user's own onboarding state, synthesized from the
+// JWT approval claim and a lookup rather than a DB row.
+type Me struct {
+	ApprovalStatus string `json:"approval_status"`
+	HasSalon       bool   `json:"has_salon"`
+}
+
 type BusinessUser struct {
 	ID          uuid.UUID `json:"id"`
 	BusinessID  uuid.UUID `json:"business_id"`

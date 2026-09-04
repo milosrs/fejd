@@ -61,6 +61,10 @@ type ErrorResponse struct {
 	Error string `json:"error" validate:"required" example:"error message"`
 }
 
+type BusinessCreateInput struct {
+	Name string `json:"name" validate:"required" example:"My Salon"`
+}
+
 type MessageResponse struct {
 	Message string `json:"message" validate:"required" example:"operation complete"`
 }
