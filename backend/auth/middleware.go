@@ -38,6 +38,7 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, ContextKeyClaims, claims)
 		ctx = context.WithValue(ctx, ContextKeyUserID, claims.Subject)
+		ctx = context.WithValue(ctx, ContextKeyApprovalStatus, claims.ApprovalStatus)
 
 		var roles []string
 		if realmRoles, exists := claims.RealmAccess["roles"]; exists {
@@ -73,6 +74,7 @@ func (m *Middleware) OptionalAuthenticate(next http.Handler) http.Handler {
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, ContextKeyClaims, claims)
 		ctx = context.WithValue(ctx, ContextKeyUserID, claims.Subject)
+		ctx = context.WithValue(ctx, ContextKeyApprovalStatus, claims.ApprovalStatus)
 
 		var roles []string
 		if realmRoles, exists := claims.RealmAccess["roles"]; exists {
@@ -178,6 +180,26 @@ func (m *Middleware) RequireAnyRole(roles []string) func(http.Handler) http.Hand
 	}
 }
 
+// RequireApproved blocks requests whose user has not been approved
+// (approval_status != "approved"). Callers must run Authenticate first so
+// claims are present in the context.
+func (m *Middleware) RequireApproved(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		claims := GetClaimsFromRequest(r)
+		if claims == nil {
+			http.Error(w, "unauthorized: missing claims", http.StatusUnauthorized)
+			return
+		}
+		if claims.ApprovalStatus != "approved" {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error":"account pending approval"}`))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func GetClaimsFromRequest(r *http.Request) *Claims {
 	if claims, ok := r.Context().Value(ContextKeyClaims).(*Claims); ok {
 		return claims
@@ -188,6 +210,13 @@ func GetClaimsFromRequest(r *http.Request) *Claims {
 func GetUserIDFromRequest(r *http.Request) string {
 	if userID, ok := r.Context().Value(ContextKeyUserID).(string); ok {
 		return userID
+	}
+	return ""
+}
+
+func GetApprovalStatusFromRequest(r *http.Request) string {
+	if status, ok := r.Context().Value(ContextKeyApprovalStatus).(string); ok {
+		return status
 	}
 	return ""
 }

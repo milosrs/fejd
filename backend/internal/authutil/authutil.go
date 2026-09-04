@@ -18,6 +18,10 @@ func GetRoles(r *http.Request) []string {
 	return auth.GetRolesFromRequest(r)
 }
 
+func GetApprovalStatus(r *http.Request) string {
+	return auth.GetApprovalStatusFromRequest(r)
+}
+
 func HasRole(r *http.Request, role string) bool {
 	for _, rl := range GetRoles(r) {
 		if rl == role {

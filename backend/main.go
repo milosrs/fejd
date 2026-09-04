@@ -52,13 +52,14 @@ func main() {
 		log.Printf("Migration warning: %v", err)
 	}
 
-	keycloakURL := getEnv("KEYCLOAK_URL", "http://localhost:9090")
-	realm := getEnv("KEYCLOAK_REALM", "fejd")
-	clientID := getEnv("KEYCLOAK_CLIENT_ID", "fejd-backend")
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
 
 	keycloakConfig := auth.KeycloakConfig{
-		RealmURL: fmt.Sprintf("%s/realms/%s", keycloakURL, realm),
-		ClientID: clientID,
+		RealmURL:  fmt.Sprintf("%s/realms/%s", cfg.Keycloak.AdminURL, cfg.Keycloak.Realm),
+		Audiences: cfg.Keycloak.Audiences,
 	}
 
 	authMiddleware, err := auth.NewMiddleware(keycloakConfig)
@@ -76,11 +77,6 @@ func main() {
 	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
 	imageStore := store.NewImageStore(pool)
 	imageLinkStore := store.NewImageLinkStore(pool)
-
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
-	}
 
 	var imageStorage storage.ImageStorage
 	if cfg.ImageStorage.Backend != config.BackendPostgres {

@@ -18,20 +18,22 @@ type Claims struct {
 	ResourceAccess map[string]any      `json:"resource_access"`
 	Email          string              `json:"email"`
 	EmailVerified  bool                `json:"email_verified"`
+	ApprovalStatus string              `json:"approval_status"`
 }
 
 type ContextKey string
 
 const (
-	ContextKeyClaims      ContextKey = "claims"
-	ContextKeyUserID      ContextKey = "user_id"
-	ContextKeyRoles       ContextKey = "roles"
-	ContextKeyAuthInvalid ContextKey = "auth_invalid"
+	ContextKeyClaims          ContextKey = "claims"
+	ContextKeyUserID          ContextKey = "user_id"
+	ContextKeyRoles           ContextKey = "roles"
+	ContextKeyAuthInvalid     ContextKey = "auth_invalid"
+	ContextKeyApprovalStatus  ContextKey = "approval_status"
 )
 
 type KeycloakConfig struct {
 	RealmURL     string
-	ClientID     string
+	Audiences    []string
 	RequiredRole string
 }
 
@@ -61,7 +63,6 @@ func (k *JWKSClient) ValidateToken(tokenString string) (*Claims, error) {
 		tokenString,
 		&Claims{},
 		k.jwks.Keyfunc,
-		jwt.WithAudience(k.config.ClientID),
 		jwt.WithIssuer(k.config.RealmURL),
 		jwt.WithExpirationRequired(),
 	)
@@ -74,9 +75,26 @@ func (k *JWKSClient) ValidateToken(tokenString string) (*Claims, error) {
 		return nil, fmt.Errorf("invalid token claims")
 	}
 
+	if !audienceAllowed(claims.Audience, k.config.Audiences) {
+		return nil, fmt.Errorf("token audience not allowed")
+	}
+
 	log.Printf("[auth] token validated subject=%q issuer=%q expires=%v", claims.Subject, claims.Issuer, claims.ExpiresAt)
 
 	return claims, nil
+}
+
+// audienceAllowed reports whether the token audience intersects the allowed
+// audiences.
+func audienceAllowed(audience jwt.ClaimStrings, allowed []string) bool {
+	for _, a := range audience {
+		for _, want := range allowed {
+			if a == want {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 func (k *KeycloakConfig) RequireRole(claims *Claims) error {
