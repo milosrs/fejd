@@ -1595,17 +1595,15 @@
     "strictTransportSecurity": "max-age=31536000; includeSubDomains"
   },
   "smtpServer": {
-    "password": "${SMTP_PASSWORD}",
-    "starttls": "true",
-    "auth": "true",
-    "port": "587",
+    "starttls": "false",
+    "auth": "false",
+    "port": "25",
     "host": "${SMTP_HOST}",
     "replyTo": "",
     "from": "${SMTP_FROM}",
     "fromDisplayName": "Fejd",
     "envelopeFrom": "",
-    "ssl": "false",
-    "user": "${SMTP_USER}"
+    "ssl": "false"
   },
   "eventsEnabled": false,
   "eventsListeners": [

@@ -13,6 +13,10 @@ services:
       KEYCLOAK_REALM: fejd
       KEYCLOAK_CLIENT_ID: fejd-backend
       KEYCLOAK_CLIENT_SECRET: EYlizeFHVtfRPhomKqasA4mgRYGLfJBL
+      SMTP_HOST: smtp
+      SMTP_PORT: "25"
+      SMTP_FROM: no-reply@fejd.local
+      SUPERADMIN_NOTIFY_EMAIL: admin@fejd.local
       IMAGE_STORAGE_BACKEND: minio
       MINIO_ENDPOINT: minio:9000
       MINIO_ACCESS_KEY: minioadmin
@@ -28,6 +32,7 @@ services:
     depends_on:
       - db
       - keycloak
+      - smtp
 
   frontend:
     image: node:22-alpine
@@ -75,15 +80,14 @@ services:
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       FEJD_ADMIN_CLIENT_SECRET: H6vKp9sQ2wXrT4yL8mN1cB3dV5fG7jZ0
-      SMTP_HOST: smtp.example.com
-      SMTP_PORT: "587"
+      SMTP_HOST: smtp
+      SMTP_PORT: "25"
       SMTP_FROM: no-reply@fejd.local
-      SMTP_USER: dev
-      SMTP_PASSWORD: dev
     ports:
       - "9090:8080"
     depends_on:
       - db
+      - smtp
     volumes:
       - ./keycloak/themes:/opt/keycloak/themes
       - ./keycloak/providers:/opt/keycloak/providers
@@ -103,6 +107,19 @@ services:
     volumes:
       - miniodata:/data
 
+  smtp:
+    build:
+      context: ./deploy/smtp
+      dockerfile: Dockerfile
+    container_name: fejd-smtp
+    environment:
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+    ports:
+      - "1025:25"
+    volumes:
+      - smtpdata:/var/mail
+
 volumes:
   pgdata:
   miniodata:
+  smtpdata:
