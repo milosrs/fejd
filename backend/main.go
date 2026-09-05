@@ -25,7 +25,10 @@ import (
 	_ "fejd-backend/docs"
 	"fejd-backend/internal/config"
 	"fejd-backend/internal/db"
+	"fejd-backend/internal/email"
 	"fejd-backend/internal/handler"
+	"fejd-backend/internal/jobs"
+	"fejd-backend/internal/keycloak"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/storage"
@@ -112,6 +115,18 @@ func main() {
 
 	meHandler := handler.NewMeHandler(businessStore, buStore, pool)
 
+	jobCtx, jobCancel := context.WithCancel(context.Background())
+	defer jobCancel()
+
+	if cfg.Jobs.RunJobs {
+		keycloakAdmin := keycloak.NewClient(cfg.Keycloak)
+		emailSender := email.NewSender(cfg.Email)
+		pendingNotifier := jobs.NewPendingNotifier(keycloakAdmin, emailSender, cfg.Email.SuperadminNotifyEmail)
+		inviteCleanup := jobs.NewInviteCleanup(keycloakAdmin, cfg.Jobs.InviteExpiryHours)
+		scheduler := jobs.NewScheduler(pendingNotifier, inviteCleanup, cfg.Jobs.PendingScanInterval, cfg.Jobs.CleanupInterval)
+		go scheduler.Run(jobCtx)
+	}
+
 	r := newRouter(
 		cfg,
 		authMiddleware.Authenticate,
@@ -139,6 +154,7 @@ func main() {
 		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 		<-quit
 		log.Println("Shutting down server...")
+		jobCancel()
 
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
