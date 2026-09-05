@@ -84,31 +84,35 @@ func (c *Client) accessToken(ctx context.Context) (string, error) {
 	return c.token, nil
 }
 
-func (c *Client) do(ctx context.Context, method, path string, body, out any) error {
+func (c *Client) request(ctx context.Context, method, path string, body any) (*http.Response, error) {
 	token, err := c.accessToken(ctx)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var reader io.Reader
 	if body != nil {
 		b, err := json.Marshal(body)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		reader = bytes.NewReader(b)
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, reader)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	req.Header.Set("Authorization", "Bearer "+token)
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
 
-	resp, err := c.http.Do(req)
+	return c.http.Do(req)
+}
+
+func (c *Client) do(ctx context.Context, method, path string, body, out any) error {
+	resp, err := c.request(ctx, method, path, body)
 	if err != nil {
 		return err
 	}
