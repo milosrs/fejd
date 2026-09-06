@@ -16,12 +16,10 @@ const URL_APPOINTMENTS = "/api/appointments" as const
 
 type Schemas = components["schemas"]
 
-export type Business = Schemas["models.Business"]
-export type Service = Schemas["models.Service"]
-export type Employee = Schemas["models.BusinessUser"]
-export type TimeSlot = Schemas["models.TimeSlot"]
-type WorkingHours = Schemas["models.WorkingHours"]
-type WorkingHoursOverride = Schemas["models.WorkingHoursOverride"]
+export type Business = Schemas["dto.Business"]
+export type Service = Schemas["dto.Service"]
+export type Employee = Schemas["dto.BusinessUser"]
+export type TimeSlot = Schemas["dto.TimeSlot"]
 
 export function useBusiness(slug: string) {
   return useQuery({
@@ -116,7 +114,7 @@ export async function createAppointment(params: {
   return data
 }
 
-export async function updateWorkingHours(businessId: string, userId: string, workingHours: WorkingHours[]) {
+export async function updateWorkingHours(businessId: string, userId: string, workingHours: Schemas["handler.WorkingHoursInput"][]) {
   const { data } = await PUT(
     URL_ADMIN_WORKING_HOURS,
     {
@@ -127,18 +125,18 @@ export async function updateWorkingHours(businessId: string, userId: string, wor
   return data
 }
 
-export async function createService(businessId: string, service: Partial<Service>) {
+export async function createService(businessId: string, service: Schemas["handler.ServiceInput"]) {
   const { data } = await POST(URL_ADMIN_SERVICES, {
     params: { path: { businessID: businessId } },
-    body: service as Service,
+    body: service,
   })
   return data
 }
 
-export async function updateService(businessId: string, serviceId: string, service: Partial<Service>) {
+export async function updateService(businessId: string, serviceId: string, service: Partial<Schemas["handler.ServiceInput"]>) {
   const { data } = await PUT(URL_ADMIN_SERVICES_DELETE, {
     params: { path: { businessID: businessId, serviceID: serviceId } },
-    body: service as Service,
+    body: service as Schemas["handler.ServiceInput"],
   })
   return data
 }
@@ -150,7 +148,7 @@ export async function deleteService(businessId: string, serviceId: string) {
   return data
 }
 
-export async function addOverride(businessId: string, userId: string, override: WorkingHoursOverride) {
+export async function addOverride(businessId: string, userId: string, override: Schemas["handler.WorkingHoursOverrideInput"]) {
   const { data } = await POST(
     URL_ADMIN_OVERRIDES,
     {

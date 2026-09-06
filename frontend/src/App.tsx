@@ -10,6 +10,7 @@ import { AdminServicesPage } from "./pages/AdminServicesPage"
 import { DatePickerPage } from "./pages/DatePickerPage"
 import { ThemeProvider } from "#components/theme-provider"
 import { ModeToggle } from "#components/mode-toggle"
+import { OnboardingGate } from "#components/OnboardingGate"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,14 +91,16 @@ function App() {
         <BrowserRouter>
           <AppInit>
             <ProtectedRoute>
-              <Routes>
-                <Route path="/" element={<DatePickerPage />} />
-                <Route path="/business/:slug" element={<BusinessPage />} />
-                <Route path="/business/:slug/book" element={<BookingPage />} />
-                <Route path="/my/appointments" element={<MyAppointmentsPage />} />
-                <Route path="/admin/business/:businessId/schedule" element={<AdminSchedulePage />} />
-                <Route path="/admin/business/:businessId/services" element={<AdminServicesPage />} />
-              </Routes>
+              <OnboardingGate>
+                <Routes>
+                  <Route path="/" element={<DatePickerPage />} />
+                  <Route path="/business/:slug" element={<BusinessPage />} />
+                  <Route path="/business/:slug/book" element={<BookingPage />} />
+                  <Route path="/my/appointments" element={<MyAppointmentsPage />} />
+                  <Route path="/admin/business/:businessId/schedule" element={<AdminSchedulePage />} />
+                  <Route path="/admin/business/:businessId/services" element={<AdminServicesPage />} />
+                </Routes>
+              </OnboardingGate>
             </ProtectedRoute>
           </AppInit>
         </BrowserRouter>

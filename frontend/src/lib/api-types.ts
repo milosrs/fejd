@@ -33,7 +33,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["models.BusinessUser"][];
+                        "application/json": components["schemas"]["dto.BusinessUser"][];
                     };
                 };
                 /** @description Bad Request */
@@ -58,6 +58,139 @@ export interface paths {
         };
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/employees/{userID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove an employee
+         * @description Soft-deletes an employee: future reservations are reassigned or cancelled.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description User ID (Keycloak sub) */
+                    userID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/employees/{userID}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload an employee avatar
+         * @description Uploads an employee avatar (multipart file). Visibility is private; allowed for the employee or an admin.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description User ID (Keycloak sub) */
+                    userID: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["postApiAdminBusiness_businessid_employees_userid_image"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Image"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -92,7 +225,7 @@ export interface paths {
             /** @description Override details */
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["models.WorkingHoursOverride"];
+                    "application/json": components["schemas"]["handler.WorkingHoursOverrideInput"];
                 };
             };
             responses: {
@@ -102,7 +235,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["models.WorkingHoursOverride"];
+                        "application/json": components["schemas"]["dto.WorkingHoursOverride"];
                     };
                 };
                 /** @description Bad Request */
@@ -181,6 +314,204 @@ export interface paths {
                 };
                 /** @description Unauthorized */
                 401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/employees/{userID}/services": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Set employee services
+         * @description Replaces the set of services an employee offers.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description User ID (Keycloak sub) */
+                    userID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Service IDs */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.SetEmployeeServicesRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/employees/{userID}/unavailability": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark an employee unavailable
+         * @description Blocks a time range (e.g. vacation) for an employee.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description User ID (Keycloak sub) */
+                    userID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Unavailability range */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.CreateUnavailabilityRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.EmployeeUnavailability"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/employees/{userID}/unavailability/{unavailabilityID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Remove an unavailability block
+         * @description Deletes a previously created unavailability range.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description User ID (Keycloak sub) */
+                    userID: string;
+                    /** @description Unavailability UUID */
+                    unavailabilityID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -308,6 +639,158 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/business/{businessID}/images": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a business image
+         * @description Uploads a business hero/logo/background image (multipart file). Visibility is public.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: {
+                content: {
+                    "multipart/form-data": {
+                        /** @description hero|logo|background (default hero) */
+                        purpose?: string;
+                        /**
+                         * Format: binary
+                         * @description Image file
+                         */
+                        file: string;
+                    };
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Image"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/images/{imageID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete an image
+         * @description Deletes an image. Admins delete the whole image; an employee may remove only their own avatar link.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Image UUID */
+                    imageID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/business/{businessID}/services": {
         parameters: {
             query?: never;
@@ -334,7 +817,7 @@ export interface paths {
             /** @description Service details */
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["models.Service"];
+                    "application/json": components["schemas"]["handler.ServiceInput"];
                 };
             };
             responses: {
@@ -344,7 +827,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["models.Service"];
+                        "application/json": components["schemas"]["dto.Service"];
                     };
                 };
                 /** @description Bad Request */
@@ -400,7 +883,7 @@ export interface paths {
             /** @description Updated service details */
             requestBody: {
                 content: {
-                    "application/json": components["schemas"]["models.Service"];
+                    "application/json": components["schemas"]["handler.ServiceInput"];
                 };
             };
             responses: {
@@ -410,7 +893,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["models.Service"];
+                        "application/json": components["schemas"]["dto.Service"];
                     };
                 };
                 /** @description Bad Request */
@@ -486,6 +969,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/business/{businessID}/services/{serviceID}/image": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Upload a service picture
+         * @description Uploads a service picture (multipart file). Visibility is public; services.picture_id is updated.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Service UUID */
+                    serviceID: string;
+                };
+                cookie?: never;
+            };
+            requestBody: components["requestBodies"]["postApiAdminBusiness_businessid_employees_userid_image"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Image"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/appointments": {
         parameters: {
             query?: never;
@@ -519,7 +1064,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["models.Appointment"];
+                        "application/json": components["schemas"]["dto.Appointment"];
                     };
                 };
                 /** @description Bad Request */
@@ -637,7 +1182,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["models.BusinessUser"][];
+                        "application/json": components["schemas"]["dto.BusinessUser"][];
                     };
                 };
                 /** @description Not Found */
@@ -688,7 +1233,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["models.Service"][];
+                        "application/json": components["schemas"]["dto.Service"][];
                     };
                 };
                 /** @description Not Found */
@@ -777,6 +1322,203 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/images/{imageID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Retrieve an image
+         * @description Public images are served directly; private images require auth and access (streamed through the API).
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Image UUID */
+                    imageID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/*": string;
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/*": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/*": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "image/*": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Current user's onboarding state
+         * @description Returns the caller's approval status and whether they already own a salon.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Me"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/me/business": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create the caller's salon
+         * @description Creates a business and the caller's owner (admin) row. Requires an approved account.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Business name */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.BusinessCreateInput"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Business"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/my/appointments": {
         parameters: {
             query?: never;
@@ -803,7 +1545,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["models.Appointment"][];
+                        "application/json": components["schemas"]["dto.Appointment"][];
                     };
                 };
                 /** @description Unauthorized */
@@ -889,10 +1631,90 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        "dto.Appointment": {
+            business_id: string;
+            business_user_id: string;
+            cancellation_reason?: string;
+            created_at: string;
+            created_by: string;
+            customer_user_id: string;
+            end_time: string;
+            id: string;
+            service_id: string;
+            start_time: string;
+            status: string;
+        };
+        "dto.Business": {
+            created_at: string;
+            id: string;
+            name: string;
+            slug: string;
+            updated_at: string;
+        };
+        "dto.BusinessUser": {
+            active: boolean;
+            business_id: string;
+            display_name: string;
+            id: string;
+            role: string;
+            user_id: string;
+        };
+        "dto.EmployeeUnavailability": {
+            business_user_id: string;
+            end_time: string;
+            id: string;
+            reason?: string;
+            start_time: string;
+        };
+        "dto.Image": {
+            content_type?: string;
+            created_at: string;
+            id: string;
+            url: string;
+        };
+        "dto.Me": {
+            approval_status: string;
+            has_salon: boolean;
+        };
+        "dto.Service": {
+            active: boolean;
+            business_id: string;
+            created_at: string;
+            description?: string;
+            duration_minutes: number;
+            id: string;
+            name: string;
+            picture_id?: string;
+            price?: number;
+        };
+        "dto.TimeSlot": {
+            end_time: string;
+            start_time: string;
+        };
+        "dto.WorkingHours": {
+            business_user_id: string;
+            day_of_week: number;
+            end_time: string;
+            id: string;
+            start_time: string;
+        };
+        "dto.WorkingHoursOverride": {
+            business_user_id: string;
+            end_time?: string;
+            id: string;
+            is_off: boolean;
+            override_date: string;
+            reason?: string;
+            start_time?: string;
+        };
+        "handler.BusinessCreateInput": {
+            /** @example My Salon */
+            name: string;
+        };
         "handler.BusinessResponse": {
-            business: components["schemas"]["models.Business"];
-            employees: components["schemas"]["models.BusinessUser"][];
-            services: components["schemas"]["models.Service"][];
+            business: components["schemas"]["dto.Business"];
+            employees: components["schemas"]["dto.BusinessUser"][];
+            services: components["schemas"]["dto.Service"][];
         };
         "handler.CreateAppointmentRequest": {
             /** @example 550e8400-e29b-41d4-a716-446655440000 */
@@ -900,7 +1722,17 @@ export interface components {
             /** @example 550e8400-e29b-41d4-a716-446655440000 */
             business_user_id: string;
             /** @example 550e8400-e29b-41d4-a716-446655440000 */
+            customer_user_id?: string;
+            /** @example 550e8400-e29b-41d4-a716-446655440000 */
             service_id: string;
+            /** @example 2024-01-01T09:00:00Z */
+            start_time: string;
+        };
+        "handler.CreateUnavailabilityRequest": {
+            /** @example 2024-01-01T17:00:00Z */
+            end_time: string;
+            /** @example Vacation */
+            reason?: string;
             /** @example 2024-01-01T09:00:00Z */
             start_time: string;
         };
@@ -912,82 +1744,45 @@ export interface components {
             /** @example operation complete */
             message: string;
         };
+        "handler.ServiceInput": {
+            /** @example true */
+            active: boolean;
+            description?: string;
+            /** @example 60 */
+            duration_minutes: number;
+            /** @example Massage */
+            name: string;
+            picture_id?: string;
+            /** @example 100 */
+            price?: number;
+        };
+        "handler.SetEmployeeServicesRequest": {
+            /**
+             * @example [
+             *       "550e8400-e29b-41d4-a716-446655440000"
+             *     ]
+             */
+            service_ids: string[];
+        };
         "handler.SetWorkingHoursRequest": {
-            working_hours: components["schemas"]["models.WorkingHours"][];
+            working_hours: components["schemas"]["handler.WorkingHoursInput"][];
         };
         "handler.SlotsResponse": {
             /** @example 2024-01-01 */
             date: string;
-            slots: components["schemas"]["models.TimeSlot"][];
+            slots: components["schemas"]["dto.TimeSlot"][];
         };
-        "handler.WorkingHoursResponse": {
-            overrides: components["schemas"]["models.WorkingHoursOverride"][];
-            working_hours: components["schemas"]["models.WorkingHours"][];
-        };
-        "models.Appointment": {
-            business_id: string;
-            business_user_id: string;
-            created_at: string;
-            customer_user_id: string;
-            end_time: string;
-            id: string;
-            service_id: string;
-            start_time: string;
-            /** @example confirmed */
-            status: components["schemas"]["models.AppointmentStatus"];
-        };
-        /** @enum {string} */
-        "models.AppointmentStatus": "confirmed" | "cancelled" | "completed" | "no_show";
-        "models.Business": {
-            created_at: string;
-            id: string;
-            /** @example Acme Spa */
-            name: string;
-            /** @example acme-spa */
-            slug: string;
-            updated_at: string;
-        };
-        "models.BusinessUser": {
-            business_id: string;
-            /** @example John Doe */
-            display_name: string;
-            id: string;
-            /** @example admin */
-            role: string;
-            user_id: string;
-        };
-        "models.Service": {
-            /** @example true */
-            active: boolean;
-            business_id: string;
-            created_at: string;
-            /** @example 60 */
-            duration_minutes: number;
-            id: string;
-            /** @example Massage */
-            name: string;
-            /** @example 100 */
-            price?: number;
-        };
-        "models.TimeSlot": {
-            end_time: string;
-            start_time: string;
-        };
-        "models.WorkingHours": {
-            business_user_id?: string;
+        "handler.WorkingHoursInput": {
             /** @example 1 */
             day_of_week: number;
             /** @example 17:00 */
             end_time: string;
-            id?: string;
             /** @example 09:00 */
             start_time: string;
         };
-        "models.WorkingHoursOverride": {
-            business_user_id?: string;
+        "handler.WorkingHoursOverrideInput": {
             /** @example 14:00 */
             end_time?: string;
-            id?: string;
             /** @example false */
             is_off: boolean;
             /** @example 2024-12-25 */
@@ -997,10 +1792,26 @@ export interface components {
             /** @example 10:00 */
             start_time?: string;
         };
+        "handler.WorkingHoursResponse": {
+            overrides: components["schemas"]["dto.WorkingHoursOverride"][];
+            working_hours: components["schemas"]["dto.WorkingHours"][];
+        };
     };
     responses: never;
     parameters: never;
-    requestBodies: never;
+    requestBodies: {
+        postApiAdminBusiness_businessid_employees_userid_image: {
+            content: {
+                "multipart/form-data": {
+                    /**
+                     * Format: binary
+                     * @description Image file
+                     */
+                    file: string;
+                };
+            };
+        };
+    };
     headers: never;
     pathItems: never;
 }
