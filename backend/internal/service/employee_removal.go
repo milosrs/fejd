@@ -12,6 +12,13 @@ import (
 	"github.com/jackc/pgx/v5"
 )
 
+// EmployeeRemovalResult reports what happened to the removed employee's future
+// reservations.
+type EmployeeRemovalResult struct {
+	Reassigned int
+	Cancelled  int
+}
+
 // RemoveEmployee soft-deletes an employee and relocates their future
 // reservations. Past reservations are left untouched (the row is retained with
 // active=false). Future pending/confirmed reservations are reassigned to the
@@ -20,13 +27,15 @@ import (
 //
 // Note: "fairly split" is currently implemented as first-available; a balanced
 // strategy can be layered on later in the service/API plan without a migration.
-func (s *SlotService) RemoveEmployee(ctx context.Context, businessID, businessUserID uuid.UUID) error {
+func (s *SlotService) RemoveEmployee(ctx context.Context, businessID, businessUserID uuid.UUID) (EmployeeRemovalResult, error) {
+	var result EmployeeRemovalResult
+
 	bu, err := s.businessUser.GetByID(ctx, businessUserID)
 	if err != nil {
-		return fmt.Errorf("employee not found: %w", err)
+		return result, fmt.Errorf("employee not found: %w", err)
 	}
 	if bu.BusinessID != businessID {
-		return fmt.Errorf("employee does not belong to business")
+		return result, fmt.Errorf("employee does not belong to business")
 	}
 
 	// Deactivate under the same per-employee advisory lock as booking, so a
@@ -43,7 +52,7 @@ func (s *SlotService) RemoveEmployee(ctx context.Context, businessID, businessUs
 		return nil
 	})
 	if err != nil {
-		return err
+		return result, err
 	}
 
 	s.publishSlotsChanged(businessID, businessUserID)
@@ -51,12 +60,12 @@ func (s *SlotService) RemoveEmployee(ctx context.Context, businessID, businessUs
 	now := time.Now()
 	future, err := s.appointments.ListByBusinessUser(ctx, businessUserID, now, now.AddDate(1, 0, 0))
 	if err != nil {
-		return fmt.Errorf("failed to list future appointments: %w", err)
+		return result, fmt.Errorf("failed to list future appointments: %w", err)
 	}
 
 	employees, err := s.businessUser.ListEmployeesByBusiness(ctx, businessID)
 	if err != nil {
-		return fmt.Errorf("failed to list employees: %w", err)
+		return result, fmt.Errorf("failed to list employees: %w", err)
 	}
 
 	for _, appt := range future {
@@ -95,13 +104,14 @@ func (s *SlotService) RemoveEmployee(ctx context.Context, businessID, businessUs
 				"business_user_id": emp.ID.String(),
 				"start_time":       appt.StartTime.Format(time.RFC3339),
 			})
+			result.Reassigned++
 			reassigned = true
 			break
 		}
 
 		if !reassigned {
 			if err := s.appointments.CancelByID(ctx, appt.ID, "employee unavailable"); err != nil {
-				return fmt.Errorf("failed to cancel appointment: %w", err)
+				return result, fmt.Errorf("failed to cancel appointment: %w", err)
 			}
 			s.hub.Publish(businessID.String(), map[string]any{
 				"type":             "appointment_cancelled",
@@ -109,8 +119,9 @@ func (s *SlotService) RemoveEmployee(ctx context.Context, businessID, businessUs
 				"customer_user_id": appt.CustomerUserID,
 				"start_time":       appt.StartTime.Format(time.RFC3339),
 			})
+			result.Cancelled++
 		}
 	}
 
-	return nil
+	return result, nil
 }

@@ -36,8 +36,9 @@ type BusinessUser struct {
 	BusinessID  uuid.UUID `json:"business_id" validate:"required"`
 	UserID      string    `json:"user_id" validate:"required"`
 	Role        string    `json:"role" validate:"required"`
-	DisplayName string    `json:"display_name" validate:"required"`
+	DisplayName string    `json:"display_name"`
 	Active      bool      `json:"active" validate:"required"`
+	Avatar      string    `json:"avatar,omitempty"`
 }
 
 type Service struct {

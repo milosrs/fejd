@@ -178,7 +178,25 @@ func (h *BusinessHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, dto.BusinessUsersFromModels(employees))
+	users := dto.BusinessUsersFromModels(employees)
+	for i := range users {
+		users[i].Avatar = h.avatarURL(r.Context(), employees[i].ID)
+	}
+
+	writeJSON(w, http.StatusOK, users)
+}
+
+func (h *BusinessHandler) avatarURL(ctx context.Context, businessUserID uuid.UUID) string {
+	links, err := h.imageLinkStore.ListByEntity(ctx, "business_user", businessUserID)
+	if err != nil {
+		return ""
+	}
+	for _, l := range links {
+		if l.Purpose == "avatar" {
+			return "/api/images/" + l.ImageID.String()
+		}
+	}
+	return ""
 }
 
 // GetAvailableSlots godoc

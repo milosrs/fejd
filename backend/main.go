@@ -108,8 +108,14 @@ func main() {
 		appointmentStore, serviceStore, businessStore, buStore, slotService,
 	)
 
+	keycloakAdmin := keycloak.NewClient(cfg.Keycloak)
+
+	employeeService := service.NewEmployeeService(
+		keycloakAdmin, buStore, employeeServiceStore, pool, cfg.Jobs.InviteRedirectURI, cfg.Jobs.InviteExpiryHours*3600,
+	)
+
 	adminHandler := handler.NewAdminHandler(
-		businessStore, buStore, serviceStore, pageStore, sectionStore, workingHoursService, appointmentStore, slotService, imageService, pool,
+		businessStore, buStore, serviceStore, pageStore, sectionStore, workingHoursService, appointmentStore, slotService, imageService, employeeService, pool,
 	)
 
 	sseHandler := handler.NewSSEHandler(hub, businessStore)
@@ -124,7 +130,6 @@ func main() {
 	defer jobCancel()
 
 	if cfg.Jobs.RunJobs {
-		keycloakAdmin := keycloak.NewClient(cfg.Keycloak)
 		emailSender := email.NewSender(cfg.Email)
 		pendingNotifier := jobs.NewPendingNotifier(keycloakAdmin, emailSender, cfg.Email.SuperadminNotifyEmail)
 		inviteCleanup := jobs.NewInviteCleanup(keycloakAdmin, cfg.Jobs.InviteExpiryHours)

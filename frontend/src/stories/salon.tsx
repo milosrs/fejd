@@ -7,7 +7,7 @@ import { I18nProvider } from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
 import type { Salon } from "../hooks/useSalon"
 import type { Me } from "../hooks/useMe"
-import type { Service } from "../hooks/useApi"
+import type { Service, Employee } from "../hooks/useApi"
 import type { Section } from "../lib/sections"
 
 const mockI18nEn = {
@@ -178,6 +178,7 @@ interface SalonProvidersProps {
   authenticated?: boolean
   sections?: Section[]
   services?: Service[]
+  employees?: Employee[]
   children: React.ReactNode
 }
 
@@ -188,6 +189,7 @@ export function SalonProviders({
   authenticated = false,
   sections = [],
   services = mockSalon.services,
+  employees = mockSalon.employees,
   children,
 }: SalonProvidersProps) {
   const queryClient = useMemo(() => {
@@ -197,12 +199,13 @@ export function SalonProviders({
     qc.setQueryData(["salon", slug], salon)
     qc.setQueryData(["sections", slug], sections)
     qc.setQueryData(["services", slug], services)
+    qc.setQueryData(["employees", slug], employees)
     qc.setQueryData(["i18n", "en"], mockI18nEn)
     if (me) {
       qc.setQueryData(["me"], me)
     }
     return qc
-  }, [slug, salon, me, sections, services])
+  }, [slug, salon, me, sections, services, employees])
 
   useLayoutEffect(() => {
     useAuthStore.setState({

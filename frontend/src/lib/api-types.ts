@@ -57,7 +57,56 @@ export interface paths {
             };
         };
         put?: never;
-        post?: never;
+        /**
+         * Invite a new employee
+         * @description Creates a Keycloak user (invite email), a business_user row, and assigns services.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Employee */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.CreateEmployeeRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.BusinessUser"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
         delete?: never;
         options?: never;
         head?: never;
@@ -98,7 +147,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": components["schemas"]["handler.MessageResponse"];
+                        "application/json": components["schemas"]["handler.RemoveEmployeeResponse"];
                     };
                 };
                 /** @description Bad Request */
@@ -137,7 +186,7 @@ export interface paths {
         put?: never;
         /**
          * Upload an employee avatar
-         * @description Uploads an employee avatar (multipart file). Visibility is private; allowed for the employee or an admin.
+         * @description Uploads an employee avatar (multipart file). Visibility is public so avatars render on the public barbers page.
          */
         post: {
             parameters: {
@@ -2016,8 +2065,9 @@ export interface components {
         };
         "dto.BusinessUser": {
             active: boolean;
+            avatar?: string;
             business_id: string;
-            display_name: string;
+            display_name?: string;
             id: string;
             role: string;
             user_id: string;
@@ -2112,6 +2162,18 @@ export interface components {
             /** @example 2024-01-01T09:00:00Z */
             start_time: string;
         };
+        "handler.CreateEmployeeRequest": {
+            /** @example sam@example.com */
+            email: string;
+            /** @example Sam Barber */
+            name: string;
+            /**
+             * @example [
+             *       "550e8400-e29b-41d4-a716-446655440000"
+             *     ]
+             */
+            service_ids: string[];
+        };
         "handler.CreateSectionRequest": {
             content?: Record<string, never>;
             position?: number;
@@ -2133,6 +2195,11 @@ export interface components {
         "handler.MessageResponse": {
             /** @example operation complete */
             message: string;
+        };
+        "handler.RemoveEmployeeResponse": {
+            cancelled: number;
+            message: string;
+            reassigned: number;
         };
         "handler.ReorderSectionsRequest": {
             /**

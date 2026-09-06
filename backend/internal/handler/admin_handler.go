@@ -34,6 +34,7 @@ type AdminHandler struct {
 	appointmentStore    *store.AppointmentStore
 	slotService         *service.SlotService
 	imageService        *service.ImageService
+	employeeService     *service.EmployeeService
 	pool                *pgxpool.Pool
 }
 
@@ -47,6 +48,7 @@ func NewAdminHandler(
 	appointmentStore *store.AppointmentStore,
 	slotService *service.SlotService,
 	imageService *service.ImageService,
+	employeeService *service.EmployeeService,
 	pool *pgxpool.Pool,
 ) *AdminHandler {
 	return &AdminHandler{
@@ -59,6 +61,7 @@ func NewAdminHandler(
 		appointmentStore:    appointmentStore,
 		slotService:         slotService,
 		imageService:        imageService,
+		employeeService:     employeeService,
 		pool:                pool,
 	}
 }
@@ -370,6 +373,41 @@ func (h *AdminHandler) DeleteService(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, MessageResponse{Message: "service deleted"})
 }
 
+// CreateEmployee godoc
+// @Summary      Invite a new employee
+// @Description  Creates a Keycloak user (invite email), a business_user row, and assigns services.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body CreateEmployeeRequest true "Employee"
+// @Success      201 {object} dto.BusinessUser
+// @Failure      400 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/employees [post]
+func (h *AdminHandler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	var body CreateEmployeeRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	bu, err := h.employeeService.Invite(r.Context(), businessID, body.Name, body.Email, body.ServiceIDs)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, dto.BusinessUserFromModel(*bu))
+}
+
 // GetEmployees godoc
 // @Summary      List all business users
 // @Description  Returns all business users for a business (admin only).
@@ -404,7 +442,7 @@ func (h *AdminHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
 // @Param        userID path string true "User ID (Keycloak sub)"
-// @Success      200 {object} MessageResponse
+// @Success      200 {object} RemoveEmployeeResponse
 // @Failure      400 {object} ErrorResponse
 // @Failure      404 {object} ErrorResponse
 // @Security     BearerAuth
@@ -424,12 +462,17 @@ func (h *AdminHandler) RemoveEmployee(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.slotService.RemoveEmployee(r.Context(), businessID, bu.ID); err != nil {
+	result, err := h.slotService.RemoveEmployee(r.Context(), businessID, bu.ID)
+	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 
-	writeJSON(w, http.StatusOK, MessageResponse{Message: "employee removed"})
+	writeJSON(w, http.StatusOK, RemoveEmployeeResponse{
+		Reassigned: result.Reassigned,
+		Cancelled:  result.Cancelled,
+		Message:    "employee removed",
+	})
 }
 
 // SetEmployeeServices godoc

@@ -60,7 +60,7 @@ export function ServiceForm({
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl border border-border bg-background p-6"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-background p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">

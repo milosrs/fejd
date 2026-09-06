@@ -65,6 +65,72 @@
                         }
                     }
                 }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a Keycloak user (invite email), a business_user row, and assigns services.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Invite a new employee",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.CreateEmployeeRequest"
+                            }
+                        }
+                    },
+                    "description": "Employee",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/dto.BusinessUser"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
             }
         },
         "/api/admin/business/{businessID}/employees/{userID}": {
@@ -105,7 +171,7 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                    "$ref": "#/components/schemas/handler.RemoveEmployeeResponse"
                                 }
                             }
                         }
@@ -140,7 +206,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Uploads an employee avatar (multipart file). Visibility is private; allowed for the employee or an admin.",
+                "description": "Uploads an employee avatar (multipart file). Visibility is public so avatars render on the public barbers page.",
                 "tags": [
                     "admin"
                 ],
@@ -2235,7 +2301,6 @@
                 "required": [
                     "active",
                     "business_id",
-                    "display_name",
                     "id",
                     "role",
                     "user_id"
@@ -2243,6 +2308,9 @@
                 "properties": {
                     "active": {
                         "type": "boolean"
+                    },
+                    "avatar": {
+                        "type": "string"
                     },
                     "business_id": {
                         "type": "string"
@@ -2582,6 +2650,33 @@
                     }
                 }
             },
+            "handler.CreateEmployeeRequest": {
+                "type": "object",
+                "required": [
+                    "email",
+                    "name",
+                    "service_ids"
+                ],
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "example": "sam@example.com"
+                    },
+                    "name": {
+                        "type": "string",
+                        "example": "Sam Barber"
+                    },
+                    "service_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "550e8400-e29b-41d4-a716-446655440000"
+                        ]
+                    }
+                }
+            },
             "handler.CreateSectionRequest": {
                 "type": "object",
                 "required": [
@@ -2642,6 +2737,25 @@
                     "message": {
                         "type": "string",
                         "example": "operation complete"
+                    }
+                }
+            },
+            "handler.RemoveEmployeeResponse": {
+                "type": "object",
+                "required": [
+                    "cancelled",
+                    "message",
+                    "reassigned"
+                ],
+                "properties": {
+                    "cancelled": {
+                        "type": "integer"
+                    },
+                    "message": {
+                        "type": "string"
+                    },
+                    "reassigned": {
+                        "type": "integer"
                     }
                 }
             },

@@ -85,10 +85,10 @@ export function LandingPage() {
       ) : (
         <>
           {list.map((section, index) => (
-            <div key={section.id} className="group relative">
+            <div key={section.id} className="relative">
               <SectionRenderer section={section} />
               {editingOn && (
-                <div className="absolute right-0 top-0 flex gap-1 rounded-lg border border-border bg-background p-1 opacity-0 shadow-sm transition-opacity group-hover:opacity-100">
+                <div className="absolute right-0 top-0 flex gap-1 rounded-lg border border-border bg-background p-1 shadow-sm">
                   <Button
                     variant="ghost"
                     size="icon-xs"

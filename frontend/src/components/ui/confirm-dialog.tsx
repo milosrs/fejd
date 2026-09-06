@@ -25,7 +25,7 @@ export function ConfirmDialog({
       onClick={onCancel}
     >
       <div
-        className="w-full max-w-sm rounded-2xl border border-border bg-background p-6"
+        className="w-full max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-background p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-lg font-semibold text-foreground">{title}</h3>

@@ -129,7 +129,7 @@ func (h *ImageHandler) UploadServiceImage(w http.ResponseWriter, r *http.Request
 
 // UploadEmployeeImage godoc
 // @Summary      Upload an employee avatar
-// @Description  Uploads an employee avatar (multipart file). Visibility is private; allowed for the employee or an admin.
+// @Description  Uploads an employee avatar (multipart file). Visibility is public so avatars render on the public barbers page.
 // @Tags         admin
 // @Accept       mpfd
 // @Produce      json
@@ -176,7 +176,7 @@ func (h *ImageHandler) UploadEmployeeImage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	img, err := h.images.UploadAndLink(r.Context(), businessID, data, contentType, "business_user", bu.ID, "avatar", models.VisibilityPrivate)
+	img, err := h.images.UploadAndLink(r.Context(), businessID, data, contentType, "business_user", bu.ID, "avatar", models.VisibilityPublic)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

@@ -32,11 +32,11 @@ function SalonShell() {
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex items-center justify-between gap-4">
+        <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2">
           <Link to={`/${slug}`} className="text-lg font-semibold text-foreground">
             {salon.business.name}
           </Link>
-          <nav className="flex items-center gap-1">
+          <nav className="flex flex-wrap items-center gap-1">
             {nav.map((n) => (
               <NavLink
                 key={n.to}

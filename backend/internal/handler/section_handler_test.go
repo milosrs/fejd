@@ -27,7 +27,7 @@ func newTestAdminHandler(t *testing.T) (*AdminHandler, *store.BusinessStore, *st
 	serviceStore := store.NewServiceStore(pool)
 	pageStore := store.NewPageStore(pool)
 	sectionStore := store.NewSectionStore(pool)
-	h := NewAdminHandler(businessStore, buStore, serviceStore, pageStore, sectionStore, nil, nil, nil, nil, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, pageStore, sectionStore, nil, nil, nil, nil, nil, pool)
 	return h, businessStore, buStore, pool
 }
 

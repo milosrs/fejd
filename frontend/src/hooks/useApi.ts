@@ -3,9 +3,12 @@ import { GET, POST, PUT, DELETE } from "../lib/api"
 import type { components } from "../lib/api-types"
 
 const URL_BUSINESS_SERVICES = "/api/business/{slug}/services" as const
+const URL_BUSINESS_EMPLOYEES = "/api/business/{slug}/employees" as const
 const URL_BUSINESS_SLOTS = "/api/business/{slug}/slots" as const
 const URL_MY_APPOINTMENTS = "/api/my/appointments" as const
 const URL_ADMIN_EMPLOYEES = "/api/admin/business/{businessID}/employees" as const
+const URL_ADMIN_EMPLOYEE_DELETE = "/api/admin/business/{businessID}/employees/{userID}" as const
+const URL_ADMIN_EMPLOYEE_IMAGE = "/api/admin/business/{businessID}/employees/{userID}/image" as const
 const URL_ADMIN_WORKING_HOURS = "/api/admin/business/{businessID}/employees/{userID}/working-hours" as const
 const URL_ADMIN_OVERRIDES = "/api/admin/business/{businessID}/employees/{userID}/overrides" as const
 const URL_ADMIN_OVERRIDES_DELETE = "/api/admin/business/{businessID}/employees/{userID}/overrides/{overrideID}" as const
@@ -25,6 +28,19 @@ export function useServices(slug: string) {
     queryKey: ["services", slug],
     queryFn: async () => {
       const { data } = await GET(URL_BUSINESS_SERVICES, {
+        params: { path: { slug } },
+      })
+      return data
+    },
+    enabled: !!slug,
+  })
+}
+
+export function useEmployees(slug: string) {
+  return useQuery({
+    queryKey: ["employees", slug],
+    queryFn: async () => {
+      const { data } = await GET(URL_BUSINESS_EMPLOYEES, {
         params: { path: { slug } },
       })
       return data
@@ -160,5 +176,31 @@ export async function deleteOverride(businessId: string, userId: string, overrid
       params: { path: { businessID: businessId, userID: userId, overrideID: overrideId } },
     },
   )
+  return data
+}
+
+export async function inviteEmployee(
+  businessId: string,
+  input: { name: string; email: string; service_ids: string[] },
+) {
+  const { data } = await POST(URL_ADMIN_EMPLOYEES, {
+    params: { path: { businessID: businessId } },
+    body: input,
+  })
+  return data
+}
+
+export async function removeEmployee(businessId: string, userId: string) {
+  const { data } = await DELETE(URL_ADMIN_EMPLOYEE_DELETE, {
+    params: { path: { businessID: businessId, userID: userId } },
+  })
+  return data
+}
+
+export async function uploadEmployeeImage(businessId: string, userId: string, file: File) {
+  const { data } = await POST(URL_ADMIN_EMPLOYEE_IMAGE, {
+    params: { path: { businessID: businessId, userID: userId } },
+    body: { file } as any,
+  })
   return data
 }

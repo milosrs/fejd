@@ -25,6 +25,18 @@ type SetEmployeeServicesRequest struct {
 	ServiceIDs []uuid.UUID `json:"service_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
 
+type CreateEmployeeRequest struct {
+	Name       string      `json:"name" validate:"required" example:"Sam Barber"`
+	Email      string      `json:"email" validate:"required" example:"sam@example.com"`
+	ServiceIDs []uuid.UUID `json:"service_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
+}
+
+type RemoveEmployeeResponse struct {
+	Reassigned int    `json:"reassigned" validate:"required"`
+	Cancelled  int    `json:"cancelled" validate:"required"`
+	Message    string `json:"message" validate:"required"`
+}
+
 type CreateUnavailabilityRequest struct {
 	StartTime string `json:"start_time" validate:"required" example:"2024-01-01T09:00:00Z"`
 	EndTime   string `json:"end_time" validate:"required" example:"2024-01-01T17:00:00Z"`

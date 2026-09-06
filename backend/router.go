@@ -89,6 +89,7 @@ func newRouter(
 			r.Route("/admin/business/{businessID}", func(r chi.Router) {
 				r.Use(customMiddleware.RequireBusinessAdmin(buStore))
 
+				r.Post("/employees", adminHandler.CreateEmployee)
 				r.Get("/employees", adminHandler.GetEmployees)
 				r.Delete("/employees/{userID}", adminHandler.RemoveEmployee)
 				r.Get("/employees/{userID}/working-hours", adminHandler.GetWorkingHours)
