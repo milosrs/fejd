@@ -1,24 +1,14 @@
 import createClient from "openapi-fetch"
 import type { Middleware } from "openapi-fetch"
 import type { paths } from "./api-types"
-import keycloak from "./keycloak"
+import { auth } from "./auth"
 import { useAuthStore } from "../stores/authStore"
 
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
-    if (keycloak.authenticated) {
-      try {
-        await keycloak.updateToken(30)
-        console.log("[api] token refreshed, expires:", keycloak.tokenParsed?.exp)
-        if (keycloak.token) {
-          request.headers.set("Authorization", `Bearer ${keycloak.token}`)
-        }
-      } catch (err) {
-        console.error("[api] token refresh failed, redirecting to login:", err)
-        keycloak.login()
-      }
-    } else {
-      console.log("[api] not authenticated, no Authorization header for", request.url)
+    const token = await auth.getToken()
+    if (token) {
+      request.headers.set("Authorization", `Bearer ${token}`)
     }
     return request
   },
@@ -27,10 +17,9 @@ const authMiddleware: Middleware = {
 const errorMiddleware: Middleware = {
   async onResponse({ response }) {
     if (response.status === 401) {
-      console.warn("[api] 401 from", response.url, "- token invalid/revoked, redirecting to login")
-      keycloak.clearToken()
-      useAuthStore.setState({ authenticated: false, token: null })
-      keycloak.login().catch(() => {})
+      console.warn("[api] 401 from", response.url, "- re-authenticating")
+      useAuthStore.setState({ authenticated: false, userInfo: null, roles: [] })
+      auth.login().catch(() => {})
     }
     if (!response.ok) {
       const body = await response.clone().json().catch(() => undefined)

@@ -146,3 +146,64 @@ If you want to inspect the current environment, run:
 ```bash
 direnv status
 ```
+
+### 9. Native app (Capacitor)
+
+The frontend is a Capacitor app: the same React code runs on web (keycloak-js)
+and on native Android/iOS (Capacitor Browser + PKCE). The native projects are
+generated and gitignored — regenerate them with:
+
+```bash
+cd frontend
+pnpm install
+npx cap add android   # or: npx cap add ios
+```
+
+After changing web code or Capacitor config, sync the web build into the native
+projects:
+
+```bash
+cd frontend
+pnpm build
+npx cap sync
+```
+
+Run on an emulator/simulator:
+
+```bash
+cd frontend
+npx cap run android   # requires Android Studio + an AVD
+npx cap run ios       # requires macOS + Xcode + a simulator
+```
+
+`npx cap open android` / `npx cap open ios` opens the project in the native IDE
+instead.
+
+The native auth path needs the `fejd://` URL scheme (already registered in the
+scaffolded `AndroidManifest.xml` intent-filter and the iOS `Info.plist`
+`CFBundleURLTypes`) and reads Keycloak connection settings from
+`VITE_KEYCLOAK_URL`, `VITE_KEYCLOAK_REALM`, `VITE_KEYCLOAK_NATIVE_CLIENT_ID`
+(default `salon-mobile`), and `VITE_KEYCLOAK_NATIVE_REDIRECT_URI` (default
+`fejd://callback`).
+
+To test the full invite → password-set → app-open handoff on a device/simulator:
+
+1. Start the backend stack: `just up-backend` (Keycloak, DB, backend, SMTP).
+2. Invite a user (from `backend/`):
+
+   ```bash
+   KEYCLOAK_URL=http://localhost:9090 KEYCLOAK_REALM=fejd \
+   KEYCLOAK_ADMIN_CLIENT_ID=fejd-admin \
+   KEYCLOAK_ADMIN_CLIENT_SECRET=H6vKp9sQ2wXrT4yL8mN1cB3dV5fG7jZ0 \
+   INVITE_REDIRECT_URI=fejd://callback \
+   go run ./cmd/fejd-admin invite --email you@example.com --name "You"
+   ```
+
+3. Open the invite email (caught by the local SMTP at `docker exec fejd-smtp
+   cat /var/mail/catchall.eml`) and open its link on the device — the app opens
+   via the `fejd://` scheme, and the `UPDATE_PASSWORD` action sets the password.
+
+Universal/App Link handoff for invites additionally needs the hosted
+`apple-app-site-association` (iOS) and `assetlinks.json` (Android) under
+`.well-known/` on the app domain — see `frontend/public/.well-known/`.
+

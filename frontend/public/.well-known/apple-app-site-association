@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.fejd.app",
+        "paths": ["/invite/*", "/invite/callback"]
+      }
+    ]
+  }
+}
