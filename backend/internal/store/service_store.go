@@ -18,6 +18,26 @@ func NewServiceStore(pool *pgxpool.Pool) *ServiceStore {
 	return &ServiceStore{pool: pool}
 }
 
+// LongestDurationByEmployee returns the duration (minutes) of the longest
+// active service the employee offers, or 0 if none.
+func (s *ServiceStore) LongestDurationByEmployee(ctx context.Context, businessUserID uuid.UUID) (int, error) {
+	sql, args, err := psql.
+		Select("COALESCE(MAX(s.duration_minutes), 0)").
+		From("services s").
+		Join("employee_services es ON es.service_id = s.id").
+		Where(sq.Eq{"es.business_user_id": businessUserID, "s.active": true}).
+		ToSql()
+	if err != nil {
+		return 0, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var longest int
+	if err := s.pool.QueryRow(ctx, sql, args...).Scan(&longest); err != nil {
+		return 0, fmt.Errorf("failed to get longest service duration: %w", err)
+	}
+	return longest, nil
+}
+
 func (s *ServiceStore) ListByBusiness(ctx context.Context, businessID uuid.UUID) ([]models.Service, error) {
 	sql, args, err := psql.
 		Select("id", "business_id", "name", "duration_minutes", "price", "active", "COALESCE(description, '')", "picture_id", "created_at").

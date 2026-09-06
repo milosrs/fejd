@@ -101,7 +101,7 @@ func main() {
 	)
 
 	businessHandler := handler.NewBusinessHandler(
-		businessStore, buStore, serviceStore, pageStore, sectionStore, imageLinkStore, slotService,
+		businessStore, buStore, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, slotService,
 	)
 
 	appointmentHandler := handler.NewAppointmentHandler(

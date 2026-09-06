@@ -115,6 +115,16 @@ func (s *SlotService) GetAvailableSlots(
 	dayEnd := time.Date(date.Year(), date.Month(), date.Day(), endTime.Hour(), endTime.Minute(), endTime.Second(), 0, date.Location())
 
 	duration := time.Duration(svc.DurationMinutes) * time.Minute
+	// The slot grid is divided by the longest active service the employee
+	// offers, so a shorter service still fits within a block and the grid stays
+	// uniform. Booking still uses the selected service's actual duration.
+	longest, err := s.services.LongestDurationByEmployee(ctx, businessUserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get longest service duration: %w", err)
+	}
+	if longest > 0 {
+		duration = time.Duration(longest) * time.Minute
+	}
 	existing, err := s.appointments.GetConflictingAppointments(ctx, businessID, businessUserID, dayStart, dayEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing appointments: %w", err)

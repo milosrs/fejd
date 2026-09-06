@@ -86,7 +86,7 @@ func (s *BusinessUserStore) ListByBusiness(ctx context.Context, businessID uuid.
 
 func (s *BusinessUserStore) ListEmployeesByBusiness(ctx context.Context, businessID uuid.UUID) ([]models.BusinessUser, error) {
 	sql, args, err := psql.
-		Select("id", "business_id", "user_id", "role", "display_name", "active").
+		Select("id", "business_id", "user_id", "role", "COALESCE(display_name, '')", "active").
 		From("business_users").
 		Where(sq.Eq{"business_id": businessID, "role": "employee", "active": true}).
 		OrderBy("display_name").

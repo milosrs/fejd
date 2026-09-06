@@ -57,6 +57,7 @@ func newRouter(
 		r.Route("/business/{slug}", func(r chi.Router) {
 			r.Get("/", businessHandler.GetBusiness)
 			r.Get("/services", businessHandler.GetServices)
+			r.Get("/services/{serviceID}/employees", businessHandler.GetServiceEmployees)
 			r.Get("/employees", businessHandler.GetEmployees)
 			r.Get("/sections", businessHandler.GetSections)
 			r.Get("/slots", businessHandler.GetAvailableSlots)
@@ -77,14 +78,22 @@ func newRouter(
 			})
 		})
 
-		// Everything else protected: Authenticate + RequireApproved.
+		// Customer-facing booking routes: authenticated but NOT approval-gated,
+		// so a self-registered customer can book right after registering (the
+		// "QR -> register -> book" flow). approval_status gates only the
+		// owner-facing onboarding and management below.
 		r.Group(func(r chi.Router) {
 			r.Use(authenticate)
-			r.Use(requireApproved)
 
 			r.Post("/appointments", appointmentHandler.Create)
 			r.Get("/my/appointments", appointmentHandler.ListMyAppointments)
 			r.Delete("/my/appointments/{appointmentID}", appointmentHandler.Cancel)
+		})
+
+		// Owner-facing: Authenticate + RequireApproved.
+		r.Group(func(r chi.Router) {
+			r.Use(authenticate)
+			r.Use(requireApproved)
 
 			r.Route("/admin/business/{businessID}", func(r chi.Router) {
 				r.Use(customMiddleware.RequireBusinessAdmin(buStore))

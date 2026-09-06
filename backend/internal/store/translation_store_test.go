@@ -37,14 +37,17 @@ func TestTranslationStore_ListByLocale_Seeded(t *testing.T) {
 
 	en, err := store.ListByLocale(ctx, "en")
 	require.NoError(t, err)
-	require.Len(t, en, 3)
-	assert.Equal(t, "landing.empty.body", en[0].Key)
-	assert.Equal(t, "landing.empty.title", en[1].Key)
-	assert.Equal(t, "services.book.requiresAuth", en[2].Key)
+	keys := map[string]string{}
+	for _, tr := range en {
+		keys[tr.Key] = tr.Value
+	}
+	assert.Equal(t, "This page isn't set up yet", keys["landing.empty.title"])
+	assert.Equal(t, "To book, you have to register.", keys["services.book.requiresAuth"])
+	assert.Equal(t, "Choose a service", keys["booking.step.service"])
 
 	rs, err := store.ListByLocale(ctx, "rs")
 	require.NoError(t, err)
-	require.Len(t, rs, 3)
+	require.NotEmpty(t, rs)
 
 	none, err := store.ListByLocale(ctx, "zz")
 	require.NoError(t, err)

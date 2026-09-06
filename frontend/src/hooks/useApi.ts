@@ -3,6 +3,7 @@ import { GET, POST, PUT, DELETE } from "../lib/api"
 import type { components } from "../lib/api-types"
 
 const URL_BUSINESS_SERVICES = "/api/business/{slug}/services" as const
+const URL_SERVICE_EMPLOYEES = "/api/business/{slug}/services/{serviceID}/employees" as const
 const URL_BUSINESS_EMPLOYEES = "/api/business/{slug}/employees" as const
 const URL_BUSINESS_SLOTS = "/api/business/{slug}/slots" as const
 const URL_MY_APPOINTMENTS = "/api/my/appointments" as const
@@ -46,6 +47,19 @@ export function useEmployees(slug: string) {
       return data
     },
     enabled: !!slug,
+  })
+}
+
+export function useServiceEmployees(slug: string, serviceId: string) {
+  return useQuery({
+    queryKey: ["service-employees", slug, serviceId],
+    queryFn: async () => {
+      const { data } = await GET(URL_SERVICE_EMPLOYEES, {
+        params: { path: { slug, serviceID: serviceId } },
+      })
+      return data
+    },
+    enabled: !!(slug && serviceId),
   })
 }
 

@@ -15,13 +15,14 @@ import (
 )
 
 type BusinessHandler struct {
-	businessStore  *store.BusinessStore
-	buStore        *store.BusinessUserStore
-	serviceStore   *store.ServiceStore
-	pageStore      *store.PageStore
-	sectionStore   *store.SectionStore
-	imageLinkStore *store.ImageLinkStore
-	slotService    *service.SlotService
+	businessStore       *store.BusinessStore
+	buStore             *store.BusinessUserStore
+	serviceStore        *store.ServiceStore
+	pageStore           *store.PageStore
+	sectionStore        *store.SectionStore
+	imageLinkStore      *store.ImageLinkStore
+	employeeServiceStore *store.EmployeeServiceStore
+	slotService         *service.SlotService
 }
 
 func NewBusinessHandler(
@@ -31,16 +32,18 @@ func NewBusinessHandler(
 	pageStore *store.PageStore,
 	sectionStore *store.SectionStore,
 	imageLinkStore *store.ImageLinkStore,
+	employeeServiceStore *store.EmployeeServiceStore,
 	slotService *service.SlotService,
 ) *BusinessHandler {
 	return &BusinessHandler{
-		businessStore:  businessStore,
-		buStore:        buStore,
-		serviceStore:   serviceStore,
-		pageStore:      pageStore,
-		sectionStore:   sectionStore,
-		imageLinkStore: imageLinkStore,
-		slotService:    slotService,
+		businessStore:        businessStore,
+		buStore:              buStore,
+		serviceStore:         serviceStore,
+		pageStore:            pageStore,
+		sectionStore:         sectionStore,
+		imageLinkStore:       imageLinkStore,
+		employeeServiceStore: employeeServiceStore,
+		slotService:          slotService,
 	}
 }
 
@@ -197,6 +200,69 @@ func (h *BusinessHandler) avatarURL(ctx context.Context, businessUserID uuid.UUI
 		}
 	}
 	return ""
+}
+
+// GetServiceEmployees godoc
+// @Summary      List employees who offer a service
+// @Description  Returns active employees assigned to the given service.
+// @Tags         public
+// @Produce      json
+// @Param        slug path string true "Business slug"
+// @Param        serviceID path string true "Service UUID"
+// @Success      200 {array} dto.BusinessUser
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Router       /api/business/{slug}/services/{serviceID}/employees [get]
+func (h *BusinessHandler) GetServiceEmployees(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	serviceID, err := uuid.Parse(chi.URLParam(r, "serviceID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid service ID")
+		return
+	}
+
+	svc, err := h.serviceStore.GetByID(r.Context(), serviceID)
+	if err != nil || svc.BusinessID != b.ID {
+		writeError(w, http.StatusNotFound, "service not found")
+		return
+	}
+
+	links, err := h.employeeServiceStore.ListByService(r.Context(), serviceID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list employees")
+		return
+	}
+
+	employees, err := h.buStore.ListEmployeesByBusiness(r.Context(), b.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list employees")
+		return
+	}
+
+	capable := make(map[uuid.UUID]bool, len(links))
+	for _, l := range links {
+		capable[l.BusinessUserID] = true
+	}
+
+	result := make([]models.BusinessUser, 0, len(employees))
+	for _, emp := range employees {
+		if capable[emp.ID] {
+			result = append(result, emp)
+		}
+	}
+
+	users := dto.BusinessUsersFromModels(result)
+	for i := range users {
+		users[i].Avatar = h.avatarURL(r.Context(), result[i].ID)
+	}
+
+	writeJSON(w, http.StatusOK, users)
 }
 
 // GetAvailableSlots godoc

@@ -26,7 +26,8 @@ func newTestBusinessHandler(t *testing.T) (*BusinessHandler, *store.BusinessStor
 	pageStore := store.NewPageStore(pool)
 	sectionStore := store.NewSectionStore(pool)
 	imageLinkStore := store.NewImageLinkStore(pool)
-	h := NewBusinessHandler(businessStore, buStore, serviceStore, pageStore, sectionStore, imageLinkStore, nil)
+	employeeServiceStore := store.NewEmployeeServiceStore(pool)
+	h := NewBusinessHandler(businessStore, buStore, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, nil)
 	return h, businessStore, pool
 }
 
@@ -118,4 +119,48 @@ func TestBusinessHandler_GetBusiness_Images(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
 	assert.Equal(t, "/api/images/"+imageID.String(), resp.Images.Hero)
 	assert.Empty(t, resp.Images.Logo)
+}
+
+func TestBusinessHandler_GetServiceEmployees(t *testing.T) {
+	h, businessStore, pool := newTestBusinessHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+
+	emp1 := uuid.New()
+	emp2 := uuid.New()
+	_, err := pool.Exec(ctx,
+		`INSERT INTO business_users (id, business_id, user_id, role, display_name) VALUES ($1, $2, 'emp-1', 'employee', 'Sam'), ($3, $2, 'emp-2', 'employee', 'Alex')`,
+		emp1, b.ID, emp2,
+	)
+	require.NoError(t, err)
+
+	svcA := uuid.New()
+	svcB := uuid.New()
+	_, err = pool.Exec(ctx,
+		`INSERT INTO services (id, business_id, name, duration_minutes, active) VALUES ($1, $2, 'Haircut', 30, true), ($3, $2, 'Beard', 20, true)`,
+		svcA, b.ID, svcB,
+	)
+	require.NoError(t, err)
+
+	_, err = pool.Exec(ctx,
+		`INSERT INTO employee_services (business_user_id, service_id) VALUES ($1, $2), ($3, $4)`,
+		emp1, svcA, emp2, svcB,
+	)
+	require.NoError(t, err)
+
+	req := withPathParams(
+		httptest.NewRequest(http.MethodGet, "/api/business/salon/services/"+svcA.String()+"/employees", nil),
+		map[string]string{"slug": "salon", "serviceID": svcA.String()},
+	)
+	rr := httptest.NewRecorder()
+
+	h.GetServiceEmployees(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var employees []dto.BusinessUser
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &employees))
+	require.Len(t, employees, 1)
+	assert.Equal(t, emp1, employees[0].ID)
 }

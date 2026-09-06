@@ -8,7 +8,7 @@ export interface BookingState {
   setService: (id: string) => void
   setEmployee: (id: string) => void
   setDate: (date: string) => void
-  setSlot: (slot: { start_time: string; end_time: string }) => void
+  setSlot: (slot: { start_time: string; end_time: string } | null) => void
   reset: () => void
 }
 
