@@ -2,7 +2,6 @@ import { useQuery } from "@tanstack/react-query"
 import { GET, POST, PUT, DELETE } from "../lib/api"
 import type { components } from "../lib/api-types"
 
-const URL_BUSINESS = "/api/business/{slug}" as const
 const URL_BUSINESS_SERVICES = "/api/business/{slug}/services" as const
 const URL_BUSINESS_SLOTS = "/api/business/{slug}/slots" as const
 const URL_MY_APPOINTMENTS = "/api/my/appointments" as const
@@ -16,23 +15,9 @@ const URL_APPOINTMENTS = "/api/appointments" as const
 
 type Schemas = components["schemas"]
 
-export type Business = Schemas["dto.Business"]
 export type Service = Schemas["dto.Service"]
 export type Employee = Schemas["dto.BusinessUser"]
 export type TimeSlot = Schemas["dto.TimeSlot"]
-
-export function useBusiness(slug: string) {
-  return useQuery({
-    queryKey: ["business", slug],
-    queryFn: async () => {
-      const { data } = await GET(URL_BUSINESS, {
-        params: { path: { slug } },
-      })
-      return data
-    },
-    enabled: !!slug,
-  })
-}
 
 export function useServices(businessId: string) {
   return useQuery({

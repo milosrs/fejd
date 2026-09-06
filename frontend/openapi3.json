@@ -1526,7 +1526,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the caller's approval status and whether they already own a salon.",
+                "description": "Returns the caller's approval status, whether they already own a salon, and the businesses they belong to.",
                 "tags": [
                     "me"
                 ],
@@ -1926,14 +1926,44 @@
                 "type": "object",
                 "required": [
                     "approval_status",
+                    "businesses",
                     "has_salon"
                 ],
                 "properties": {
                     "approval_status": {
                         "type": "string"
                     },
+                    "businesses": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/dto.MeBusiness"
+                        }
+                    },
                     "has_salon": {
                         "type": "boolean"
+                    }
+                }
+            },
+            "dto.MeBusiness": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "role",
+                    "slug"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
                     }
                 }
             },

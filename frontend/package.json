@@ -58,18 +58,9 @@
   },
   "devDependencies": {
     "@storybook/addon-a11y": "^10.5.3",
-    "@storybook/addon-actions": "^9.0.8",
-    "@storybook/addon-backgrounds": "^9.0.8",
-    "@storybook/addon-controls": "^9.0.8",
     "@storybook/addon-docs": "^10.5.3",
-    "@storybook/addon-interactions": "^8.6.18",
-    "@storybook/addon-measure": "^9.0.8",
-    "@storybook/addon-outline": "^9.0.8",
-    "@storybook/addon-toolbars": "^9.0.8",
-    "@storybook/addon-viewport": "^9.0.8",
     "@storybook/react": "^10.5.3",
     "@storybook/react-vite": "^10.5.3",
-    "@storybook/test": "^8.6.18",
     "storybook": "^10.5.3",
     "typescript": "latest"
   }

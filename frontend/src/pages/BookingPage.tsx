@@ -2,19 +2,20 @@ import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
-import { useBusiness, useAvailableSlots, createAppointment, TimeSlot } from "../hooks/useApi"
+import { useSalonContext } from "../context/SalonContext"
+import { useAvailableSlots, createAppointment, TimeSlot } from "../hooks/useApi"
 import { useBookingStore } from "../stores/bookingStore"
 import { useTimeSlotStream } from "../hooks/useTimeSlotStream"
 import { useAuthStore } from "../stores/authStore"
 import { Button } from "../components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Calendar } from "../components/ui/calendar"
-import { ArrowLeft, Clock } from "lucide-react"
+import { ArrowLeft } from "lucide-react"
 
 export function BookingPage() {
   const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
-  const { data: businessData } = useBusiness(slug!)
+  const { salon } = useSalonContext()
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
 
@@ -41,8 +42,7 @@ export function BookingPage() {
   const [booked, setBooked] = useState(false)
   const [error, setError] = useState("")
 
-  const service = businessData?.services.find((s) => s.id === selectedServiceId)
-  const employee = businessData?.employees.find((e) => e.id === selectedEmployeeId)
+  const service = salon?.services.find((s) => s.id === selectedServiceId)
 
   const handleBook = async () => {
     if (!authenticated) {
@@ -55,7 +55,7 @@ export function BookingPage() {
     setError("")
     try {
       await createAppointment({
-        business_id: businessData!.business.id,
+        business_id: salon!.business.id,
         service_id: selectedServiceId,
         business_user_id: selectedEmployeeId,
         start_time: selectedSlot.start_time,
@@ -71,7 +71,7 @@ export function BookingPage() {
   if (!service) {
     return (
       <div className="min-h-screen bg-background p-4">
-        <Button variant="ghost" onClick={() => navigate(`/business/${slug}`)}>
+        <Button variant="ghost" onClick={() => navigate(`/${slug}`)}>
           <ArrowLeft className="size-4" /> Back
         </Button>
         <p className="text-center text-muted-foreground mt-8">Service not found.</p>
@@ -83,7 +83,7 @@ export function BookingPage() {
     <div className="min-h-screen bg-background">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(`/business/${slug}`)}>
+          <Button variant="ghost" onClick={() => navigate(`/${slug}`)}>
             <ArrowLeft className="size-4" /> Back
           </Button>
           <div>
@@ -101,7 +101,7 @@ export function BookingPage() {
               <p className="text-muted-foreground mb-4">
                 {format(new Date(selectedSlot!.start_time), "EEEE, MMMM d, yyyy 'at' h:mm a")}
               </p>
-              <Button onClick={() => navigate(`/business/${slug}`)}>Book another</Button>
+              <Button onClick={() => navigate(`/${slug}`)}>Book another</Button>
             </CardContent>
           </Card>
         ) : (
@@ -112,7 +112,7 @@ export function BookingPage() {
               </CardHeader>
               <CardContent>
                 <div className="flex flex-wrap gap-2">
-                  {(businessData?.employees ?? []).map((emp) => (
+                  {(salon?.employees ?? []).map((emp) => (
                     <Button
                       key={emp.id}
                       variant={selectedEmployeeId === emp.id ? "default" : "outline"}

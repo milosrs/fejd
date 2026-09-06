@@ -17,8 +17,17 @@ type Business struct {
 // Me is the authenticated user's own onboarding state, synthesized from the
 // JWT approval claim and a lookup rather than a DB row.
 type Me struct {
-	ApprovalStatus string `json:"approval_status" validate:"required"`
-	HasSalon       bool   `json:"has_salon" validate:"required"`
+	ApprovalStatus string       `json:"approval_status" validate:"required"`
+	HasSalon       bool         `json:"has_salon" validate:"required"`
+	Businesses     []MeBusiness `json:"businesses" validate:"required"`
+}
+
+// MeBusiness is a business the caller belongs to (as admin or employee).
+type MeBusiness struct {
+	ID   uuid.UUID `json:"id" validate:"required"`
+	Name string    `json:"name" validate:"required"`
+	Slug string    `json:"slug" validate:"required"`
+	Role string    `json:"role" validate:"required"`
 }
 
 type BusinessUser struct {

@@ -54,12 +54,13 @@ func (s *BusinessStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Busi
 	return &b, nil
 }
 
-func (s *BusinessStore) ListByUser(ctx context.Context, userID string) ([]models.Business, error) {
+func (s *BusinessStore) ListMembershipsByUser(ctx context.Context, userID string) ([]models.BusinessMembership, error) {
 	sql, args, err := psql.
-		Select("b.id", "b.name", "b.slug", "b.created_at", "b.updated_at").
+		Select("b.id", "b.name", "b.slug", "bu.role").
 		From("businesses b").
 		Join("business_users bu ON bu.business_id = b.id").
 		Where(sq.Eq{"bu.user_id": userID}).
+		OrderBy("b.created_at").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
@@ -67,19 +68,19 @@ func (s *BusinessStore) ListByUser(ctx context.Context, userID string) ([]models
 
 	rows, err := s.pool.Query(ctx, sql, args...)
 	if err != nil {
-		return nil, fmt.Errorf("failed to list businesses: %w", err)
+		return nil, fmt.Errorf("failed to list memberships: %w", err)
 	}
 	defer rows.Close()
 
-	var businesses []models.Business
+	var memberships []models.BusinessMembership
 	for rows.Next() {
-		var b models.Business
-		if err := rows.Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt); err != nil {
-			return nil, fmt.Errorf("failed to scan business: %w", err)
+		var m models.BusinessMembership
+		if err := rows.Scan(&m.BusinessID, &m.Name, &m.Slug, &m.Role); err != nil {
+			return nil, fmt.Errorf("failed to scan membership: %w", err)
 		}
-		businesses = append(businesses, b)
+		memberships = append(memberships, m)
 	}
-	return businesses, nil
+	return memberships, nil
 }
 
 func (s *BusinessStore) Create(ctx context.Context, q Querier, b *models.Business) error {

@@ -32,7 +32,7 @@ func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUse
 
 // GetMe godoc
 // @Summary      Current user's onboarding state
-// @Description  Returns the caller's approval status and whether they already own a salon.
+// @Description  Returns the caller's approval status, whether they already own a salon, and the businesses they belong to.
 // @Tags         me
 // @Produce      json
 // @Security     BearerAuth
@@ -46,15 +46,27 @@ func (h *MeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	hasSalon, err := h.buStore.HasAdminBusiness(r.Context(), h.pool, userID)
+	memberships, err := h.businessStore.ListMembershipsByUser(r.Context(), userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to check salon")
+		writeError(w, http.StatusInternalServerError, "failed to list businesses")
 		return
+	}
+	if memberships == nil {
+		memberships = []models.BusinessMembership{}
+	}
+
+	hasSalon := false
+	for _, m := range memberships {
+		if m.Role == "admin" {
+			hasSalon = true
+			break
+		}
 	}
 
 	writeJSON(w, http.StatusOK, dto.Me{
 		ApprovalStatus: authutil.GetApprovalStatus(r),
 		HasSalon:       hasSalon,
+		Businesses:     dto.MeBusinessesFromModels(memberships),
 	})
 }
 

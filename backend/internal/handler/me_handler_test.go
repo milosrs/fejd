@@ -46,6 +46,7 @@ func TestMeHandler_GetMe_NoSalon(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &me))
 	assert.Equal(t, "pending", me.ApprovalStatus)
 	assert.False(t, me.HasSalon)
+	assert.Empty(t, me.Businesses)
 }
 
 func TestMeHandler_GetMe_HasSalon(t *testing.T) {
@@ -70,6 +71,41 @@ func TestMeHandler_GetMe_HasSalon(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &me))
 	assert.Equal(t, "approved", me.ApprovalStatus)
 	assert.True(t, me.HasSalon)
+	require.Len(t, me.Businesses, 1)
+	assert.Equal(t, "my-salon", me.Businesses[0].Slug)
+	assert.Equal(t, "admin", me.Businesses[0].Role)
+}
+
+func TestMeHandler_GetMe_EmployeeMembership(t *testing.T) {
+	h, businessStore, buStore, pool := newTestMeHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "My Salon", Slug: "my-salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+	// user-2 is the admin; user-1 is only an employee.
+	require.NoError(t, buStore.Create(ctx, pool, &models.BusinessUser{
+		BusinessID: b.ID,
+		UserID:     "user-2",
+		Role:       "admin",
+	}))
+	require.NoError(t, buStore.Create(ctx, pool, &models.BusinessUser{
+		BusinessID: b.ID,
+		UserID:     "user-1",
+		Role:       "employee",
+	}))
+
+	req := withUser(httptest.NewRequest(http.MethodGet, "/api/me", nil), "user-1", "approved")
+	rr := httptest.NewRecorder()
+
+	h.GetMe(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var me dto.Me
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &me))
+	assert.False(t, me.HasSalon)
+	require.Len(t, me.Businesses, 1)
+	assert.Equal(t, "my-salon", me.Businesses[0].Slug)
+	assert.Equal(t, "employee", me.Businesses[0].Role)
 }
 
 func TestMeHandler_CreateBusiness_SlugCollision(t *testing.T) {

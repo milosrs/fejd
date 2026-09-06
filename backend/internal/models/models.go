@@ -23,6 +23,14 @@ type BusinessUser struct {
 	Active      bool
 }
 
+// BusinessMembership pairs a business with the calling user's role in it.
+type BusinessMembership struct {
+	BusinessID uuid.UUID
+	Name       string
+	Slug       string
+	Role       string
+}
+
 type Service struct {
 	ID              uuid.UUID
 	BusinessID      uuid.UUID

@@ -2,12 +2,15 @@ import { BrowserRouter, Routes, Route } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { useAuthStore } from "./stores/authStore"
-import { BusinessPage } from "./pages/BusinessPage"
+import { HomePage } from "./pages/HomePage"
+import { LandingPage } from "./pages/LandingPage"
+import { ServicesPage } from "./pages/ServicesPage"
+import { BarbersPage } from "./pages/BarbersPage"
 import { BookingPage } from "./pages/BookingPage"
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage"
 import { AdminSchedulePage } from "./pages/AdminSchedulePage"
 import { AdminServicesPage } from "./pages/AdminServicesPage"
-import { DatePickerPage } from "./pages/DatePickerPage"
+import { SalonLayout } from "./components/SalonLayout"
 import { ThemeProvider } from "#components/theme-provider"
 import { ModeToggle } from "#components/mode-toggle"
 import { OnboardingGate } from "#components/OnboardingGate"
@@ -90,18 +93,20 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <AppInit>
-            <ProtectedRoute>
-              <OnboardingGate>
-                <Routes>
-                  <Route path="/" element={<DatePickerPage />} />
-                  <Route path="/business/:slug" element={<BusinessPage />} />
-                  <Route path="/business/:slug/book" element={<BookingPage />} />
-                  <Route path="/my/appointments" element={<MyAppointmentsPage />} />
-                  <Route path="/admin/business/:businessId/schedule" element={<AdminSchedulePage />} />
-                  <Route path="/admin/business/:businessId/services" element={<AdminServicesPage />} />
-                </Routes>
-              </OnboardingGate>
-            </ProtectedRoute>
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+
+              <Route path="/my/appointments" element={<ProtectedRoute><OnboardingGate><MyAppointmentsPage /></OnboardingGate></ProtectedRoute>} />
+              <Route path="/admin/business/:businessId/schedule" element={<ProtectedRoute><OnboardingGate><AdminSchedulePage /></OnboardingGate></ProtectedRoute>} />
+              <Route path="/admin/business/:businessId/services" element={<ProtectedRoute><OnboardingGate><AdminServicesPage /></OnboardingGate></ProtectedRoute>} />
+
+              <Route path="/:slug" element={<SalonLayout />}>
+                <Route index element={<LandingPage />} />
+                <Route path="services" element={<ServicesPage />} />
+                <Route path="barbers" element={<BarbersPage />} />
+                <Route path="book" element={<BookingPage />} />
+              </Route>
+            </Routes>
           </AppInit>
         </BrowserRouter>
       </QueryClientProvider>

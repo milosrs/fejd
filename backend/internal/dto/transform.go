@@ -12,6 +12,23 @@ func BusinessFromModel(m models.Business) Business {
 	}
 }
 
+func MeBusinessFromModel(m models.BusinessMembership) MeBusiness {
+	return MeBusiness{
+		ID:   m.BusinessID,
+		Name: m.Name,
+		Slug: m.Slug,
+		Role: m.Role,
+	}
+}
+
+func MeBusinessesFromModels(ms []models.BusinessMembership) []MeBusiness {
+	out := make([]MeBusiness, len(ms))
+	for i, m := range ms {
+		out[i] = MeBusinessFromModel(m)
+	}
+	return out
+}
+
 func BusinessUserFromModel(m models.BusinessUser) BusinessUser {
 	return BusinessUser{
 		ID:          m.ID,

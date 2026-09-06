@@ -1400,7 +1400,7 @@ export interface paths {
         };
         /**
          * Current user's onboarding state
-         * @description Returns the caller's approval status and whether they already own a salon.
+         * @description Returns the caller's approval status, whether they already own a salon, and the businesses they belong to.
          */
         get: {
             parameters: {
@@ -1674,7 +1674,14 @@ export interface components {
         };
         "dto.Me": {
             approval_status: string;
+            businesses: components["schemas"]["dto.MeBusiness"][];
             has_salon: boolean;
+        };
+        "dto.MeBusiness": {
+            id: string;
+            name: string;
+            role: string;
+            slug: string;
         };
         "dto.Service": {
             active: boolean;
