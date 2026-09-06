@@ -4,13 +4,7 @@ import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useSalonContext } from "../context/SalonContext"
-import {
-  useServices,
-  useServiceEmployees,
-  useAvailableSlots,
-  createAppointment,
-  type TimeSlot,
-} from "../hooks/useApi"
+import { useServices, useServiceEmployees, createAppointment } from "../hooks/useApi"
 import { useBookingStore } from "../stores/bookingStore"
 import { useTimeSlotStream } from "../hooks/useTimeSlotStream"
 import { useAuthStore } from "../stores/authStore"
@@ -18,8 +12,8 @@ import { useI18n } from "../lib/i18n"
 import { Button } from "../components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Calendar } from "../components/ui/calendar"
-import { ArrowLeft, CheckCircle2, UserRound } from "lucide-react"
-import { resolveImageUrl } from "../lib/images"
+import { BarberAvailabilityCard } from "../components/booking/BarberAvailabilityCard"
+import { ArrowLeft, CheckCircle2 } from "lucide-react"
 
 function mapBookingError(msg: string, t: (key: string) => string): string {
   switch (msg) {
@@ -50,9 +44,9 @@ export function BookingPage() {
     selectedDate,
     selectedSlot,
     setService,
-    setEmployee,
     setDate,
-    setSlot,
+    selectSlot,
+    clearSlot,
   } = useBookingStore()
 
   useTimeSlotStream(slug!)
@@ -69,12 +63,6 @@ export function BookingPage() {
   const { data: barbers, isLoading: barbersLoading } = useServiceEmployees(
     slug!,
     selectedServiceId ?? "",
-  )
-  const { data: slotsData } = useAvailableSlots(
-    slug!,
-    selectedServiceId ?? "",
-    selectedEmployeeId ?? "",
-    selectedDate ?? "",
   )
 
   const [booking, setBooking] = useState(false)
@@ -106,7 +94,7 @@ export function BookingPage() {
       const msg = e?.body?.error ?? ""
       setError(mapBookingError(msg, t))
       if (msg === "time slot is no longer available") {
-        setSlot(null)
+        clearSlot()
         queryClient.invalidateQueries({ queryKey: ["slots", slug] })
       }
     } finally {
@@ -116,7 +104,7 @@ export function BookingPage() {
 
   if (bookedTime) {
     return (
-      <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
         <main className="max-w-4xl mx-auto px-4 py-8">
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
@@ -139,7 +127,7 @@ export function BookingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate(`/${slug}`)}>
@@ -179,90 +167,40 @@ export function BookingPage() {
           <>
             <Card>
               <CardHeader>
-                <CardTitle>{t("booking.step.barber")}</CardTitle>
+                <CardTitle>{t("booking.step.date")}</CardTitle>
               </CardHeader>
               <CardContent>
-                {barbersLoading ? (
-                  <p className="text-muted-foreground">Loading…</p>
-                ) : (barbers ?? []).length === 0 ? (
-                  <p className="text-muted-foreground">{t("booking.empty.barbers")}</p>
-                ) : (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4">
-                    {(barbers ?? []).map((b) => {
-                      const avatar = resolveImageUrl(b.avatar)
-                      const selected = b.id === selectedEmployeeId
-                      return (
-                        <button
-                          key={b.id}
-                          onClick={() => setEmployee(b.id)}
-                          className={`flex flex-col items-center gap-2 rounded-xl border p-4 transition-colors ${
-                            selected
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:bg-muted"
-                          }`}
-                        >
-                          {avatar ? (
-                            <img
-                              src={avatar}
-                              alt={b.display_name || b.user_id}
-                              className="h-16 w-16 rounded-full object-cover"
-                            />
-                          ) : (
-                            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-muted-foreground">
-                              <UserRound className="size-7" />
-                            </div>
-                          )}
-                          <span className="text-sm font-medium text-foreground">
-                            {b.display_name || b.user_id}
-                          </span>
-                        </button>
-                      )
-                    })}
-                  </div>
-                )}
+                <Calendar
+                  value={selectedDate ? parseDate(selectedDate) : undefined}
+                  onChange={(date) => date && setDate(date.toString())}
+                  minValue={today(getLocalTimeZone())}
+                  className="mx-auto"
+                />
               </CardContent>
             </Card>
 
-            {barber && (
+            {selectedDate && (
               <Card>
                 <CardHeader>
-                  <CardTitle>{t("booking.step.date")}</CardTitle>
+                  <CardTitle>{t("booking.step.barber")}</CardTitle>
                 </CardHeader>
-                <CardContent>
-                  <Calendar
-                    value={selectedDate ? parseDate(selectedDate) : undefined}
-                    onChange={(date) => date && setDate(date.toString())}
-                    minValue={today(getLocalTimeZone())}
-                    className="mx-auto"
-                  />
-                </CardContent>
-              </Card>
-            )}
-
-            {selectedDate && slotsData && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>{t("booking.step.time")}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {slotsData.slots.length === 0 ? (
-                    <p className="text-muted-foreground">{t("booking.empty.slots")}</p>
+                <CardContent className="space-y-4">
+                  {barbersLoading ? (
+                    <p className="text-muted-foreground">Loading…</p>
+                  ) : (barbers ?? []).length === 0 ? (
+                    <p className="text-muted-foreground">{t("booking.empty.barbers")}</p>
                   ) : (
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-6">
-                      {slotsData.slots.map((slot: TimeSlot) => (
-                        <button
-                          key={slot.start_time}
-                          onClick={() => setSlot(slot)}
-                          className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
-                            selectedSlot?.start_time === slot.start_time
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-foreground hover:bg-muted/70"
-                          }`}
-                        >
-                          {format(new Date(slot.start_time), "h:mm a")}
-                        </button>
-                      ))}
-                    </div>
+                    (barbers ?? []).map((b) => (
+                      <BarberAvailabilityCard
+                        key={b.id}
+                        barber={b}
+                        slug={slug!}
+                        serviceId={selectedServiceId!}
+                        date={selectedDate}
+                        selectedStartTime={selectedSlot?.start_time}
+                        onSelectSlot={(employeeId, slot) => selectSlot(employeeId, slot)}
+                      />
+                    ))
                   )}
                 </CardContent>
               </Card>

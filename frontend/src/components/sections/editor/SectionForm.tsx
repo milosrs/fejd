@@ -1,8 +1,7 @@
-import { useRef } from "react"
 import { Input } from "../../ui/input"
 import { Textarea } from "../../ui/textarea"
 import { Label } from "../../ui/label"
-import { Button } from "../../ui/button"
+import { ImageUploadButton } from "../../ui/image-upload-button"
 import type {
   AboutContent,
   ContactContent,
@@ -38,8 +37,6 @@ export function HeroSectionForm({
   onUploadImage?: (file: File) => void
   uploading?: boolean
 }) {
-  const fileRef = useRef<HTMLInputElement>(null)
-
   return (
     <div className="space-y-4">
       <Field label="Headline">
@@ -62,27 +59,7 @@ export function HeroSectionForm({
       </Field>
       {onUploadImage && (
         <Field label="Hero image">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              isDisabled={uploading}
-              onClick={() => fileRef.current?.click()}
-            >
-              {uploading ? "Uploading…" : "Upload image"}
-            </Button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                const file = e.target.files?.[0]
-                if (file) onUploadImage(file)
-                e.target.value = ""
-              }}
-            />
-          </div>
+          <ImageUploadButton onPicked={onUploadImage} uploading={uploading} />
         </Field>
       )}
     </div>

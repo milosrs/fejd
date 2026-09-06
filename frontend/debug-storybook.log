@@ -1,0 +1,23 @@
+[01:31:17.836] [INFO] storybook v10.6.0
+[01:31:19.958] [DEBUG] Getting package.json info for /home/rixon/fejd/frontend/package.json...
+[01:31:20.600] [INFO] Starting...
+[01:31:20.618] [DEBUG] readDependencyManifest: could not resolve "tw-animate-css"
+[01:31:20.744] [DEBUG] Starting preview..
+[01:31:20.949] [ERROR] Failed to build the preview
+[01:31:20.949] [ERROR] file://./node_modules/.pnpm/@vitest+browser@5.0.0_vite@8.1.5_@types+node@26.1.1_esbuild@0.28.1_jiti@2.7.0_terser@5.49.0__vitest@4.1.10/node_modules/@vitest/browser/dist/index.js:9
+import { isFileLoadingAllowed, createDebugger, isValidApiRequest, BrowserConnectionError, isCSSRequest, distDir, rolldownVersion, isFileServingAllowed } from 'vitest/node';
+                                                                  ^^^^^^^^^^^^^^^^^^^^^^
+[38;2;241;97;97mSyntaxError: The requested module 'vitest/node' does not provide an export named 'BrowserConnectionError'[39m
+    at #asyncInstantiate (node:internal/modules/esm/module_job:327:21)
+    at async ModuleJob.run (node:internal/modules/esm/module_job:431:5)
+    at async node:internal/modules/esm/loader:643:26
+    at async loadConfigFromBundledFile (file://./node_modules/.pnpm/vite@8.1.5_@types+node@26.1.1_esbuild@0.28.1_jiti@2.7.0_terser@5.49.0/node_modules/vite/dist/node/chunks/node.js:36180:12)
+    at async bundleAndLoadConfigFile (file://./node_modules/.pnpm/vite@8.1.5_@types+node@26.1.1_esbuild@0.28.1_jiti@2.7.0_terser@5.49.0/node_modules/vite/dist/node/chunks/node.js:36042:17)
+    at async loadConfigFromFile (file://./node_modules/.pnpm/vite@8.1.5_@types+node@26.1.1_esbuild@0.28.1_jiti@2.7.0_terser@5.49.0/node_modules/vite/dist/node/chunks/node.js:36001:42)
+    at async commonConfig (file://./node_modules/.pnpm/@storybook+builder-vite@10.6.0_storybook@10.6.0_@types+react@19.2.17_react@19.2.7__vite@8.1.5_xkztpafyj6xz5xirjjjjyr4o5y/node_modules/@storybook/builder-vite/dist/index.js:1605:324)
+    at async createViteServer (file://./node_modules/.pnpm/@storybook+builder-vite@10.6.0_storybook@10.6.0_@types+react@19.2.17_react@19.2.7__vite@8.1.5_xkztpafyj6xz5xirjjjjyr4o5y/node_modules/@storybook/builder-vite/dist/index.js:1751:42)
+    at async Module.start (file://./node_modules/.pnpm/@storybook+builder-vite@10.6.0_storybook@10.6.0_@types+react@19.2.17_react@19.2.7__vite@8.1.5_xkztpafyj6xz5xirjjjjyr4o5y/node_modules/@storybook/builder-vite/dist/index.js:1800:17)
+    at async storybookDevServer (file://./node_modules/.pnpm/storybook@10.6.0_@types+react@19.2.17_react@19.2.7/node_modules/storybook/dist/core-server/index.js:8495:59)
+[01:31:20.952] [WARN] Broken build, fix the error above.
+You may need to refresh the browser.
+[01:31:25.243] [PROMPT] Would you like to send anonymous crash reports to improve Storybook and fix bugs faster? {"choice":true}

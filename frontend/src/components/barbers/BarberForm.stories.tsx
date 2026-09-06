@@ -1,5 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { BarberForm } from "./BarberForm"
+import { SalonFrame } from "../../stories/salon"
 import type { Employee, Service } from "../../hooks/useApi"
 
 const meta: Meta<typeof BarberForm> = {
@@ -44,19 +45,23 @@ const existing: Employee = {
 }
 
 export const Create: Story = {
-  args: {
-    services,
-    onClose: () => {},
-    onSubmit: () => {},
-  },
+  render: () => (
+    <SalonFrame>
+      <BarberForm services={services} onClose={() => {}} onSubmit={() => {}} />
+    </SalonFrame>
+  ),
 }
 
 export const Edit: Story = {
-  args: {
-    initial: existing,
-    services,
-    onClose: () => {},
-    onSubmit: () => {},
-    onUploadAvatar: () => {},
-  },
+  render: () => (
+    <SalonFrame>
+      <BarberForm
+        initial={existing}
+        services={services}
+        onClose={() => {}}
+        onSubmit={() => {}}
+        onUploadAvatar={() => {}}
+      />
+    </SalonFrame>
+  ),
 }

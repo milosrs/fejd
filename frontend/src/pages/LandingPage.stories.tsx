@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { LandingPage } from "./LandingPage"
 import { SalonFrame, mockSections, mockOwnerMe } from "../stories/salon"
 

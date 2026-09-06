@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { ServiceForm } from "./ServiceForm"
 import type { Service } from "../../hooks/useApi"
 

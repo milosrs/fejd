@@ -1,8 +1,9 @@
-import { useRef, useState } from "react"
+import { useState } from "react"
 import { Input } from "../ui/input"
 import { Textarea } from "../ui/textarea"
 import { Label } from "../ui/label"
 import { Button } from "../ui/button"
+import { ImageUploadButton } from "../ui/image-upload-button"
 import type { Service } from "../../hooks/useApi"
 
 export interface ServiceFormValues {
@@ -42,7 +43,6 @@ export function ServiceForm({
   const [price, setPrice] = useState(
     initial && initial.price != null ? String(initial.price) : "",
   )
-  const fileRef = useRef<HTMLInputElement>(null)
 
   const handleSubmit = () => {
     if (!name.trim()) return
@@ -56,7 +56,7 @@ export function ServiceForm({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))]"
       onClick={onClose}
     >
       <div
@@ -100,27 +100,7 @@ export function ServiceForm({
 
           {initial && onUploadImage && (
             <Field label="Picture">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  isDisabled={uploading}
-                  onClick={() => fileRef.current?.click()}
-                >
-                  {uploading ? "Uploading…" : "Upload image"}
-                </Button>
-                <input
-                  ref={fileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0]
-                    if (file) onUploadImage(file)
-                    e.target.value = ""
-                  }}
-                />
-              </div>
+              <ImageUploadButton onPicked={onUploadImage} uploading={uploading} />
             </Field>
           )}
         </div>

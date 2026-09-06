@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { BarberCard, BarberCardSkeleton } from "./BarberCard"
 import type { Employee } from "../../hooks/useApi"
 

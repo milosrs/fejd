@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { Calendar, RangeCalendar } from "./calendar"
 import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date"
 

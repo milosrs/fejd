@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { HeroSection } from "./HeroSection"
 import { AboutSection } from "./AboutSection"
 import { GallerySection } from "./GallerySection"

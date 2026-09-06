@@ -6,9 +6,9 @@ export interface BookingState {
   selectedDate: string | null
   selectedSlot: { start_time: string; end_time: string } | null
   setService: (id: string) => void
-  setEmployee: (id: string) => void
   setDate: (date: string) => void
-  setSlot: (slot: { start_time: string; end_time: string } | null) => void
+  selectSlot: (employeeId: string, slot: { start_time: string; end_time: string }) => void
+  clearSlot: () => void
   reset: () => void
 }
 
@@ -18,8 +18,8 @@ export const useBookingStore = create<BookingState>((set) => ({
   selectedDate: null,
   selectedSlot: null,
   setService: (id) => set({ selectedServiceId: id, selectedEmployeeId: null, selectedDate: null, selectedSlot: null }),
-  setEmployee: (id) => set({ selectedEmployeeId: id, selectedDate: null, selectedSlot: null }),
-  setDate: (date) => set({ selectedDate: date, selectedSlot: null }),
-  setSlot: (slot) => set({ selectedSlot: slot }),
+  setDate: (date) => set({ selectedDate: date, selectedEmployeeId: null, selectedSlot: null }),
+  selectSlot: (employeeId, slot) => set({ selectedEmployeeId: employeeId, selectedSlot: slot }),
+  clearSlot: () => set({ selectedSlot: null }),
   reset: () => set({ selectedServiceId: null, selectedEmployeeId: null, selectedDate: null, selectedSlot: null }),
 }))

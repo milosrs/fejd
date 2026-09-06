@@ -5,6 +5,7 @@ import { ThemeProvider } from "../components/theme-provider"
 import { SalonProvider } from "../context/SalonContext"
 import { I18nProvider } from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
+import { useBookingStore } from "../stores/bookingStore"
 import type { Salon } from "../hooks/useSalon"
 import type { Me } from "../hooks/useMe"
 import type { Service, Employee } from "../hooks/useApi"
@@ -33,6 +34,9 @@ const mockI18nEn = {
   "booking.error.alreadyBooked": "You already have a booking with this salon today.",
   "booking.error.noService": "This barber doesn't offer this service. Please pick another.",
   "booking.error.generic": "Booking failed. Please try again.",
+  "barberForm.nameRequired": "Name is required.",
+  "barberForm.emailRequired": "Email is required.",
+  "barberForm.emailInvalid": "Enter a valid email address.",
 }
 
 export const mockSalon: Salon = {
@@ -235,6 +239,7 @@ export function SalonProviders({
         : null,
       roles: [],
     })
+    useBookingStore.getState().reset()
     return () =>
       useAuthStore.setState({
         initialized: true,
@@ -246,9 +251,9 @@ export function SalonProviders({
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="storybook-theme">
-      <I18nProvider>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <I18nProvider>{children}</I18nProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   )
 }
@@ -264,7 +269,7 @@ export function SalonFrame({ children, initialEditing, ...props }: SalonFramePro
       <MemoryRouter initialEntries={[`/${slug}`]}>
         <Routes>
           <Route
-            path="/:slug"
+            path="/:slug/*"
             element={<SalonProvider initialEditing={initialEditing}>{children}</SalonProvider>}
           />
         </Routes>

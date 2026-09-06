@@ -11,6 +11,7 @@ import { MyAppointmentsPage } from "./pages/MyAppointmentsPage"
 import { AdminSchedulePage } from "./pages/AdminSchedulePage"
 import { AdminServicesPage } from "./pages/AdminServicesPage"
 import { SalonLayout } from "./components/SalonLayout"
+import { I18nProvider } from "./lib/i18n"
 import { ThemeProvider } from "#components/theme-provider"
 import { ModeToggle } from "#components/mode-toggle"
 import { OnboardingGate } from "#components/OnboardingGate"
@@ -43,7 +44,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
   return (
     <>
       {authenticated && (
-        <header className="flex items-center justify-end gap-4 border-b px-6 py-3">
+        <header className="flex items-center justify-end gap-4 border-b px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
           <span className="text-sm text-muted-foreground">
             Hello {userInfo?.name}
           </span>
@@ -89,26 +90,28 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AppInit>
-            <Routes>
-              <Route path="/" element={<HomePage />} />
+        <I18nProvider>
+          <BrowserRouter>
+            <AppInit>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
 
-              <Route path="/my/appointments" element={<ProtectedRoute><OnboardingGate><MyAppointmentsPage /></OnboardingGate></ProtectedRoute>} />
-              <Route path="/admin/business/:businessId/schedule" element={<ProtectedRoute><OnboardingGate><AdminSchedulePage /></OnboardingGate></ProtectedRoute>} />
-              <Route path="/admin/business/:businessId/services" element={<ProtectedRoute><OnboardingGate><AdminServicesPage /></OnboardingGate></ProtectedRoute>} />
+                <Route path="/my/appointments" element={<ProtectedRoute><OnboardingGate><MyAppointmentsPage /></OnboardingGate></ProtectedRoute>} />
+                <Route path="/admin/business/:businessId/schedule" element={<ProtectedRoute><OnboardingGate><AdminSchedulePage /></OnboardingGate></ProtectedRoute>} />
+                <Route path="/admin/business/:businessId/services" element={<ProtectedRoute><OnboardingGate><AdminServicesPage /></OnboardingGate></ProtectedRoute>} />
 
-              <Route path="/:slug" element={<SalonLayout />}>
-                <Route index element={<LandingPage />} />
-                <Route path="services" element={<ServicesPage />} />
-                <Route path="barbers" element={<BarbersPage />} />
-                <Route path="book" element={<BookingPage />} />
-              </Route>
-            </Routes>
-          </AppInit>
-        </BrowserRouter>
+                <Route path="/:slug" element={<SalonLayout />}>
+                  <Route index element={<LandingPage />} />
+                  <Route path="services" element={<ServicesPage />} />
+                  <Route path="barbers" element={<BarbersPage />} />
+                  <Route path="book" element={<BookingPage />} />
+                </Route>
+              </Routes>
+            </AppInit>
+          </BrowserRouter>
+        </I18nProvider>
       </QueryClientProvider>
     </ThemeProvider>
   )

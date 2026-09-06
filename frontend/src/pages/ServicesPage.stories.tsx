@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { ServicesPage } from "./ServicesPage"
 import { SalonFrame, mockOwnerMe } from "../stories/salon"
 

@@ -30,7 +30,7 @@ function SalonShell() {
   ]
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2">
           <Link to={`/${slug}`} className="text-lg font-semibold text-foreground">

@@ -1,4 +1,4 @@
-import type { Meta, StoryObj } from "@storybook/react"
+import type { Meta, StoryObj } from "@storybook/react-vite"
 import { SectionEditor } from "./SectionEditor"
 import { SalonFrame, mockSections } from "../../../stories/salon"
 

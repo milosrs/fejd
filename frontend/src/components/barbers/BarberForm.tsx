@@ -1,7 +1,9 @@
-import { useRef, useState } from "react"
+import { useState } from "react"
 import { Input } from "../ui/input"
 import { Label } from "../ui/label"
 import { Button } from "../ui/button"
+import { ImageUploadButton } from "../ui/image-upload-button"
+import { useI18n } from "../../lib/i18n"
 import type { Employee, Service } from "../../hooks/useApi"
 
 export interface BarberFormValues {
@@ -10,14 +12,25 @@ export interface BarberFormValues {
   service_ids: string[]
 }
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({
+  label,
+  error,
+  children,
+}: {
+  label: string
+  error?: string
+  children: React.ReactNode
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs text-muted-foreground">{label}</Label>
       {children}
+      {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   )
 }
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
 export function BarberForm({
   initial,
@@ -36,10 +49,19 @@ export function BarberForm({
   uploading?: boolean
   saving?: boolean
 }) {
+  const { t } = useI18n()
   const [name, setName] = useState(initial?.display_name ?? "")
   const [email, setEmail] = useState("")
   const [serviceIds, setServiceIds] = useState<string[]>([])
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [touched, setTouched] = useState({ name: false, email: false })
+
+  const nameValid = name.trim().length > 0
+  const emailValid = EMAIL_PATTERN.test(email.trim())
+
+  const showNameError = touched.name && !nameValid
+  const showEmailError = touched.email && !emailValid
+  const emailError =
+    email.trim() === "" ? t("barberForm.emailRequired") : t("barberForm.emailInvalid")
 
   const toggleService = (id: string) => {
     setServiceIds((prev) =>
@@ -48,14 +70,15 @@ export function BarberForm({
   }
 
   const handleSubmit = () => {
-    if (name.trim() && email.trim()) {
+    setTouched({ name: true, email: true })
+    if (nameValid && emailValid) {
       onSubmit({ name: name.trim(), email: email.trim(), service_ids: serviceIds })
     }
   }
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))]"
       onClick={onClose}
     >
       <div
@@ -78,27 +101,11 @@ export function BarberForm({
             </Field>
             {onUploadAvatar && (
               <Field label="Avatar">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    isDisabled={uploading}
-                    onClick={() => fileRef.current?.click()}
-                  >
-                    {uploading ? "Uploading…" : "Upload avatar"}
-                  </Button>
-                  <input
-                    ref={fileRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0]
-                      if (file) onUploadAvatar(file)
-                      e.target.value = ""
-                    }}
-                  />
-                </div>
+                <ImageUploadButton
+                  onPicked={onUploadAvatar}
+                  label="Upload avatar"
+                  uploading={uploading}
+                />
               </Field>
             )}
             <div className="flex justify-end">
@@ -108,11 +115,20 @@ export function BarberForm({
         ) : (
           <>
             <div className="space-y-4">
-              <Field label="Name">
-                <Input value={name} onChange={(e) => setName(e.target.value)} />
+              <Field label="Name" error={showNameError ? t("barberForm.nameRequired") : undefined}>
+                <Input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
+                />
               </Field>
-              <Field label="Email">
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Field label="Email" error={showEmailError ? emailError : undefined}>
+                <Input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+                />
               </Field>
               <Field label="Services">
                 {services.length === 0 ? (
@@ -137,10 +153,7 @@ export function BarberForm({
               <Button variant="outline" onClick={onClose}>
                 Cancel
               </Button>
-              <Button
-                isDisabled={saving || !name.trim() || !email.trim()}
-                onClick={handleSubmit}
-              >
+              <Button isDisabled={saving} onClick={handleSubmit}>
                 {saving ? "Inviting…" : "Invite"}
               </Button>
             </div>
