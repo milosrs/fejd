@@ -1,4 +1,4 @@
-import { Clock } from "lucide-react"
+import { Clock, Pencil, Trash2 } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../ui/card"
 import { Button } from "../ui/button"
 import { resolveImageUrl } from "../../lib/images"
@@ -8,14 +8,20 @@ export function ServiceCard({
   service,
   onBook,
   note,
+  onEdit,
+  onDelete,
 }: {
   service: Service
   onBook: (serviceId: string) => void
   note?: string
+  onEdit?: () => void
+  onDelete?: () => void
 }) {
   const imageUrl = service.picture_id
     ? resolveImageUrl(`/api/images/${service.picture_id}`)
     : undefined
+
+  const editing = Boolean(onEdit && onDelete)
 
   return (
     <Card>
@@ -38,9 +44,20 @@ export function ServiceCard({
         )}
       </CardContent>
       <CardFooter className="flex-col items-stretch gap-2">
-        <Button className="w-full" onClick={() => onBook(service.id)}>
-          Book now
-        </Button>
+        {editing ? (
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={onEdit}>
+              <Pencil className="size-3" /> Edit
+            </Button>
+            <Button variant="destructive" className="flex-1" onClick={onDelete}>
+              <Trash2 className="size-3" /> Delete
+            </Button>
+          </div>
+        ) : (
+          <Button className="w-full" onClick={() => onBook(service.id)}>
+            Book now
+          </Button>
+        )}
         {note && (
           <p className="text-center text-xs text-muted-foreground">{note}</p>
         )}

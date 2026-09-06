@@ -11,6 +11,7 @@ const URL_ADMIN_OVERRIDES = "/api/admin/business/{businessID}/employees/{userID}
 const URL_ADMIN_OVERRIDES_DELETE = "/api/admin/business/{businessID}/employees/{userID}/overrides/{overrideID}" as const
 const URL_ADMIN_SERVICES = "/api/admin/business/{businessID}/services" as const
 const URL_ADMIN_SERVICES_DELETE = "/api/admin/business/{businessID}/services/{serviceID}" as const
+const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serviceID}/image" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
 
 type Schemas = components["schemas"]
@@ -129,6 +130,14 @@ export async function updateService(businessId: string, serviceId: string, servi
 export async function deleteService(businessId: string, serviceId: string) {
   const { data } = await DELETE(URL_ADMIN_SERVICES_DELETE, {
     params: { path: { businessID: businessId, serviceID: serviceId } },
+  })
+  return data
+}
+
+export async function uploadServiceImage(businessId: string, serviceId: string, file: File) {
+  const { data } = await POST(URL_ADMIN_SERVICE_IMAGE, {
+    params: { path: { businessID: businessId, serviceID: serviceId } },
+    body: { file } as any,
   })
   return data
 }

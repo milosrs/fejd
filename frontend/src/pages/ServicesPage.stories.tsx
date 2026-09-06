@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react"
 import { ServicesPage } from "./ServicesPage"
-import { SalonFrame } from "../stories/salon"
+import { SalonFrame, mockOwnerMe } from "../stories/salon"
 
 const meta: Meta<typeof ServicesPage> = {
   title: "Salon/Services",
@@ -24,6 +24,14 @@ export const Default: Story = {
 export const Empty: Story = {
   render: () => (
     <SalonFrame services={[]}>
+      <ServicesPage />
+    </SalonFrame>
+  ),
+}
+
+export const Editing: Story = {
+  render: () => (
+    <SalonFrame authenticated me={mockOwnerMe} initialEditing>
       <ServicesPage />
     </SalonFrame>
   ),

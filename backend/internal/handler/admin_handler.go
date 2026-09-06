@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -352,6 +353,11 @@ func (h *AdminHandler) DeleteService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.serviceStore.Delete(r.Context(), serviceID, businessID); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23503" {
+			writeError(w, http.StatusConflict, "service has appointments and cannot be deleted")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
