@@ -19,16 +19,16 @@ export type Service = Schemas["dto.Service"]
 export type Employee = Schemas["dto.BusinessUser"]
 export type TimeSlot = Schemas["dto.TimeSlot"]
 
-export function useServices(businessId: string) {
+export function useServices(slug: string) {
   return useQuery({
-    queryKey: ["services", businessId],
+    queryKey: ["services", slug],
     queryFn: async () => {
       const { data } = await GET(URL_BUSINESS_SERVICES, {
-        params: { path: { slug: businessId } },
+        params: { path: { slug } },
       })
       return data
     },
-    enabled: !!businessId,
+    enabled: !!slug,
   })
 }
 

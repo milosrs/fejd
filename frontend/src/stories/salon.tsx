@@ -7,11 +7,13 @@ import { I18nProvider } from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
 import type { Salon } from "../hooks/useSalon"
 import type { Me } from "../hooks/useMe"
+import type { Service } from "../hooks/useApi"
 import type { Section } from "../lib/sections"
 
 const mockI18nEn = {
   "landing.empty.title": "This page isn't set up yet",
   "landing.empty.body": "The salon hasn't published any content yet. Check back soon.",
+  "services.book.requiresAuth": "To book, you have to register.",
 }
 
 export const mockSalon: Salon = {
@@ -175,6 +177,7 @@ interface SalonProvidersProps {
   me?: Me | null
   authenticated?: boolean
   sections?: Section[]
+  services?: Service[]
   children: React.ReactNode
 }
 
@@ -184,6 +187,7 @@ export function SalonProviders({
   me = null,
   authenticated = false,
   sections = [],
+  services = mockSalon.services,
   children,
 }: SalonProvidersProps) {
   const queryClient = useMemo(() => {
@@ -192,12 +196,13 @@ export function SalonProviders({
     })
     qc.setQueryData(["salon", slug], salon)
     qc.setQueryData(["sections", slug], sections)
+    qc.setQueryData(["services", slug], services)
     qc.setQueryData(["i18n", "en"], mockI18nEn)
     if (me) {
       qc.setQueryData(["me"], me)
     }
     return qc
-  }, [slug, salon, me, sections])
+  }, [slug, salon, me, sections, services])
 
   useLayoutEffect(() => {
     useAuthStore.setState({
