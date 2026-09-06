@@ -31,6 +31,39 @@ type BusinessMembership struct {
 	Role       string
 }
 
+// Section is a landing-page content block. Content is a locale-keyed JSONB
+// object ({ "<locale>": { ...type-specific fields } }) so it is
+// internationalization-ready without schema changes.
+type Section struct {
+	ID        uuid.UUID
+	PageID    uuid.UUID
+	Type      string
+	Content   []byte
+	Position  int
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
+// Page is a named page of a business's public site (e.g. "landing").
+type Page struct {
+	ID         uuid.UUID
+	BusinessID uuid.UUID
+	Name       string
+	Position   int
+	CreatedAt  time.Time
+	UpdatedAt  time.Time
+}
+
+// Translation is a single app UI label in a given locale.
+type Translation struct {
+	ID        uuid.UUID
+	Key       string
+	Locale    string
+	Value     string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}
+
 type Service struct {
 	ID              uuid.UUID
 	BusinessID      uuid.UUID

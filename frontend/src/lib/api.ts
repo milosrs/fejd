@@ -34,6 +34,8 @@ const apiClient = createClient<paths>({
   headers: { "Content-Type": "application/json" },
 })
 
+export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
+
 apiClient.use(authMiddleware)
 apiClient.use(errorMiddleware)
 

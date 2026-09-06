@@ -69,10 +69,21 @@ type MessageResponse struct {
 	Message string `json:"message" validate:"required" example:"operation complete"`
 }
 
+// Translations is a flat map of translation key -> localized value.
+type Translations map[string]string
+
 type BusinessResponse struct {
 	Business  dto.Business       `json:"business" validate:"required"`
 	Services  []dto.Service      `json:"services" validate:"required"`
 	Employees []dto.BusinessUser `json:"employees" validate:"required"`
+	Images    BusinessImages     `json:"images" validate:"required"`
+}
+
+// BusinessImages exposes the salon's public business images as URLs.
+type BusinessImages struct {
+	Hero       string `json:"hero,omitempty"`
+	Logo       string `json:"logo,omitempty"`
+	Background string `json:"background,omitempty"`
 }
 
 type SlotsResponse struct {

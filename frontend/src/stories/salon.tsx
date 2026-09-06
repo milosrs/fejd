@@ -3,9 +3,16 @@ import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "../components/theme-provider"
 import { SalonProvider } from "../context/SalonContext"
+import { I18nProvider } from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
 import type { Salon } from "../hooks/useSalon"
 import type { Me } from "../hooks/useMe"
+import type { Section } from "../lib/sections"
+
+const mockI18nEn = {
+  "landing.empty.title": "This page isn't set up yet",
+  "landing.empty.body": "The salon hasn't published any content yet. Check back soon.",
+}
 
 export const mockSalon: Salon = {
   business: {
@@ -62,7 +69,79 @@ export const mockSalon: Salon = {
       active: true,
     },
   ],
+  images: {
+    hero: "",
+    logo: "",
+    background: "",
+  },
 }
+
+export const mockSections: Section[] = [
+  {
+    id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+    page_id: "99999999-9999-4999-8999-999999999999",
+    type: "hero",
+    content: {
+      en: {
+        headline: "Sharp cuts, done right",
+        subheadline: "Book your next appointment in seconds.",
+        cta_text: "Book now",
+      },
+      rs: {
+        headline: "Oštre frizure, kako treba",
+        subheadline: "Zakažite sledeći termin za nekoliko sekundi.",
+        cta_text: "Zakaži sada",
+      },
+    },
+    position: 0,
+  },
+  {
+    id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+    page_id: "99999999-9999-4999-8999-999999999999",
+    type: "about",
+    content: {
+      en: {
+        heading: "About us",
+        body: "A neighbourhood barbershop run by people who care about the craft.",
+      },
+      rs: {
+        heading: "O nama",
+        body: "Kvartovska berbernica koju vode ljudi kojima je stalo do zanata.",
+      },
+    },
+    position: 1,
+  },
+  {
+    id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+    page_id: "99999999-9999-4999-8999-999999999999",
+    type: "gallery",
+    content: {
+      en: {
+        heading: "Our work",
+        image_urls: [
+          "https://picsum.photos/seed/salon-1/400",
+          "https://picsum.photos/seed/salon-2/400",
+          "https://picsum.photos/seed/salon-3/400",
+        ],
+      },
+    },
+    position: 2,
+  },
+  {
+    id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd",
+    page_id: "99999999-9999-4999-8999-999999999999",
+    type: "contact",
+    content: {
+      en: {
+        heading: "Visit us",
+        phone: "+46 8 123 45 67",
+        email: "hello@fejd.example",
+        address: "Main Street 1, Stockholm",
+      },
+    },
+    position: 3,
+  },
+]
 
 export const mockOwnerMe: Me = {
   approval_status: "approved",
@@ -95,6 +174,7 @@ interface SalonProvidersProps {
   salon?: Salon
   me?: Me | null
   authenticated?: boolean
+  sections?: Section[]
   children: React.ReactNode
 }
 
@@ -103,6 +183,7 @@ export function SalonProviders({
   salon = mockSalon,
   me = null,
   authenticated = false,
+  sections = [],
   children,
 }: SalonProvidersProps) {
   const queryClient = useMemo(() => {
@@ -110,11 +191,13 @@ export function SalonProviders({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     })
     qc.setQueryData(["salon", slug], salon)
+    qc.setQueryData(["sections", slug], sections)
+    qc.setQueryData(["i18n", "en"], mockI18nEn)
     if (me) {
       qc.setQueryData(["me"], me)
     }
     return qc
-  }, [slug, salon, me])
+  }, [slug, salon, me, sections])
 
   useLayoutEffect(() => {
     useAuthStore.setState({
@@ -136,7 +219,9 @@ export function SalonProviders({
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="storybook-theme">
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <I18nProvider>
+        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      </I18nProvider>
     </ThemeProvider>
   )
 }

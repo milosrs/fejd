@@ -26,6 +26,7 @@ func newRouter(
 	sseHandler *handler.SSEHandler,
 	imageHandler *handler.ImageHandler,
 	meHandler *handler.MeHandler,
+	i18nHandler *handler.I18nHandler,
 	buStore *store.BusinessUserStore,
 ) *chi.Mux {
 	r := chi.NewRouter()
@@ -57,8 +58,11 @@ func newRouter(
 			r.Get("/", businessHandler.GetBusiness)
 			r.Get("/services", businessHandler.GetServices)
 			r.Get("/employees", businessHandler.GetEmployees)
+			r.Get("/sections", businessHandler.GetSections)
 			r.Get("/slots", businessHandler.GetAvailableSlots)
 		})
+
+		r.Get("/i18n/{locale}", i18nHandler.GetTranslations)
 
 		// GET /api/me is exempt from approval so a pending user can read their
 		// own status; POST /api/me/business is gated.

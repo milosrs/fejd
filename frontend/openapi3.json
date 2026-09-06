@@ -1332,6 +1332,51 @@
                 }
             }
         },
+        "/api/business/{slug}/sections": {
+            "get": {
+                "description": "Returns the salon's landing page sections ordered by position.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "List landing page sections",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/dto.Section"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/business/{slug}/services": {
             "get": {
                 "description": "Returns all active services for a business.",
@@ -1445,6 +1490,48 @@
                     },
                     "404": {
                         "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/i18n/{locale}": {
+            "get": {
+                "description": "Returns the app's UI labels as a flat key/value object for the given locale.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "List UI labels for a locale",
+                "parameters": [
+                    {
+                        "description": "Locale code (e.g. en, rs)",
+                        "name": "locale",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.Translations"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1967,6 +2054,33 @@
                     }
                 }
             },
+            "dto.Section": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "page_id",
+                    "position",
+                    "type"
+                ],
+                "properties": {
+                    "content": {
+                        "description": "Content is a locale-keyed JSON object.",
+                        "type": "object"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "page_id": {
+                        "type": "string"
+                    },
+                    "position": {
+                        "type": "integer"
+                    },
+                    "type": {
+                        "type": "string"
+                    }
+                }
+            },
             "dto.Service": {
                 "type": "object",
                 "required": [
@@ -2093,11 +2207,26 @@
                     }
                 }
             },
+            "handler.BusinessImages": {
+                "type": "object",
+                "properties": {
+                    "background": {
+                        "type": "string"
+                    },
+                    "hero": {
+                        "type": "string"
+                    },
+                    "logo": {
+                        "type": "string"
+                    }
+                }
+            },
             "handler.BusinessResponse": {
                 "type": "object",
                 "required": [
                     "business",
                     "employees",
+                    "images",
                     "services"
                 ],
                 "properties": {
@@ -2109,6 +2238,9 @@
                         "items": {
                             "$ref": "#/components/schemas/dto.BusinessUser"
                         }
+                    },
+                    "images": {
+                        "$ref": "#/components/schemas/handler.BusinessImages"
                     },
                     "services": {
                         "type": "array",
@@ -2274,6 +2406,12 @@
                             "$ref": "#/components/schemas/dto.TimeSlot"
                         }
                     }
+                }
+            },
+            "handler.Translations": {
+                "type": "object",
+                "additionalProperties": {
+                    "type": "string"
                 }
             },
             "handler.WorkingHoursInput": {

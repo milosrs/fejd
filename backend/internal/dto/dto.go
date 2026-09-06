@@ -1,6 +1,7 @@
 package dto
 
 import (
+	"encoding/json"
 	"time"
 
 	"github.com/google/uuid"
@@ -49,6 +50,17 @@ type Service struct {
 	Description     string     `json:"description,omitempty"`
 	PictureID       *uuid.UUID `json:"picture_id,omitempty"`
 	CreatedAt       time.Time  `json:"created_at" validate:"required"`
+}
+
+// Section is a landing-page content block. Content is a locale-keyed object
+// ({ "<locale>": { ...type-specific fields } }).
+type Section struct {
+	ID       uuid.UUID `json:"id" validate:"required"`
+	PageID   uuid.UUID `json:"page_id" validate:"required"`
+	Type     string    `json:"type" validate:"required"`
+	// Content is a locale-keyed JSON object.
+	Content  json.RawMessage `json:"content" validate:"required" swaggertype:"object"`
+	Position int             `json:"position" validate:"required"`
 }
 
 type WorkingHours struct {

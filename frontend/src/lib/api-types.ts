@@ -1204,6 +1204,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/business/{slug}/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List landing page sections
+         * @description Returns the salon's landing page sections ordered by position.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business slug */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Section"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/business/{slug}/services": {
         parameters: {
             query?: never;
@@ -1305,6 +1356,57 @@ export interface paths {
                 };
                 /** @description Not Found */
                 404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/i18n/{locale}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List UI labels for a locale
+         * @description Returns the app's UI labels as a flat key/value object for the given locale.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Locale code (e.g. en, rs) */
+                    locale: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.Translations"];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -1683,6 +1785,14 @@ export interface components {
             role: string;
             slug: string;
         };
+        "dto.Section": {
+            /** @description Content is a locale-keyed JSON object. */
+            content?: Record<string, never>;
+            id: string;
+            page_id: string;
+            position: number;
+            type: string;
+        };
         "dto.Service": {
             active: boolean;
             business_id: string;
@@ -1718,9 +1828,15 @@ export interface components {
             /** @example My Salon */
             name: string;
         };
+        "handler.BusinessImages": {
+            background?: string;
+            hero?: string;
+            logo?: string;
+        };
         "handler.BusinessResponse": {
             business: components["schemas"]["dto.Business"];
             employees: components["schemas"]["dto.BusinessUser"][];
+            images: components["schemas"]["handler.BusinessImages"];
             services: components["schemas"]["dto.Service"][];
         };
         "handler.CreateAppointmentRequest": {
@@ -1778,6 +1894,9 @@ export interface components {
             /** @example 2024-01-01 */
             date: string;
             slots: components["schemas"]["dto.TimeSlot"][];
+        };
+        "handler.Translations": {
+            [key: string]: string;
         };
         "handler.WorkingHoursInput": {
             /** @example 1 */

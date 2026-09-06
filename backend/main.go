@@ -74,6 +74,9 @@ func main() {
 	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
 	imageStore := store.NewImageStore(pool)
 	imageLinkStore := store.NewImageLinkStore(pool)
+	sectionStore := store.NewSectionStore(pool)
+	pageStore := store.NewPageStore(pool)
+	translationStore := store.NewTranslationStore(pool)
 
 	var imageStorage storage.ImageStorage
 	if cfg.ImageStorage.Backend != config.BackendPostgres {
@@ -98,7 +101,7 @@ func main() {
 	)
 
 	businessHandler := handler.NewBusinessHandler(
-		businessStore, buStore, serviceStore, slotService,
+		businessStore, buStore, serviceStore, pageStore, sectionStore, imageLinkStore, slotService,
 	)
 
 	appointmentHandler := handler.NewAppointmentHandler(
@@ -114,6 +117,8 @@ func main() {
 	imageHandler := handler.NewImageHandler(imageService, serviceStore, buStore)
 
 	meHandler := handler.NewMeHandler(businessStore, buStore, pool)
+
+	i18nHandler := handler.NewI18nHandler(translationStore)
 
 	jobCtx, jobCancel := context.WithCancel(context.Background())
 	defer jobCancel()
@@ -138,6 +143,7 @@ func main() {
 		sseHandler,
 		imageHandler,
 		meHandler,
+		i18nHandler,
 		buStore,
 	)
 

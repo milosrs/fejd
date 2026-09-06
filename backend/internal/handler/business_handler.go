@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
@@ -14,23 +15,32 @@ import (
 )
 
 type BusinessHandler struct {
-	businessStore *store.BusinessStore
-	buStore       *store.BusinessUserStore
-	serviceStore  *store.ServiceStore
-	slotService   *service.SlotService
+	businessStore  *store.BusinessStore
+	buStore        *store.BusinessUserStore
+	serviceStore   *store.ServiceStore
+	pageStore      *store.PageStore
+	sectionStore   *store.SectionStore
+	imageLinkStore *store.ImageLinkStore
+	slotService    *service.SlotService
 }
 
 func NewBusinessHandler(
 	businessStore *store.BusinessStore,
 	buStore *store.BusinessUserStore,
 	serviceStore *store.ServiceStore,
+	pageStore *store.PageStore,
+	sectionStore *store.SectionStore,
+	imageLinkStore *store.ImageLinkStore,
 	slotService *service.SlotService,
 ) *BusinessHandler {
 	return &BusinessHandler{
-		businessStore: businessStore,
-		buStore:       buStore,
-		serviceStore:  serviceStore,
-		slotService:   slotService,
+		businessStore:  businessStore,
+		buStore:        buStore,
+		serviceStore:   serviceStore,
+		pageStore:      pageStore,
+		sectionStore:   sectionStore,
+		imageLinkStore: imageLinkStore,
+		slotService:    slotService,
 	}
 }
 
@@ -53,12 +63,70 @@ func (h *BusinessHandler) GetBusiness(w http.ResponseWriter, r *http.Request) {
 
 	services, _ := h.serviceStore.ListByBusiness(r.Context(), b.ID)
 	employees, _ := h.buStore.ListEmployeesByBusiness(r.Context(), b.ID)
+	images := h.businessImages(r.Context(), b.ID)
 
 	writeJSON(w, http.StatusOK, BusinessResponse{
 		Business:  dto.BusinessFromModel(*b),
 		Services:  dto.ServicesFromModels(services),
 		Employees: dto.BusinessUsersFromModels(employees),
+		Images:    images,
 	})
+}
+
+func (h *BusinessHandler) businessImages(ctx context.Context, businessID uuid.UUID) BusinessImages {
+	links, err := h.imageLinkStore.ListByEntity(ctx, "business", businessID)
+	if err != nil {
+		return BusinessImages{}
+	}
+
+	var images BusinessImages
+	for _, l := range links {
+		url := "/api/images/" + l.ImageID.String()
+		switch l.Purpose {
+		case "hero":
+			images.Hero = url
+		case "logo":
+			images.Logo = url
+		case "background":
+			images.Background = url
+		}
+	}
+	return images
+}
+
+// GetSections godoc
+// @Summary      List landing page sections
+// @Description  Returns the salon's landing page sections ordered by position.
+// @Tags         public
+// @Produce      json
+// @Param        slug path string true "Business slug"
+// @Success      200 {array} dto.Section
+// @Failure      404 {object} ErrorResponse
+// @Router       /api/business/{slug}/sections [get]
+func (h *BusinessHandler) GetSections(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	page, err := h.pageStore.GetByBusinessAndName(r.Context(), b.ID, store.LandingPageName)
+	if err != nil {
+		writeJSON(w, http.StatusOK, dto.SectionsFromModels(nil))
+		return
+	}
+
+	sections, err := h.sectionStore.ListByPage(r.Context(), page.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get sections")
+		return
+	}
+	if sections == nil {
+		sections = []models.Section{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.SectionsFromModels(sections))
 }
 
 // GetServices godoc

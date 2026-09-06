@@ -1,6 +1,10 @@
 package dto
 
-import "fejd-backend/internal/models"
+import (
+	"encoding/json"
+
+	"fejd-backend/internal/models"
+)
 
 func BusinessFromModel(m models.Business) Business {
 	return Business{
@@ -38,6 +42,28 @@ func BusinessUserFromModel(m models.BusinessUser) BusinessUser {
 		DisplayName: m.DisplayName,
 		Active:      m.Active,
 	}
+}
+
+func SectionFromModel(m models.Section) Section {
+	content := json.RawMessage(m.Content)
+	if len(content) == 0 {
+		content = json.RawMessage(`{}`)
+	}
+	return Section{
+		ID:       m.ID,
+		PageID:   m.PageID,
+		Type:     m.Type,
+		Content:  content,
+		Position: m.Position,
+	}
+}
+
+func SectionsFromModels(ms []models.Section) []Section {
+	out := make([]Section, len(ms))
+	for i, m := range ms {
+		out[i] = SectionFromModel(m)
+	}
+	return out
 }
 
 func ServiceFromModel(m models.Service) Service {
