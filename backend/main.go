@@ -109,7 +109,7 @@ func main() {
 	)
 
 	adminHandler := handler.NewAdminHandler(
-		businessStore, buStore, serviceStore, workingHoursService, appointmentStore, slotService, imageService,
+		businessStore, buStore, serviceStore, pageStore, sectionStore, workingHoursService, appointmentStore, slotService, imageService, pool,
 	)
 
 	sseHandler := handler.NewSSEHandler(hub, businessStore)

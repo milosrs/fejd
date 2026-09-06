@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"time"
 
 	"fejd-backend/internal/dto"
@@ -63,6 +64,20 @@ type ErrorResponse struct {
 
 type BusinessCreateInput struct {
 	Name string `json:"name" validate:"required" example:"My Salon"`
+}
+
+type CreateSectionRequest struct {
+	Type     string          `json:"type" validate:"required" example:"hero"`
+	Content  json.RawMessage `json:"content" swaggertype:"object"`
+	Position int             `json:"position,omitempty"`
+}
+
+type UpdateSectionRequest struct {
+	Content json.RawMessage `json:"content" validate:"required" swaggertype:"object"`
+}
+
+type ReorderSectionsRequest struct {
+	SectionIDs []uuid.UUID `json:"section_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
 
 type MessageResponse struct {

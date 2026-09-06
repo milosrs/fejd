@@ -38,3 +38,20 @@ func (s *PageStore) GetByBusinessAndName(ctx context.Context, businessID uuid.UU
 	}
 	return &p, nil
 }
+
+func (s *PageStore) Create(ctx context.Context, q Querier, p *models.Page) error {
+	if p.ID == uuid.Nil {
+		p.ID = uuid.New()
+	}
+	sql, args, err := psql.
+		Insert("pages").
+		Columns("id", "business_id", "name", "position").
+		Values(p.ID, p.BusinessID, p.Name, p.Position).
+		Suffix("RETURNING created_at, updated_at").
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	return q.QueryRow(ctx, sql, args...).Scan(&p.CreatedAt, &p.UpdatedAt)
+}

@@ -791,6 +791,267 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/business/{businessID}/sections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Add a landing page section
+         * @description Creates a new section on the salon's landing page, creating the page if needed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Section */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.CreateSectionRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Section"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/sections/reorder": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Reorder landing page sections
+         * @description Sets the position of every landing page section from the given ordered list of section IDs.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Ordered section IDs */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.ReorderSectionsRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Section"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/sections/{sectionID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update a landing page section's content
+         * @description Replaces the content JSON of a section on the salon's landing page.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Section UUID */
+                    sectionID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Section content */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.UpdateSectionRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Section"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        /**
+         * Remove a landing page section
+         * @description Deletes a section from the salon's landing page.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Section UUID */
+                    sectionID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/business/{businessID}/services": {
         parameters: {
             query?: never;
@@ -1787,7 +2048,7 @@ export interface components {
         };
         "dto.Section": {
             /** @description Content is a locale-keyed JSON object. */
-            content?: Record<string, never>;
+            content: Record<string, never>;
             id: string;
             page_id: string;
             position: number;
@@ -1851,6 +2112,12 @@ export interface components {
             /** @example 2024-01-01T09:00:00Z */
             start_time: string;
         };
+        "handler.CreateSectionRequest": {
+            content?: Record<string, never>;
+            position?: number;
+            /** @example hero */
+            type: string;
+        };
         "handler.CreateUnavailabilityRequest": {
             /** @example 2024-01-01T17:00:00Z */
             end_time: string;
@@ -1866,6 +2133,14 @@ export interface components {
         "handler.MessageResponse": {
             /** @example operation complete */
             message: string;
+        };
+        "handler.ReorderSectionsRequest": {
+            /**
+             * @example [
+             *       "550e8400-e29b-41d4-a716-446655440000"
+             *     ]
+             */
+            section_ids: string[];
         };
         "handler.ServiceInput": {
             /** @example true */
@@ -1897,6 +2172,9 @@ export interface components {
         };
         "handler.Translations": {
             [key: string]: string;
+        };
+        "handler.UpdateSectionRequest": {
+            content: Record<string, never>;
         };
         "handler.WorkingHoursInput": {
             /** @example 1 */

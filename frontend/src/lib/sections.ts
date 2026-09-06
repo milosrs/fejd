@@ -47,3 +47,19 @@ export const KNOWN_SECTION_TYPES: SectionType[] = [
 export function isSectionType(value: string): value is SectionType {
   return (KNOWN_SECTION_TYPES as string[]).includes(value)
 }
+
+export function getLocalizedContent<T extends object>(
+  content: Record<string, unknown>,
+  locale: string,
+): T {
+  const c = content[locale]
+  return (c && typeof c === "object" ? c : {}) as T
+}
+
+export function setLocalizedContent(
+  content: Record<string, unknown>,
+  locale: string,
+  value: unknown,
+): Record<string, unknown> {
+  return { ...content, [locale]: value }
+}

@@ -1,4 +1,4 @@
-import { createContext, useContext } from "react"
+import { createContext, useContext, useState } from "react"
 import { useParams } from "react-router-dom"
 import { useSalon, type Salon } from "../hooks/useSalon"
 import { useMe } from "../hooks/useMe"
@@ -10,16 +10,27 @@ interface SalonContextValue {
   salon: Salon | undefined
   isLoading: boolean
   error: unknown
+  editing: boolean
+  setEditing: (editing: boolean) => void
 }
 
 const SalonContext = createContext<SalonContextValue | null>(null)
 
-export function SalonProvider({ children }: { children: React.ReactNode }) {
+export function SalonProvider({
+  children,
+  initialEditing = false,
+}: {
+  children: React.ReactNode
+  initialEditing?: boolean
+}) {
   const { slug = "" } = useParams<{ slug: string }>()
   const { data, isLoading, error } = useSalon(slug)
+  const [editing, setEditing] = useState(initialEditing)
 
   return (
-    <SalonContext.Provider value={{ slug, salon: data, isLoading, error }}>
+    <SalonContext.Provider
+      value={{ slug, salon: data, isLoading, error, editing, setEditing }}
+    >
       {children}
     </SalonContext.Provider>
   )

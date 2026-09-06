@@ -1,12 +1,10 @@
-import { useState } from "react"
 import { Link, NavLink, Outlet } from "react-router-dom"
 import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonContext"
 import { Button } from "./ui/button"
 
 function SalonShell() {
-  const { slug, salon, isLoading } = useSalonContext()
+  const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
   const isOwner = useIsOwner()
-  const [editing, setEditing] = useState(false)
 
   if (isLoading) {
     return (
@@ -60,7 +58,7 @@ function SalonShell() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setEditing((v) => !v)}
+              onClick={() => setEditing(!editing)}
             >
               {editing ? "Done" : "Edit"}
             </Button>
@@ -75,9 +73,9 @@ function SalonShell() {
   )
 }
 
-export function SalonLayout() {
+export function SalonLayout({ initialEditing }: { initialEditing?: boolean }) {
   return (
-    <SalonProvider>
+    <SalonProvider initialEditing={initialEditing}>
       <SalonShell />
     </SalonProvider>
   )

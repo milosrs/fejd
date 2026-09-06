@@ -226,15 +226,20 @@ export function SalonProviders({
   )
 }
 
-interface SalonFrameProps extends SalonProvidersProps {}
+interface SalonFrameProps extends SalonProvidersProps {
+  initialEditing?: boolean
+}
 
-export function SalonFrame({ children, ...props }: SalonFrameProps) {
+export function SalonFrame({ children, initialEditing, ...props }: SalonFrameProps) {
   const { slug = "fejd" } = props
   return (
     <SalonProviders {...props}>
       <MemoryRouter initialEntries={[`/${slug}`]}>
         <Routes>
-          <Route path="/:slug" element={<SalonProvider>{children}</SalonProvider>} />
+          <Route
+            path="/:slug"
+            element={<SalonProvider initialEditing={initialEditing}>{children}</SalonProvider>}
+          />
         </Routes>
       </MemoryRouter>
     </SalonProviders>

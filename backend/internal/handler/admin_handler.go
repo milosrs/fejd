@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fejd-backend/internal/db"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
@@ -12,6 +13,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 var (
@@ -24,29 +27,38 @@ type AdminHandler struct {
 	businessStore       *store.BusinessStore
 	buStore             *store.BusinessUserStore
 	serviceStore        *store.ServiceStore
+	pageStore           *store.PageStore
+	sectionStore        *store.SectionStore
 	workingHoursService *service.WorkingHoursService
 	appointmentStore    *store.AppointmentStore
 	slotService         *service.SlotService
 	imageService        *service.ImageService
+	pool                *pgxpool.Pool
 }
 
 func NewAdminHandler(
 	businessStore *store.BusinessStore,
 	buStore *store.BusinessUserStore,
 	serviceStore *store.ServiceStore,
+	pageStore *store.PageStore,
+	sectionStore *store.SectionStore,
 	workingHoursService *service.WorkingHoursService,
 	appointmentStore *store.AppointmentStore,
 	slotService *service.SlotService,
 	imageService *service.ImageService,
+	pool *pgxpool.Pool,
 ) *AdminHandler {
 	return &AdminHandler{
 		businessStore:       businessStore,
 		buStore:             buStore,
 		serviceStore:        serviceStore,
+		pageStore:           pageStore,
+		sectionStore:        sectionStore,
 		workingHoursService: workingHoursService,
 		appointmentStore:    appointmentStore,
 		slotService:         slotService,
 		imageService:        imageService,
+		pool:                pool,
 	}
 }
 
@@ -540,4 +552,227 @@ func (h *AdminHandler) DeleteUnavailability(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeJSON(w, http.StatusOK, MessageResponse{Message: "unavailability deleted"})
+}
+
+// CreateSection godoc
+// @Summary      Add a landing page section
+// @Description  Creates a new section on the salon's landing page, creating the page if needed.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body CreateSectionRequest true "Section"
+// @Success      201 {object} dto.Section
+// @Failure      400 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/sections [post]
+func (h *AdminHandler) CreateSection(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	var body CreateSectionRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+	if !models.IsValidSectionType(body.Type) {
+		writeError(w, http.StatusBadRequest, "invalid section type")
+		return
+	}
+
+	content := body.Content
+	if len(content) == 0 {
+		content = json.RawMessage(`{}`)
+	}
+
+	page, err := h.ensureLandingPage(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to load landing page")
+		return
+	}
+
+	sections, err := h.sectionStore.ListByPage(r.Context(), page.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list sections")
+		return
+	}
+
+	position := body.Position
+	if position == 0 {
+		position = len(sections)
+	}
+
+	section := &models.Section{
+		PageID:   page.ID,
+		Type:     body.Type,
+		Content:  []byte(content),
+		Position: position,
+	}
+	if err := h.sectionStore.Create(r.Context(), h.pool, section); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to create section")
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, dto.SectionFromModel(*section))
+}
+
+// UpdateSection godoc
+// @Summary      Update a landing page section's content
+// @Description  Replaces the content JSON of a section on the salon's landing page.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        sectionID path string true "Section UUID"
+// @Param        body body UpdateSectionRequest true "Section content"
+// @Success      200 {object} dto.Section
+// @Failure      400 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/sections/{sectionID} [put]
+func (h *AdminHandler) UpdateSection(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	sectionID, err := uuid.Parse(chi.URLParam(r, "sectionID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid section ID")
+		return
+	}
+
+	var body UpdateSectionRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	section, err := h.ownedSection(r.Context(), businessID, sectionID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "section not found")
+		return
+	}
+
+	if err := h.sectionStore.UpdateContent(r.Context(), h.pool, sectionID, []byte(body.Content)); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to update section")
+		return
+	}
+	section.Content = []byte(body.Content)
+
+	writeJSON(w, http.StatusOK, dto.SectionFromModel(*section))
+}
+
+// DeleteSection godoc
+// @Summary      Remove a landing page section
+// @Description  Deletes a section from the salon's landing page.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        sectionID path string true "Section UUID"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/sections/{sectionID} [delete]
+func (h *AdminHandler) DeleteSection(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	sectionID, err := uuid.Parse(chi.URLParam(r, "sectionID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid section ID")
+		return
+	}
+
+	if _, err := h.ownedSection(r.Context(), businessID, sectionID); err != nil {
+		writeError(w, http.StatusNotFound, "section not found")
+		return
+	}
+
+	if err := h.sectionStore.Delete(r.Context(), h.pool, sectionID); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to delete section")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "section deleted"})
+}
+
+// ReorderSections godoc
+// @Summary      Reorder landing page sections
+// @Description  Sets the position of every landing page section from the given ordered list of section IDs.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body ReorderSectionsRequest true "Ordered section IDs"
+// @Success      200 {array} dto.Section
+// @Failure      400 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/sections/reorder [put]
+func (h *AdminHandler) ReorderSections(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	var body ReorderSectionsRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	page, err := h.pageStore.GetByBusinessAndName(r.Context(), businessID, store.LandingPageName)
+	if err != nil {
+		writeJSON(w, http.StatusOK, dto.SectionsFromModels(nil))
+		return
+	}
+
+	owned, err := h.sectionStore.ListByPage(r.Context(), page.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list sections")
+		return
+	}
+	ownedIDs := make(map[uuid.UUID]bool, len(owned))
+	for _, s := range owned {
+		ownedIDs[s.ID] = true
+	}
+	for _, id := range body.SectionIDs {
+		if !ownedIDs[id] {
+			writeError(w, http.StatusBadRequest, "section does not belong to this business")
+			return
+		}
+	}
+
+	err = db.WithTx(r.Context(), h.pool, func(tx pgx.Tx) error {
+		for i, id := range body.SectionIDs {
+			if err := h.sectionStore.UpdatePosition(r.Context(), tx, id, i); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to reorder sections")
+		return
+	}
+
+	sections, err := h.sectionStore.ListByPage(r.Context(), page.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list sections")
+		return
+	}
+	writeJSON(w, http.StatusOK, dto.SectionsFromModels(sections))
 }
