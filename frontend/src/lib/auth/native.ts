@@ -206,6 +206,15 @@ export const nativeAdapter: AuthAdapter = {
     return accessToken ?? undefined
   },
 
+  async refresh() {
+    try {
+      await refreshTokens()
+      return true
+    } catch {
+      return false
+    }
+  },
+
   getUserInfo() {
     return userInfo
   },

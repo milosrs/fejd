@@ -17,9 +17,15 @@ const authMiddleware: Middleware = {
 const errorMiddleware: Middleware = {
   async onResponse({ response }) {
     if (response.status === 401) {
-      console.warn("[api] 401 from", response.url, "- re-authenticating")
-      useAuthStore.setState({ authenticated: false, userInfo: null, roles: [] })
-      auth.login().catch(() => {})
+      // A 401 usually means a stale token, not a dead session: refresh it and
+      // let the query retry with the fresh token. Only fall back to a full
+      // login redirect when the refresh fails, which terminates the loop.
+      const refreshed = await auth.refresh().catch(() => false)
+      if (!refreshed) {
+        console.warn("[api] 401 from", response.url, "- session expired, re-authenticating")
+        useAuthStore.setState({ authenticated: false, userInfo: null, roles: [] })
+        auth.login().catch(() => {})
+      }
     }
     if (!response.ok) {
       const body = await response.clone().json().catch(() => undefined)

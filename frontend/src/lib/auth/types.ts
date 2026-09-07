@@ -16,6 +16,8 @@ export interface AuthAdapter {
   logout(): Promise<void>
   isAuthenticated(): boolean
   getToken(): Promise<string | undefined>
+  /** Force a token refresh; resolves to whether a valid token is present. */
+  refresh(): Promise<boolean>
   getUserInfo(): AuthUserInfo | null
   getRoles(): string[]
   /** Subscribe to auth-state changes; returns an unsubscribe function. */
