@@ -21,6 +21,14 @@ type Claims struct {
 	ApprovalStatus string              `json:"approval_status"`
 }
 
+// Keycloak realm roles that gate permissions. Ownership is separate: it lives
+// in the database (business_users.role='admin').
+const (
+	RoleOwner    = "Owner"
+	RoleEmployee = "Employee"
+	RoleCustomer = "Customer"
+)
+
 type ContextKey string
 
 const (

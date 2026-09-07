@@ -6,7 +6,7 @@ export interface OnboardingState {
   hasSalon: boolean
   status: "idle" | "loading" | "ready"
   fetchMe: () => Promise<void>
-  createBusiness: (name: string) => Promise<void>
+  createBusiness: (name: string) => Promise<string | undefined>
   reset: () => void
 }
 
@@ -29,8 +29,9 @@ export const useOnboardingStore = create<OnboardingState>((set) => ({
     }
   },
   createBusiness: async (name: string) => {
-    await POST("/api/me/business", { body: { name } })
+    const { data } = await POST("/api/me/business", { body: { name } })
     set({ hasSalon: true })
+    return data?.slug
   },
   reset: () => set({ approvalStatus: null, hasSalon: false, status: "idle" }),
 }))

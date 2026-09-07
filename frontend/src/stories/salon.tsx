@@ -199,6 +199,7 @@ interface SalonProvidersProps {
   salon?: Salon
   me?: Me | null
   authenticated?: boolean
+  roles?: string[]
   sections?: Section[]
   services?: Service[]
   employees?: Employee[]
@@ -210,6 +211,7 @@ export function SalonProviders({
   salon = mockSalon,
   me = null,
   authenticated = false,
+  roles = ["Owner"],
   sections = [],
   services = mockSalon.services,
   employees = mockSalon.employees,
@@ -237,7 +239,7 @@ export function SalonProviders({
       userInfo: authenticated
         ? { sub: "user-1", email: "owner@example.com", name: "Owner" }
         : null,
-      roles: [],
+      roles: authenticated ? roles : [],
     })
     useBookingStore.getState().reset()
     return () =>
@@ -247,7 +249,7 @@ export function SalonProviders({
         userInfo: null,
         roles: [],
       })
-  }, [authenticated])
+  }, [authenticated, roles])
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="storybook-theme">

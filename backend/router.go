@@ -19,7 +19,7 @@ import (
 // functions so routing can be tested without a live Keycloak JWKS.
 func newRouter(
 	cfg *config.Config,
-	authenticate, optionalAuthenticate, requireApproved func(http.Handler) http.Handler,
+	authenticate, optionalAuthenticate, requireApproved, requireOwner func(http.Handler) http.Handler,
 	businessHandler *handler.BusinessHandler,
 	appointmentHandler *handler.AppointmentHandler,
 	adminHandler *handler.AdminHandler,
@@ -96,6 +96,7 @@ func newRouter(
 			r.Use(requireApproved)
 
 			r.Route("/admin/business/{businessID}", func(r chi.Router) {
+				r.Use(requireOwner)
 				r.Use(customMiddleware.RequireBusinessAdmin(buStore))
 
 				r.Post("/employees", adminHandler.CreateEmployee)

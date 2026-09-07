@@ -86,6 +86,33 @@
         "clientRole": false,
         "containerId": "7a3cb392-c1c7-4702-82fc-8c26c6db0ba7",
         "attributes": {}
+      },
+      {
+        "id": "a1b2c3d4-0001-4000-8000-000000000001",
+        "name": "Owner",
+        "description": "Salon owner — creates and manages a salon and its employees.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "7a3cb392-c1c7-4702-82fc-8c26c6db0ba7",
+        "attributes": {}
+      },
+      {
+        "id": "a1b2c3d4-0002-4000-8000-000000000002",
+        "name": "Employee",
+        "description": "Salon employee — can change their own profile picture.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "7a3cb392-c1c7-4702-82fc-8c26c6db0ba7",
+        "attributes": {}
+      },
+      {
+        "id": "a1b2c3d4-0003-4000-8000-000000000003",
+        "name": "Customer",
+        "description": "Customer — views and books services only.",
+        "composite": false,
+        "clientRole": false,
+        "containerId": "7a3cb392-c1c7-4702-82fc-8c26c6db0ba7",
+        "attributes": {}
       }
     ],
     "client": {

@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/http"
 
+	"fejd-backend/auth"
 	"fejd-backend/internal/authutil"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
@@ -157,7 +158,12 @@ func (h *ImageHandler) UploadEmployeeImage(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	if callerID != targetUserID {
+	if callerID == targetUserID {
+		if !authutil.HasRole(r, auth.RoleEmployee) && !authutil.HasRole(r, auth.RoleOwner) {
+			writeError(w, http.StatusForbidden, "employee role required")
+			return
+		}
+	} else {
 		isAdmin, err := h.businessUser.IsAdmin(r.Context(), businessID, callerID)
 		if err != nil || !isAdmin {
 			writeError(w, http.StatusForbidden, "forbidden")

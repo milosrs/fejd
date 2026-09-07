@@ -12,6 +12,7 @@ export interface AuthUserInfo {
 export interface AuthAdapter {
   init(): Promise<boolean>
   login(): Promise<void>
+  register(): Promise<void>
   logout(): Promise<void>
   isAuthenticated(): boolean
   getToken(): Promise<string | undefined>

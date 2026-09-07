@@ -21,12 +21,14 @@ type Story = StoryObj<typeof SalonLayout>
 function Shell({
   authenticated,
   me,
+  roles,
 }: {
   authenticated: boolean
   me?: typeof mockOwnerMe | null
+  roles?: string[]
 }) {
   return (
-    <SalonProviders authenticated={authenticated} me={me ?? null}>
+    <SalonProviders authenticated={authenticated} me={me ?? null} roles={roles}>
       <MemoryRouter initialEntries={["/fejd"]}>
         <Routes>
           <Route path="/:slug" element={<SalonLayout />}>
@@ -51,5 +53,5 @@ export const Owner: Story = {
 }
 
 export const Employee: Story = {
-  render: () => <Shell authenticated me={mockEmployeeMe} />,
+  render: () => <Shell authenticated me={mockEmployeeMe} roles={["Employee"]} />,
 }

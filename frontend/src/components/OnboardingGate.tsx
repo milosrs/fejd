@@ -1,4 +1,5 @@
 import { useOnboarding } from "#hooks/useOnboarding"
+import { CreateSalonForm } from "./CreateSalonForm"
 
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { gate, ready } = useOnboarding()
@@ -23,10 +24,10 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
   }
 
   if (gate === "setup") {
-    // TODO: replace with the real SalonSetupPage (name form -> createBusiness).
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background p-8">
         <p className="text-muted-foreground">Set up your salon to continue.</p>
+        <CreateSalonForm />
       </div>
     )
   }

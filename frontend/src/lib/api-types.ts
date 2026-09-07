@@ -1924,7 +1924,7 @@ export interface paths {
         put?: never;
         /**
          * Create the caller's salon
-         * @description Creates a business and the caller's owner (admin) row. Requires an approved account.
+         * @description Creates a business and the caller's owner (admin) row. Requires an approved account with the Owner role.
          */
         post: {
             parameters: {

@@ -3,7 +3,7 @@ import { useParams } from "react-router-dom"
 import { useSalon, type Salon } from "../hooks/useSalon"
 import { useMe } from "../hooks/useMe"
 import { useAuthStore } from "../stores/authStore"
-import { isOwnerOfBusiness } from "../lib/ownership"
+import { isOwnerOfBusiness, hasRole } from "../lib/ownership"
 
 interface SalonContextValue {
   slug: string
@@ -47,8 +47,9 @@ export function useSalonContext() {
 export function useIsOwner() {
   const { slug } = useSalonContext()
   const authenticated = useAuthStore((s) => s.authenticated)
+  const roles = useAuthStore((s) => s.roles)
   const { data: me } = useMe()
 
-  if (!authenticated) return false
+  if (!authenticated || !hasRole(roles, "Owner")) return false
   return isOwnerOfBusiness(me, slug)
 }

@@ -7,11 +7,19 @@ function parsedToken(): Record<string, any> | undefined {
 
 export const webAdapter: AuthAdapter = {
   async init() {
-    return keycloak.init({ onLoad: "login-required", pkceMethod: "S256" })
+    return keycloak.init({
+      onLoad: "check-sso",
+      pkceMethod: "S256",
+      silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+    })
   },
 
   async login() {
     await keycloak.login()
+  },
+
+  async register() {
+    await keycloak.register()
   },
 
   async logout() {

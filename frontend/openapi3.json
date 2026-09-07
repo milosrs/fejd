@@ -2079,7 +2079,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates a business and the caller's owner (admin) row. Requires an approved account.",
+                "description": "Creates a business and the caller's owner (admin) row. Requires an approved account with the Owner role.",
                 "tags": [
                     "me"
                 ],

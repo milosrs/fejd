@@ -170,6 +170,19 @@ export const nativeAdapter: AuthAdapter = {
     await Browser.open({ url: `${AUTH_URL}?${params.toString()}`, windowName: "_self" })
   },
 
+  async register() {
+    const registrationUrl =
+      `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/registrations?` +
+      new URLSearchParams({
+        client_id: CLIENT_ID,
+        redirect_uri: REDIRECT_URI,
+        response_type: "code",
+        scope: "openid profile email",
+      }).toString()
+
+    await Browser.open({ url: registrationUrl, windowName: "_self" })
+  },
+
   async logout() {
     accessToken = null
     refreshToken = null

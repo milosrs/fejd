@@ -33,6 +33,11 @@ func withUser(r *http.Request, userID, approvalStatus string) *http.Request {
 	return r.WithContext(ctx)
 }
 
+func withRoles(r *http.Request, roles ...string) *http.Request {
+	ctx := context.WithValue(r.Context(), auth.ContextKeyRoles, roles)
+	return r.WithContext(ctx)
+}
+
 func TestMeHandler_GetMe_NoSalon(t *testing.T) {
 	h, _, _, _ := newTestMeHandler(t)
 
@@ -115,7 +120,7 @@ func TestMeHandler_CreateBusiness_SlugCollision(t *testing.T) {
 	require.NoError(t, businessStore.Create(ctx, pool, &models.Business{Name: "Existing", Slug: "my-salon"}))
 
 	body := `{"name":"My Salon"}`
-	req := withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "user-1", "approved")
+	req := withRoles(withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "user-1", "approved"), auth.RoleOwner)
 	rr := httptest.NewRecorder()
 
 	h.CreateBusiness(rr, req)
@@ -125,6 +130,18 @@ func TestMeHandler_CreateBusiness_SlugCollision(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &b))
 	assert.Equal(t, "My Salon", b.Name)
 	assert.Equal(t, "my-salon-2", b.Slug)
+}
+
+func TestMeHandler_CreateBusiness_RequiresOwnerRole(t *testing.T) {
+	h, _, _, _ := newTestMeHandler(t)
+
+	body := `{"name":"My Salon"}`
+	req := withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "user-1", "approved")
+	rr := httptest.NewRecorder()
+
+	h.CreateBusiness(rr, req)
+
+	require.Equal(t, http.StatusForbidden, rr.Code)
 }
 
 func TestMeHandler_CreateBusiness_DoubleCreate(t *testing.T) {
@@ -140,7 +157,7 @@ func TestMeHandler_CreateBusiness_DoubleCreate(t *testing.T) {
 	}))
 
 	body := `{"name":"New Salon"}`
-	req := withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "user-1", "approved")
+	req := withRoles(withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "user-1", "approved"), auth.RoleOwner)
 	rr := httptest.NewRecorder()
 
 	h.CreateBusiness(rr, req)
@@ -166,8 +183,8 @@ func TestMeHandler_TwoTierAuth(t *testing.T) {
 	guarded.ServeHTTP(rr2, req2)
 	assert.Equal(t, http.StatusForbidden, rr2.Code)
 
-	// Approved passes through to the handler.
-	req3 := withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(`{"name":"X"}`)), "user-1", "approved")
+	// Approved owner passes through to the handler.
+	req3 := withRoles(withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(`{"name":"X"}`)), "user-1", "approved"), auth.RoleOwner)
 	rr3 := httptest.NewRecorder()
 	guarded.ServeHTTP(rr3, req3)
 	assert.Equal(t, http.StatusCreated, rr3.Code)

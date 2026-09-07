@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 
+	"fejd-backend/auth"
 	"fejd-backend/internal/authutil"
 	"fejd-backend/internal/db"
 	"fejd-backend/internal/dto"
@@ -72,7 +73,7 @@ func (h *MeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 
 // CreateBusiness godoc
 // @Summary      Create the caller's salon
-// @Description  Creates a business and the caller's owner (admin) row. Requires an approved account.
+// @Description  Creates a business and the caller's owner (admin) row. Requires an approved account with the Owner role.
 // @Tags         me
 // @Accept       json
 // @Produce      json
@@ -100,6 +101,11 @@ func (h *MeHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {
 	userID, err := authutil.GetUserID(r)
 	if err != nil {
 		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	if !authutil.HasRole(r, auth.RoleOwner) {
+		writeError(w, http.StatusForbidden, "owner role required")
 		return
 	}
 

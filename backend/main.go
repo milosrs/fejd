@@ -142,6 +142,7 @@ func main() {
 		authMiddleware.Authenticate,
 		authMiddleware.OptionalAuthenticate,
 		authMiddleware.RequireApproved,
+		authMiddleware.RequireRole(auth.RoleOwner),
 		businessHandler,
 		appointmentHandler,
 		adminHandler,

@@ -9,6 +9,7 @@ interface AuthState {
   roles: string[]
   init: () => Promise<void>
   login: () => Promise<void>
+  register: () => Promise<void>
   logout: () => Promise<void>
 }
 
@@ -45,6 +46,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   login: async () => {
     await auth.login()
+  },
+
+  register: async () => {
+    await auth.register()
   },
 
   logout: async () => {
