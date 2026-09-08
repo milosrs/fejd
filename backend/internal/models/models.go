@@ -163,3 +163,17 @@ type EmployeeUnavailability struct {
 	EndTime        time.Time
 	Reason         string
 }
+
+// Invitation is a shareable link/QR invite that links a user to a business as
+// an employee. The raw token is never stored; only its hash is persisted.
+type Invitation struct {
+	ID         uuid.UUID
+	BusinessID uuid.UUID
+	TokenHash  string
+	Role       string
+	CreatedBy  string
+	MaxUses    int
+	UseCount   int
+	ExpiresAt  time.Time
+	CreatedAt  time.Time
+}

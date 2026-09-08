@@ -27,6 +27,7 @@ func newRouter(
 	imageHandler *handler.ImageHandler,
 	meHandler *handler.MeHandler,
 	i18nHandler *handler.I18nHandler,
+	invitationHandler *handler.InvitationHandler,
 	buStore *store.BusinessUserStore,
 ) *chi.Mux {
 	r := chi.NewRouter()
@@ -122,6 +123,9 @@ func newRouter(
 
 			r.Post("/admin/business/{businessID}/employees/{userID}/image", imageHandler.UploadEmployeeImage)
 			r.Delete("/admin/business/{businessID}/images/{imageID}", imageHandler.DeleteImage)
+
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Post("/admin/business/{businessID}/invitations", invitationHandler.CreateInvitation)
 		})
 
 		r.With(optionalAuthenticate).Get("/images/{imageID}", imageHandler.GetImage)

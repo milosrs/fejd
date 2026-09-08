@@ -31,6 +31,17 @@ type CreateEmployeeRequest struct {
 	ServiceIDs []uuid.UUID `json:"service_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
 
+type CreateInvitationRequest struct {
+	ExpiresInHours int `json:"expires_in_hours,omitempty" example:"48"`
+}
+
+type InvitationResponse struct {
+	ID        uuid.UUID `json:"id" validate:"required"`
+	URL       string    `json:"url" validate:"required"`
+	Token     string    `json:"token" validate:"required"`
+	ExpiresAt time.Time `json:"expires_at" validate:"required"`
+}
+
 type RemoveEmployeeResponse struct {
 	Reassigned int    `json:"reassigned" validate:"required"`
 	Cancelled  int    `json:"cancelled" validate:"required"`

@@ -16,6 +16,7 @@ const URL_ADMIN_OVERRIDES_DELETE = "/api/admin/business/{businessID}/employees/{
 const URL_ADMIN_SERVICES = "/api/admin/business/{businessID}/services" as const
 const URL_ADMIN_SERVICES_DELETE = "/api/admin/business/{businessID}/services/{serviceID}" as const
 const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serviceID}/image" as const
+const URL_ADMIN_INVITATIONS = "/api/admin/business/{businessID}/invitations" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
 
 type Schemas = components["schemas"]
@@ -200,6 +201,16 @@ export async function inviteEmployee(
   const { data } = await POST(URL_ADMIN_EMPLOYEES, {
     params: { path: { businessID: businessId } },
     body: input,
+  })
+  return data
+}
+
+export type Invitation = Schemas["handler.InvitationResponse"]
+
+export async function createInvitation(businessId: string, body?: { expires_in_hours?: number }) {
+  const { data } = await POST(URL_ADMIN_INVITATIONS, {
+    params: { path: { businessID: businessId } },
+    body: body ?? {},
   })
   return data
 }

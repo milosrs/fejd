@@ -53,3 +53,14 @@ export function useIsOwner() {
   if (!authenticated || !hasRole(roles, "Owner")) return false
   return isOwnerOfBusiness(me, slug)
 }
+
+// useIsMember is true for any active member of the current salon (owner or
+// employee). Member-level actions like generating invite links rely on it.
+export function useIsMember() {
+  const { slug } = useSalonContext()
+  const authenticated = useAuthStore((s) => s.authenticated)
+  const { data: me } = useMe()
+
+  if (!authenticated || !me) return false
+  return me.businesses.some((b) => b.slug === slug)
+}

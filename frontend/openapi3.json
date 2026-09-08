@@ -966,6 +966,83 @@
                 }
             }
         },
+        "/api/admin/business/{businessID}/invitations": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates a single-use invitation link that, when opened, links the recipient to this salon as an employee. Accessible to owners and employees.",
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Create an invite link / QR code",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.CreateInvitationRequest"
+                            }
+                        }
+                    },
+                    "description": "Invitation options"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.InvitationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/business/{businessID}/sections": {
             "post": {
                 "security": [
@@ -2741,6 +2818,15 @@
                     }
                 }
             },
+            "handler.CreateInvitationRequest": {
+                "type": "object",
+                "properties": {
+                    "expires_in_hours": {
+                        "type": "integer",
+                        "example": 48
+                    }
+                }
+            },
             "handler.CreateSectionRequest": {
                 "type": "object",
                 "required": [
@@ -2789,6 +2875,29 @@
                     "error": {
                         "type": "string",
                         "example": "error message"
+                    }
+                }
+            },
+            "handler.InvitationResponse": {
+                "type": "object",
+                "required": [
+                    "expires_at",
+                    "id",
+                    "token",
+                    "url"
+                ],
+                "properties": {
+                    "expires_at": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "token": {
+                        "type": "string"
+                    },
+                    "url": {
+                        "type": "string"
                     }
                 }
             },

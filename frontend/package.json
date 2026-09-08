@@ -42,6 +42,7 @@
     "keycloak-js": "latest",
     "lucide-react": "^1.25.0",
     "openapi-fetch": "^0.17.0",
+    "qrcode.react": "^4.2.0",
     "react": "latest",
     "react-aria-components": "^1.20.0",
     "react-day-picker": "^10.0.1",

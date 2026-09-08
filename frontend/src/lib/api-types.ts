@@ -840,6 +840,80 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/business/{businessID}/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create an invite link / QR code
+         * @description Generates a single-use invitation link that, when opened, links the recipient to this salon as an employee. Accessible to owners and employees.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Invitation options */
+            requestBody?: {
+                content: {
+                    "application/json": components["schemas"]["handler.CreateInvitationRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.InvitationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/business/{businessID}/sections": {
         parameters: {
             query?: never;
@@ -2236,6 +2310,10 @@ export interface components {
              */
             service_ids: string[];
         };
+        "handler.CreateInvitationRequest": {
+            /** @example 48 */
+            expires_in_hours?: number;
+        };
         "handler.CreateSectionRequest": {
             content?: Record<string, never>;
             position?: number;
@@ -2253,6 +2331,12 @@ export interface components {
         "handler.ErrorResponse": {
             /** @example error message */
             error: string;
+        };
+        "handler.InvitationResponse": {
+            expires_at: string;
+            id: string;
+            token: string;
+            url: string;
         };
         "handler.MessageResponse": {
             /** @example operation complete */

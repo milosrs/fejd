@@ -114,6 +114,10 @@ func main() {
 		keycloakAdmin, buStore, employeeServiceStore, pool, cfg.Jobs.InviteRedirectURI, cfg.Jobs.InviteExpiryHours*3600,
 	)
 
+	invitationStore := store.NewInvitationStore(pool)
+	invitationService := service.NewInvitationService(invitationStore, pool, cfg.Jobs.InviteBaseURL)
+	invitationHandler := handler.NewInvitationHandler(invitationService, time.Duration(cfg.Jobs.InviteExpiryHours)*time.Hour)
+
 	adminHandler := handler.NewAdminHandler(
 		businessStore, buStore, serviceStore, pageStore, sectionStore, workingHoursService, appointmentStore, slotService, imageService, employeeService, pool,
 	)
@@ -150,6 +154,7 @@ func main() {
 		imageHandler,
 		meHandler,
 		i18nHandler,
+		invitationHandler,
 		buStore,
 	)
 

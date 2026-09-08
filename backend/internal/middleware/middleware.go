@@ -39,6 +39,35 @@ func getUserIDFromCtx(r *http.Request) string {
 	return auth.GetUserIDFromRequest(r)
 }
 
+// RequireBusinessMember allows any active member of the business (admin or
+// employee). Use it for member-level actions like generating invitation
+// links, which both owners and employees may perform.
+func RequireBusinessMember(buStore *store.BusinessUserStore) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+			if err != nil {
+				http.Error(w, `{"error":"invalid business ID"}`, http.StatusBadRequest)
+				return
+			}
+
+			userID := getUserIDFromCtx(r)
+			if userID == "" {
+				http.Error(w, `{"error":"authentication required"}`, http.StatusUnauthorized)
+				return
+			}
+
+			bu, err := buStore.GetByBusinessAndUser(r.Context(), businessID, userID)
+			if err != nil || !bu.Active {
+				http.Error(w, `{"error":"forbidden: not a member of this business"}`, http.StatusForbidden)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 // MaxBodyBytes rejects requests whose body exceeds limit before any handler
 // reads it. A declared Content-Length over the limit is rejected immediately;
 // bodies without a known length (chunked) are wrapped with http.MaxBytesReader

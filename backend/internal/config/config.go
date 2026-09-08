@@ -62,6 +62,7 @@ type JobsConfig struct {
 	RunJobs             bool
 	InviteExpiryHours   int
 	InviteRedirectURI   string
+	InviteBaseURL       string
 }
 
 // EmailConfig holds SMTP settings and the superadmin notification target.
@@ -120,6 +121,7 @@ func Load() (*Config, error) {
 			RunJobs:             getEnvBool("RUN_JOBS", true),
 			InviteExpiryHours:   int(getEnvInt("INVITE_EXPIRY_HOURS", 48)),
 			InviteRedirectURI:   getEnv("INVITE_REDIRECT_URI", ""),
+			InviteBaseURL:       getEnv("INVITE_BASE_URL", ""),
 		},
 		Email: EmailConfig{
 			SMTPHost:              getEnv("SMTP_HOST", ""),
