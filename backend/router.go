@@ -143,6 +143,14 @@ func newRouter(
 					r.Post("/", adminHandler.AddMyUnavailability)
 					r.Delete("/{unavailabilityID}", adminHandler.DeleteMyUnavailability)
 				})
+
+			// Self-service reservations: any active member can list their own
+			// appointments for a date and cancel them with a reason.
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Route("/admin/business/{businessID}/me/appointments", func(r chi.Router) {
+					r.Get("/", adminHandler.ListMyReservations)
+					r.Delete("/{appointmentID}", adminHandler.CancelMyReservation)
+				})
 		})
 
 		r.With(optionalAuthenticate).Get("/images/{imageID}", imageHandler.GetImage)

@@ -70,6 +70,13 @@ export function HomePage() {
           >
             Reserve my time
           </Link>
+
+          <Link
+            to={`/admin/business/${primaryBusiness.id}/my-reservations`}
+            className="text-sm underline text-foreground"
+          >
+            My reservations
+          </Link>
         </div>
       ) : (
         <Link to="/my/appointments" className="text-sm underline text-foreground">

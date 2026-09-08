@@ -94,6 +94,8 @@ type Appointment struct {
 	CreatedBy          string    `json:"created_by" validate:"required"`
 	CancellationReason string    `json:"cancellation_reason,omitempty"`
 	CreatedAt          time.Time `json:"created_at" validate:"required"`
+	// ServiceName is populated for staff-facing reservation lists only.
+	ServiceName string `json:"service_name,omitempty"`
 }
 
 type TimeSlot struct {

@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fejd-backend/internal/authutil"
@@ -10,6 +11,7 @@ import (
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -735,6 +737,122 @@ func (h *AdminHandler) DeleteMyUnavailability(w http.ResponseWriter, r *http.Req
 	}
 
 	writeJSON(w, http.StatusOK, MessageResponse{Message: "unavailability deleted"})
+}
+
+// ListMyReservations godoc
+// @Summary      List my reservations for a date
+// @Description  Returns the authenticated member's reservations (appointments) for a given date, with status and service name.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        date query string true "Date (YYYY-MM-DD)"
+// @Success      200 {array} dto.Appointment
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/me/appointments [get]
+func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	date, err := time.Parse(time.DateOnly, r.URL.Query().Get("date"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid date format, use YYYY-MM-DD")
+		return
+	}
+
+	appointments, err := h.slotService.ListOwnAppointments(r.Context(), businessID, userID, date)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if appointments == nil {
+		appointments = []models.Appointment{}
+	}
+
+	serviceNames, err := h.serviceNameMap(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames))
+}
+
+// CancelMyReservation godoc
+// @Summary      Cancel one of my reservations
+// @Description  Cancels the authenticated member's own reservation. A cancellation reason is required.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        appointmentID path string true "Appointment UUID"
+// @Param        body body CancelAppointmentRequest true "Cancellation reason"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/me/appointments/{appointmentID} [delete]
+func (h *AdminHandler) CancelMyReservation(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	appointmentID, err := uuid.Parse(chi.URLParam(r, "appointmentID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid appointment ID")
+		return
+	}
+
+	var body CancelAppointmentRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	reason := strings.TrimSpace(body.CancellationReason)
+	if reason == "" {
+		writeError(w, http.StatusBadRequest, "cancellation_reason is required")
+		return
+	}
+
+	if err := h.slotService.CancelOwnAppointment(r.Context(), businessID, userID, appointmentID, reason); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "reservation cancelled"})
+}
+
+func (h *AdminHandler) serviceNameMap(ctx context.Context, businessID uuid.UUID) (map[uuid.UUID]string, error) {
+	services, err := h.serviceStore.ListByBusiness(ctx, businessID)
+	if err != nil {
+		return nil, err
+	}
+	names := make(map[uuid.UUID]string, len(services))
+	for _, svc := range services {
+		names[svc.ID] = svc.Name
+	}
+	return names, nil
 }
 
 // CreateSection godoc

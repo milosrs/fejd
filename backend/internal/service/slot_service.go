@@ -352,6 +352,47 @@ func (s *SlotService) DeleteEmployeeUnavailability(ctx context.Context, business
 	return nil
 }
 
+// ListOwnAppointments returns the staff member's own reservations (appointments
+// where they are the provider) for the given UTC day, in chronological order.
+func (s *SlotService) ListOwnAppointments(ctx context.Context, businessID uuid.UUID, userID string, date time.Time) ([]models.Appointment, error) {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	dayStart := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+	dayEnd := dayStart.AddDate(0, 0, 1)
+
+	return s.appointments.ListByBusinessUser(ctx, bu.ID, dayStart, dayEnd)
+}
+
+// CancelOwnAppointment cancels one of the caller's own active reservations with
+// a required reason, then notifies slot subscribers so availability refreshes.
+func (s *SlotService) CancelOwnAppointment(ctx context.Context, businessID uuid.UUID, userID string, appointmentID uuid.UUID, reason string) error {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, bu.ID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+
+		if err := s.appointments.CancelByBusinessUser(ctx, tx, appointmentID, bu.ID, reason); err != nil {
+			return fmt.Errorf("failed to cancel appointment: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, bu.ID)
+	return nil
+}
+
 func mapAppointmentError(err error) error {
 	var pgErr *pgconn.PgError
 	if errors.As(err, &pgErr) {

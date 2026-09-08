@@ -19,6 +19,8 @@ const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serv
 const URL_ADMIN_INVITATIONS = "/api/admin/business/{businessID}/invitations" as const
 const URL_MY_UNAVAILABILITY = "/api/admin/business/{businessID}/me/unavailability" as const
 const URL_MY_UNAVAILABILITY_DELETE = "/api/admin/business/{businessID}/me/unavailability/{unavailabilityID}" as const
+const URL_MY_RESERVATIONS = "/api/admin/business/{businessID}/me/appointments" as const
+const URL_MY_RESERVATIONS_DELETE = "/api/admin/business/{businessID}/me/appointments/{appointmentID}" as const
 const URL_INVITATION = "/api/invitations/{token}" as const
 const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
@@ -278,6 +280,29 @@ export async function reserveOwnSlot(
 export async function deleteOwnSlot(businessId: string, unavailabilityId: string) {
   const { data } = await DELETE(URL_MY_UNAVAILABILITY_DELETE, {
     params: { path: { businessID: businessId, unavailabilityID: unavailabilityId } },
+  })
+  return data
+}
+
+export type Appointment = Schemas["dto.Appointment"]
+
+export function useMyReservations(businessId: string, date: string) {
+  return useQuery({
+    queryKey: ["my-reservations", businessId, date],
+    queryFn: async () => {
+      const { data } = await GET(URL_MY_RESERVATIONS, {
+        params: { path: { businessID: businessId }, query: { date } },
+      })
+      return data
+    },
+    enabled: !!(businessId && date),
+  })
+}
+
+export async function cancelReservation(businessId: string, appointmentId: string, reason: string) {
+  const { data } = await DELETE(URL_MY_RESERVATIONS_DELETE, {
+    params: { path: { businessID: businessId, appointmentID: appointmentId } },
+    body: { cancellation_reason: reason },
   })
   return data
 }

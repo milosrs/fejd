@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 
 	"fejd-backend/internal/models"
+
+	"github.com/google/uuid"
 )
 
 func BusinessFromModel(m models.Business) Business {
@@ -180,6 +182,17 @@ func AppointmentsFromModels(ms []models.Appointment) []Appointment {
 	out := make([]Appointment, len(ms))
 	for i, m := range ms {
 		out[i] = AppointmentFromModel(m)
+	}
+	return out
+}
+
+// StaffAppointmentsFromModels enriches appointments with their service name for
+// staff-facing reservation lists.
+func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.UUID]string) []Appointment {
+	out := make([]Appointment, len(ms))
+	for i, m := range ms {
+		out[i] = AppointmentFromModel(m)
+		out[i].ServiceName = serviceNames[m.ServiceID]
 	}
 	return out
 }

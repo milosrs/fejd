@@ -914,6 +914,154 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/business/{businessID}/me/appointments": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List my reservations for a date
+         * @description Returns the authenticated member's reservations (appointments) for a given date, with status and service name.
+         */
+        get: {
+            parameters: {
+                query: {
+                    /** @description Date (YYYY-MM-DD) */
+                    date: string;
+                };
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Appointment"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/me/appointments/{appointmentID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel one of my reservations
+         * @description Cancels the authenticated member's own reservation. A cancellation reason is required.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Appointment UUID */
+                    appointmentID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Cancellation reason */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.CancelAppointmentRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/business/{businessID}/me/unavailability": {
         parameters: {
             query?: never;
@@ -2525,6 +2673,8 @@ export interface components {
             end_time: string;
             id: string;
             service_id: string;
+            /** @description ServiceName is populated for staff-facing reservation lists only. */
+            service_name?: string;
             start_time: string;
             status: string;
         };
@@ -2621,6 +2771,10 @@ export interface components {
             employees: components["schemas"]["dto.BusinessUser"][];
             images: components["schemas"]["handler.BusinessImages"];
             services: components["schemas"]["dto.Service"][];
+        };
+        "handler.CancelAppointmentRequest": {
+            /** @example unexpected absence */
+            cancellation_reason?: string;
         };
         "handler.CreateAppointmentRequest": {
             /** @example 550e8400-e29b-41d4-a716-446655440000 */

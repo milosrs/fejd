@@ -173,6 +173,24 @@ func (s *AppointmentStore) CancelByID(ctx context.Context, id uuid.UUID, reason 
 	return err
 }
 
+// CancelByBusinessUser cancels one of a staff member's own active reservations
+// (pending/confirmed), scoped so a member cannot cancel another's appointment.
+func (s *AppointmentStore) CancelByBusinessUser(ctx context.Context, q Querier, id, businessUserID uuid.UUID, reason string) error {
+	sql, args, err := psql.
+		Update("appointments").
+		Set("status", string(models.AppointmentStatusCancelled)).
+		Set("cancellation_reason", reason).
+		Where(sq.Eq{"id": id, "business_user_id": businessUserID}).
+		Where(sq.Eq{"status": []string{string(models.AppointmentStatusPending), string(models.AppointmentStatusConfirmed)}}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}
+
 func scanAppointment(row rowScanner) (*models.Appointment, error) {
 	var a models.Appointment
 	if err := row.Scan(&a.ID, &a.BusinessID, &a.ServiceID, &a.BusinessUserID,
