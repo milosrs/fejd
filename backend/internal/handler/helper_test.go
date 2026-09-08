@@ -14,9 +14,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
 	tcpostgres "github.com/testcontainers/testcontainers-go/modules/postgres"
-	"github.com/testcontainers/testcontainers-go/wait"
 )
 
 func setupHandlerTestDB(t *testing.T) *pgxpool.Pool {
@@ -30,11 +28,7 @@ func setupHandlerTestDB(t *testing.T) *pgxpool.Pool {
 		tcpostgres.WithDatabase("fejd"),
 		tcpostgres.WithUsername("postgres"),
 		tcpostgres.WithPassword("postgres"),
-		testcontainers.WithWaitStrategy(wait.ForListeningPort("5432/tcp").WithStartupTimeout(60*time.Second)),
-		testcontainers.CustomizeRequestOption(func(req *testcontainers.GenericContainerRequest) error {
-			req.AutoRemove = true
-			return nil
-		}),
+		tcpostgres.BasicWaitStrategies(),
 	)
 	require.NoError(t, err)
 
