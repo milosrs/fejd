@@ -22,6 +22,7 @@ type SlotService struct {
 	workingHours     *store.WorkingHoursStore
 	overrides        *store.WorkingHoursOverrideStore
 	services         *store.ServiceStore
+	business         *store.BusinessStore
 	businessUser     *store.BusinessUserStore
 	employeeServices *store.EmployeeServiceStore
 	unavailability   *store.EmployeeUnavailabilityStore
@@ -34,6 +35,7 @@ func NewSlotService(
 	workingHours *store.WorkingHoursStore,
 	overrides *store.WorkingHoursOverrideStore,
 	services *store.ServiceStore,
+	business *store.BusinessStore,
 	businessUser *store.BusinessUserStore,
 	employeeServices *store.EmployeeServiceStore,
 	unavailability *store.EmployeeUnavailabilityStore,
@@ -45,6 +47,7 @@ func NewSlotService(
 		workingHours:     workingHours,
 		overrides:        overrides,
 		services:         services,
+		business:         business,
 		businessUser:     businessUser,
 		employeeServices: employeeServices,
 		unavailability:   unavailability,
@@ -391,6 +394,89 @@ func (s *SlotService) CancelOwnAppointment(ctx context.Context, businessID uuid.
 
 	s.publishSlotsChanged(businessID, bu.ID)
 	return nil
+}
+
+// ErrNoShowTooEarly is returned when a staff member tries to mark an
+// appointment as no-show before the salon's configured grace period has passed.
+var ErrNoShowTooEarly = errors.New("no-show cannot be marked yet")
+
+// MarkNoShow marks one of the caller's own active reservations as no-show,
+// enforcing the salon's policy that a no-show can only be recorded
+// business.no_show_after_hours after the appointment start.
+func (s *SlotService) MarkNoShow(ctx context.Context, businessID uuid.UUID, userID string, appointmentID uuid.UUID) error {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	appt, err := s.appointments.GetByID(ctx, appointmentID)
+	if err != nil {
+		return ErrAppointmentNotFound
+	}
+	if appt.BusinessUserID != bu.ID {
+		return ErrAppointmentNotFound
+	}
+
+	b, err := s.business.GetByID(ctx, appt.BusinessID)
+	if err != nil {
+		return fmt.Errorf("business not found: %w", err)
+	}
+
+	grace := time.Duration(b.NoShowAfterHours) * time.Hour
+	if time.Since(appt.StartTime) < grace {
+		return ErrNoShowTooEarly
+	}
+
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, bu.ID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+
+		if err := s.appointments.MarkNoShow(ctx, tx, appointmentID, bu.ID); err != nil {
+			return fmt.Errorf("failed to mark no-show: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, bu.ID)
+	return nil
+}
+
+// ErrCancellationTooLate is returned when a customer tries to cancel inside the
+// salon's configured cancellation notice window.
+var ErrCancellationTooLate = errors.New("cancellation window has passed")
+
+// ErrAppointmentNotFound is returned when an appointment does not exist or does
+// not belong to the caller.
+var ErrAppointmentNotFound = errors.New("appointment not found")
+
+// CancelCustomerAppointment cancels one of a customer's own appointments,
+// enforcing the salon's cancellation notice policy (at least
+// business.cancellation_lead_hours before the start time).
+func (s *SlotService) CancelCustomerAppointment(ctx context.Context, appointmentID uuid.UUID, customerUserID, reason string) error {
+	appt, err := s.appointments.GetByID(ctx, appointmentID)
+	if err != nil {
+		return ErrAppointmentNotFound
+	}
+	if appt.CustomerUserID != customerUserID {
+		return ErrAppointmentNotFound
+	}
+
+	b, err := s.business.GetByID(ctx, appt.BusinessID)
+	if err != nil {
+		return fmt.Errorf("business not found: %w", err)
+	}
+
+	lead := time.Duration(b.CancellationLeadHours) * time.Hour
+	if time.Until(appt.StartTime) < lead {
+		return ErrCancellationTooLate
+	}
+
+	return s.appointments.Cancel(ctx, appointmentID, customerUserID, reason)
 }
 
 func mapAppointmentError(err error) error {

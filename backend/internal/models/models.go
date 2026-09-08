@@ -12,6 +12,12 @@ type Business struct {
 	Slug      string
 	CreatedAt time.Time
 	UpdatedAt time.Time
+	// CancellationLeadHours is the minimum notice (hours) a customer must give
+	// before cancelling an appointment. Soft policy, configurable by the owner.
+	CancellationLeadHours int
+	// NoShowAfterHours is how many hours after an appointment start a staff
+	// member may mark it as no-show. Soft policy, configurable by the owner.
+	NoShowAfterHours int
 }
 
 type BusinessUser struct {

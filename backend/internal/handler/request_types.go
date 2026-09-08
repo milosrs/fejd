@@ -61,6 +61,16 @@ type CreateUnavailabilityRequest struct {
 	Reason    string `json:"reason,omitempty" example:"Vacation"`
 }
 
+type SalonPolicyResponse struct {
+	CancellationLeadHours int `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterHours      int `json:"no_show_after_hours" validate:"required" example:"2"`
+}
+
+type UpdateSalonPolicyRequest struct {
+	CancellationLeadHours int `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterHours      int `json:"no_show_after_hours" validate:"required" example:"2"`
+}
+
 type WorkingHoursInput struct {
 	DayOfWeek int       `json:"day_of_week" validate:"required" example:"1"`
 	StartTime time.Time `json:"start_time" validate:"required" example:"09:00"`

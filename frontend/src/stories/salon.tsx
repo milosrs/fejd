@@ -46,6 +46,8 @@ export const mockSalon: Salon = {
     slug: "fejd",
     created_at: "2024-01-01T00:00:00Z",
     updated_at: "2024-01-01T00:00:00Z",
+    cancellation_lead_hours: 2,
+    no_show_after_hours: 2,
   },
   services: [
     {

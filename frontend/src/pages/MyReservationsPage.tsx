@@ -4,12 +4,13 @@ import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "../stores/authStore"
-import { useMyReservations, cancelReservation, type Appointment } from "../hooks/useApi"
+import { useMyReservations, cancelReservation, markNoShow, type Appointment } from "../hooks/useApi"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Calendar } from "../components/ui/calendar"
+import { ConfirmDialog } from "../components/ui/confirm-dialog"
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
@@ -31,6 +32,17 @@ function StatusBadge({ status }: { status: string }) {
   )
 }
 
+function isPast(r: Appointment): boolean {
+  return new Date().getTime() >= new Date(r.start_time).getTime()
+}
+
+function canMarkNoShow(r: Appointment): boolean {
+  if (r.status !== "pending" && r.status !== "confirmed") return false
+  if (!isPast(r)) return false
+  const graceMs = (r.no_show_after_hours ?? 0) * 3600 * 1000
+  return new Date().getTime() >= new Date(r.start_time).getTime() + graceMs
+}
+
 export function MyReservationsPage() {
   const { businessId } = useParams<{ businessId: string }>()
   const navigate = useNavigate()
@@ -44,6 +56,7 @@ export function MyReservationsPage() {
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
   const [reason, setReason] = useState("")
   const [cancelling, setCancelling] = useState(false)
+  const [noShowTarget, setNoShowTarget] = useState<Appointment | null>(null)
   const [message, setMessage] = useState("")
 
   if (!authenticated) {
@@ -72,6 +85,19 @@ export function MyReservationsPage() {
       setMessage("Failed to cancel reservation.")
     } finally {
       setCancelling(false)
+    }
+  }
+
+  const handleMarkNoShow = async () => {
+    if (!noShowTarget) return
+    setMessage("")
+    try {
+      await markNoShow(businessId!, noShowTarget.id)
+      setMessage("Appointment marked as no-show.")
+      setNoShowTarget(null)
+      await refresh()
+    } catch {
+      setMessage("Failed to mark no-show.")
     }
   }
 
@@ -132,16 +158,25 @@ export function MyReservationsPage() {
                     )}
                   </div>
                   {(r.status === "pending" || r.status === "confirmed") && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setCancelTarget(r)
-                        setReason("")
-                      }}
-                    >
-                      Cancel
-                    </Button>
+                    <div className="flex items-center gap-2 shrink-0">
+                      {!isPast(r) && (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setCancelTarget(r)
+                            setReason("")
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                      )}
+                      {canMarkNoShow(r) && (
+                        <Button variant="outline" size="sm" onClick={() => setNoShowTarget(r)}>
+                          No-show
+                        </Button>
+                      )}
+                    </div>
                   )}
                 </div>
               ))
@@ -191,6 +226,20 @@ export function MyReservationsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={noShowTarget != null}
+        title="Mark as no-show?"
+        description={
+          noShowTarget
+            ? `${noShowTarget.service_name || "Service"} at ${format(new Date(noShowTarget.start_time), "h:mm a")}`
+            : undefined
+        }
+        confirmLabel="Mark no-show"
+        cancelLabel="Back"
+        onConfirm={handleMarkNoShow}
+        onCancel={() => setNoShowTarget(null)}
+      />
     </div>
   )
 }

@@ -35,7 +35,7 @@ func newUnavailabilityTestHandler(t *testing.T) (*AdminHandler, *store.BusinessS
 
 	slotService := service.NewSlotService(
 		appointmentStore, workingHoursStore, overrideStore,
-		serviceStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
+		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
 	)
 
 	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, appointmentStore, slotService, nil, nil, pool)

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"fejd-backend/internal/authutil"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
@@ -139,18 +140,32 @@ func (h *AppointmentHandler) ListMyAppointments(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	writeJSON(w, http.StatusOK, dto.AppointmentsFromModels(appointments))
+	leadHoursByBusiness := make(map[uuid.UUID]int)
+	for _, a := range appointments {
+		if _, ok := leadHoursByBusiness[a.BusinessID]; ok {
+			continue
+		}
+		if b, err := h.business.GetByID(r.Context(), a.BusinessID); err == nil {
+			leadHoursByBusiness[a.BusinessID] = b.CancellationLeadHours
+		}
+	}
+
+	writeJSON(w, http.StatusOK, dto.CustomerAppointmentsFromModels(appointments, leadHoursByBusiness))
 }
 
 // Cancel godoc
 // @Summary      Cancel an appointment
-// @Description  Cancels an appointment owned by the authenticated customer.
+// @Description  Cancels an appointment owned by the authenticated customer, respecting the salon's cancellation notice policy.
 // @Tags         appointments
+// @Accept       json
 // @Produce      json
 // @Param        appointmentID path string true "Appointment UUID"
+// @Param        body body CancelAppointmentRequest true "Cancellation reason"
 // @Success      200 {object} MessageResponse
 // @Failure      400 {object} ErrorResponse
 // @Failure      401 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Failure      409 {object} ErrorResponse
 // @Security     BearerAuth
 // @Router       /api/my/appointments/{appointmentID} [delete]
 func (h *AppointmentHandler) Cancel(w http.ResponseWriter, r *http.Request) {
@@ -169,7 +184,15 @@ func (h *AppointmentHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 	var body CancelAppointmentRequest
 	_ = json.NewDecoder(r.Body).Decode(&body)
 
-	if err := h.appointments.Cancel(r.Context(), appointmentID, userID, body.CancellationReason); err != nil {
+	if err := h.slotService.CancelCustomerAppointment(r.Context(), appointmentID, userID, body.CancellationReason); err != nil {
+		if errors.Is(err, service.ErrCancellationTooLate) {
+			writeError(w, http.StatusConflict, "cancellation is no longer allowed; too close to the appointment start time")
+			return
+		}
+		if errors.Is(err, service.ErrAppointmentNotFound) {
+			writeError(w, http.StatusNotFound, "appointment not found")
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

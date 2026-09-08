@@ -51,6 +51,24 @@ func (s *AppointmentStore) GetConflictingAppointments(ctx context.Context, busin
 	return appointments, nil
 }
 
+func (s *AppointmentStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Appointment, error) {
+	sql, args, err := psql.
+		Select("id", "business_id", "service_id", "business_user_id", "customer_user_id",
+			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
+		From("appointments").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	a, err := scanAppointment(s.pool.QueryRow(ctx, sql, args...))
+	if err != nil {
+		return nil, fmt.Errorf("appointment not found: %w", err)
+	}
+	return a, nil
+}
+
 func (s *AppointmentStore) Create(ctx context.Context, q Querier, a *models.Appointment) error {
 	if a.ID == uuid.Nil {
 		a.ID = uuid.New()
@@ -180,6 +198,23 @@ func (s *AppointmentStore) CancelByBusinessUser(ctx context.Context, q Querier, 
 		Update("appointments").
 		Set("status", string(models.AppointmentStatusCancelled)).
 		Set("cancellation_reason", reason).
+		Where(sq.Eq{"id": id, "business_user_id": businessUserID}).
+		Where(sq.Eq{"status": []string{string(models.AppointmentStatusPending), string(models.AppointmentStatusConfirmed)}}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}
+
+// MarkNoShow marks one of a staff member's own active reservations as no-show,
+// scoped so a member cannot touch another's appointment.
+func (s *AppointmentStore) MarkNoShow(ctx context.Context, q Querier, id, businessUserID uuid.UUID) error {
+	sql, args, err := psql.
+		Update("appointments").
+		Set("status", string(models.AppointmentStatusNoShow)).
 		Where(sq.Eq{"id": id, "business_user_id": businessUserID}).
 		Where(sq.Eq{"status": []string{string(models.AppointmentStatusPending), string(models.AppointmentStatusConfirmed)}}).
 		ToSql()

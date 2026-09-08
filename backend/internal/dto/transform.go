@@ -10,11 +10,13 @@ import (
 
 func BusinessFromModel(m models.Business) Business {
 	return Business{
-		ID:        m.ID,
-		Name:      m.Name,
-		Slug:      m.Slug,
-		CreatedAt: m.CreatedAt,
-		UpdatedAt: m.UpdatedAt,
+		ID:                    m.ID,
+		Name:                  m.Name,
+		Slug:                  m.Slug,
+		CreatedAt:             m.CreatedAt,
+		UpdatedAt:             m.UpdatedAt,
+		CancellationLeadHours: m.CancellationLeadHours,
+		NoShowAfterHours:      m.NoShowAfterHours,
 	}
 }
 
@@ -186,13 +188,25 @@ func AppointmentsFromModels(ms []models.Appointment) []Appointment {
 	return out
 }
 
-// StaffAppointmentsFromModels enriches appointments with their service name for
-// staff-facing reservation lists.
-func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.UUID]string) []Appointment {
+// StaffAppointmentsFromModels enriches appointments with their service name and
+// the salon's no-show grace period for staff-facing reservation lists.
+func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.UUID]string, noShowAfterHours int) []Appointment {
 	out := make([]Appointment, len(ms))
 	for i, m := range ms {
 		out[i] = AppointmentFromModel(m)
 		out[i].ServiceName = serviceNames[m.ServiceID]
+		out[i].NoShowAfterHours = noShowAfterHours
+	}
+	return out
+}
+
+// CustomerAppointmentsFromModels enriches customer appointments with each
+// salon's cancellation notice window so the UI can surface the deadline.
+func CustomerAppointmentsFromModels(ms []models.Appointment, leadHoursByBusiness map[uuid.UUID]int) []Appointment {
+	out := make([]Appointment, len(ms))
+	for i, m := range ms {
+		out[i] = AppointmentFromModel(m)
+		out[i].CancellationLeadHours = leadHoursByBusiness[m.BusinessID]
 	}
 	return out
 }

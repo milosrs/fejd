@@ -1,10 +1,13 @@
 import { Link, NavLink, Outlet } from "react-router-dom"
+import { useState } from "react"
 import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonContext"
 import { Button } from "./ui/button"
+import { SalonPolicyDialog } from "./SalonPolicyDialog"
 
 function SalonShell() {
   const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
   const isOwner = useIsOwner()
+  const [policyOpen, setPolicyOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -55,13 +58,22 @@ function SalonShell() {
             ))}
           </nav>
           {isOwner && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditing(!editing)}
-            >
-              {editing ? "Done" : "Edit"}
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPolicyOpen(true)}
+              >
+                Salon policy
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setEditing(!editing)}
+              >
+                {editing ? "Done" : "Edit"}
+              </Button>
+            </div>
           )}
         </div>
       </header>
@@ -69,6 +81,16 @@ function SalonShell() {
       <main className="max-w-4xl mx-auto px-4 py-8">
         <Outlet />
       </main>
+
+      {policyOpen && (
+        <SalonPolicyDialog
+          businessId={salon.business.id}
+          slug={slug}
+          cancellationLeadHours={salon.business.cancellation_lead_hours}
+          noShowAfterHours={salon.business.no_show_after_hours}
+          onClose={() => setPolicyOpen(false)}
+        />
+      )}
     </div>
   )
 }

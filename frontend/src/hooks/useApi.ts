@@ -7,6 +7,8 @@ const URL_SERVICE_EMPLOYEES = "/api/business/{slug}/services/{serviceID}/employe
 const URL_BUSINESS_EMPLOYEES = "/api/business/{slug}/employees" as const
 const URL_BUSINESS_SLOTS = "/api/business/{slug}/slots" as const
 const URL_MY_APPOINTMENTS = "/api/my/appointments" as const
+const URL_MY_APPOINTMENTS_DELETE = "/api/my/appointments/{appointmentID}" as const
+const URL_SALON_POLICY = "/api/admin/business/{businessID}/policy" as const
 const URL_ADMIN_EMPLOYEES = "/api/admin/business/{businessID}/employees" as const
 const URL_ADMIN_EMPLOYEE_DELETE = "/api/admin/business/{businessID}/employees/{userID}" as const
 const URL_ADMIN_EMPLOYEE_IMAGE = "/api/admin/business/{businessID}/employees/{userID}/image" as const
@@ -21,6 +23,7 @@ const URL_MY_UNAVAILABILITY = "/api/admin/business/{businessID}/me/unavailabilit
 const URL_MY_UNAVAILABILITY_DELETE = "/api/admin/business/{businessID}/me/unavailability/{unavailabilityID}" as const
 const URL_MY_RESERVATIONS = "/api/admin/business/{businessID}/me/appointments" as const
 const URL_MY_RESERVATIONS_DELETE = "/api/admin/business/{businessID}/me/appointments/{appointmentID}" as const
+const URL_MY_RESERVATIONS_NO_SHOW = "/api/admin/business/{businessID}/me/appointments/{appointmentID}/no-show" as const
 const URL_INVITATION = "/api/invitations/{token}" as const
 const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
@@ -94,6 +97,33 @@ export function useMyAppointments() {
       return data
     },
   })
+}
+
+export async function cancelAppointment(appointmentId: string, reason: string) {
+  const { data } = await DELETE(URL_MY_APPOINTMENTS_DELETE, {
+    params: { path: { appointmentID: appointmentId } },
+    body: { cancellation_reason: reason },
+  })
+  return data
+}
+
+export async function getSalonPolicy(businessId: string) {
+  const { data } = await GET(URL_SALON_POLICY, {
+    params: { path: { businessID: businessId } },
+  })
+  return data
+}
+
+export async function updateSalonPolicy(
+  businessId: string,
+  cancellationLeadHours: number,
+  noShowAfterHours: number,
+) {
+  const { data } = await PUT(URL_SALON_POLICY, {
+    params: { path: { businessID: businessId } },
+    body: { cancellation_lead_hours: cancellationLeadHours, no_show_after_hours: noShowAfterHours },
+  })
+  return data
 }
 
 export function useAdminEmployees(businessId: string) {
@@ -303,6 +333,13 @@ export async function cancelReservation(businessId: string, appointmentId: strin
   const { data } = await DELETE(URL_MY_RESERVATIONS_DELETE, {
     params: { path: { businessID: businessId, appointmentID: appointmentId } },
     body: { cancellation_reason: reason },
+  })
+  return data
+}
+
+export async function markNoShow(businessId: string, appointmentId: string) {
+  const { data } = await POST(URL_MY_RESERVATIONS_NO_SHOW, {
+    params: { path: { businessID: businessId, appointmentID: appointmentId } },
   })
   return data
 }

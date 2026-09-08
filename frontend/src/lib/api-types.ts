@@ -1012,12 +1012,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            /** @description Cancellation reason */
-            requestBody: {
-                content: {
-                    "application/json": components["schemas"]["handler.CancelAppointmentRequest"];
-                };
-            };
+            requestBody: components["requestBodies"]["handler.CancelAppointmentRequest"];
             responses: {
                 /** @description OK */
                 200: {
@@ -1057,6 +1052,95 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/me/appointments/{appointmentID}/no-show": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mark one of my reservations as no-show
+         * @description Marks the authenticated member's own reservation as no-show, once the salon's configured grace period has passed.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Appointment UUID */
+                    appointmentID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -1255,6 +1339,133 @@ export interface paths {
                 };
             };
         };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/admin/business/{businessID}/policy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get salon policy
+         * @description Returns the salon's cancellation and no-show policies.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.SalonPolicyResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Update salon policy
+         * @description Sets the salon's cancellation and no-show policies.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Policy */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.UpdateSalonPolicyRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.SalonPolicyResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
         options?: never;
         head?: never;
         patch?: never;
@@ -2611,7 +2822,7 @@ export interface paths {
         post?: never;
         /**
          * Cancel an appointment
-         * @description Cancels an appointment owned by the authenticated customer.
+         * @description Cancels an appointment owned by the authenticated customer, respecting the salon's cancellation notice policy.
          */
         delete: {
             parameters: {
@@ -2623,7 +2834,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            requestBody?: never;
+            requestBody: components["requestBodies"]["handler.CancelAppointmentRequest"];
             responses: {
                 /** @description OK */
                 200: {
@@ -2652,6 +2863,24 @@ export interface paths {
                         "application/json": components["schemas"]["handler.ErrorResponse"];
                     };
                 };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Conflict */
+                409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
             };
         };
         options?: never;
@@ -2666,12 +2895,22 @@ export interface components {
         "dto.Appointment": {
             business_id: string;
             business_user_id: string;
+            /**
+             * @description CancellationLeadHours is populated for customer appointment lists so the
+             *     UI can surface the salon's cancellation notice window.
+             */
+            cancellation_lead_hours?: number;
             cancellation_reason?: string;
             created_at: string;
             created_by: string;
             customer_user_id: string;
             end_time: string;
             id: string;
+            /**
+             * @description NoShowAfterHours is populated for staff reservation lists so the UI can
+             *     surface when a no-show may be recorded.
+             */
+            no_show_after_hours?: number;
             service_id: string;
             /** @description ServiceName is populated for staff-facing reservation lists only. */
             service_name?: string;
@@ -2679,9 +2918,11 @@ export interface components {
             status: string;
         };
         "dto.Business": {
+            cancellation_lead_hours: number;
             created_at: string;
             id: string;
             name: string;
+            no_show_after_hours: number;
             slug: string;
             updated_at: string;
         };
@@ -2851,6 +3092,12 @@ export interface components {
              */
             section_ids: string[];
         };
+        "handler.SalonPolicyResponse": {
+            /** @example 2 */
+            cancellation_lead_hours: number;
+            /** @example 2 */
+            no_show_after_hours: number;
+        };
         "handler.ServiceInput": {
             /** @example true */
             active: boolean;
@@ -2881,6 +3128,12 @@ export interface components {
         };
         "handler.Translations": {
             [key: string]: string;
+        };
+        "handler.UpdateSalonPolicyRequest": {
+            /** @example 2 */
+            cancellation_lead_hours: number;
+            /** @example 2 */
+            no_show_after_hours: number;
         };
         "handler.UpdateSectionRequest": {
             content: Record<string, never>;
@@ -2922,6 +3175,12 @@ export interface components {
                      */
                     file: string;
                 };
+            };
+        };
+        /** @description Cancellation reason */
+        "handler.CancelAppointmentRequest": {
+            content: {
+                "application/json": components["schemas"]["handler.CancelAppointmentRequest"];
             };
         };
     };

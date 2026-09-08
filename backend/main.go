@@ -92,7 +92,7 @@ func main() {
 
 	slotService := service.NewSlotService(
 		appointmentStore, workingHoursStore, overrideStore,
-		serviceStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
+		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
 	)
 
 	workingHoursService := service.NewWorkingHoursService(

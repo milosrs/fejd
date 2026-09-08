@@ -786,7 +786,12 @@ func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames))
+	noShowAfterHours := 0
+	if b, err := h.businessStore.GetByID(r.Context(), businessID); err == nil {
+		noShowAfterHours = b.NoShowAfterHours
+	}
+
+	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, noShowAfterHours))
 }
 
 // CancelMyReservation godoc
@@ -853,6 +858,134 @@ func (h *AdminHandler) serviceNameMap(ctx context.Context, businessID uuid.UUID)
 		names[svc.ID] = svc.Name
 	}
 	return names, nil
+}
+
+// GetSalonPolicy godoc
+// @Summary      Get salon policy
+// @Description  Returns the salon's cancellation and no-show policies.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Success      200 {object} SalonPolicyResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/policy [get]
+func (h *AdminHandler) GetSalonPolicy(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	b, err := h.businessStore.GetByID(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, SalonPolicyResponse{
+		CancellationLeadHours: b.CancellationLeadHours,
+		NoShowAfterHours:      b.NoShowAfterHours,
+	})
+}
+
+// UpdateSalonPolicy godoc
+// @Summary      Update salon policy
+// @Description  Sets the salon's cancellation and no-show policies.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body UpdateSalonPolicyRequest true "Policy"
+// @Success      200 {object} SalonPolicyResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/policy [put]
+func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	var body UpdateSalonPolicyRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	if body.CancellationLeadHours < 0 {
+		writeError(w, http.StatusBadRequest, "cancellation_lead_hours must be zero or greater")
+		return
+	}
+	if body.NoShowAfterHours < 0 {
+		writeError(w, http.StatusBadRequest, "no_show_after_hours must be zero or greater")
+		return
+	}
+
+	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterHours); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, SalonPolicyResponse{
+		CancellationLeadHours: body.CancellationLeadHours,
+		NoShowAfterHours:      body.NoShowAfterHours,
+	})
+}
+
+// MarkNoShow godoc
+// @Summary      Mark one of my reservations as no-show
+// @Description  Marks the authenticated member's own reservation as no-show, once the salon's configured grace period has passed.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        appointmentID path string true "Appointment UUID"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Failure      409 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/me/appointments/{appointmentID}/no-show [post]
+func (h *AdminHandler) MarkNoShow(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	appointmentID, err := uuid.Parse(chi.URLParam(r, "appointmentID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid appointment ID")
+		return
+	}
+
+	if err := h.slotService.MarkNoShow(r.Context(), businessID, userID, appointmentID); err != nil {
+		if errors.Is(err, service.ErrNoShowTooEarly) {
+			writeError(w, http.StatusConflict, "no-show can only be marked after the configured grace period")
+			return
+		}
+		if errors.Is(err, service.ErrAppointmentNotFound) {
+			writeError(w, http.StatusNotFound, "appointment not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "appointment marked as no-show"})
 }
 
 // CreateSection godoc

@@ -1155,15 +1155,7 @@
                     }
                 ],
                 "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/handler.CancelAppointmentRequest"
-                            }
-                        }
-                    },
-                    "description": "Cancellation reason",
-                    "required": true
+                    "$ref": "#/components/requestBodies/handler.CancelAppointmentRequest"
                 },
                 "responses": {
                     "200": {
@@ -1198,6 +1190,102 @@
                     },
                     "403": {
                         "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/business/{businessID}/me/appointments/{appointmentID}/no-show": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Marks the authenticated member's own reservation as no-show, once the salon's configured grace period has passed.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Mark one of my reservations as no-show",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Appointment UUID",
+                        "name": "appointmentID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -1394,6 +1482,149 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/business/{businessID}/policy": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the salon's cancellation and no-show policies.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Get salon policy",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.SalonPolicyResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Sets the salon's cancellation and no-show policies.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update salon policy",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.UpdateSalonPolicyRequest"
+                            }
+                        }
+                    },
+                    "description": "Policy",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.SalonPolicyResponse"
                                 }
                             }
                         }
@@ -2789,7 +3020,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Cancels an appointment owned by the authenticated customer.",
+                "description": "Cancels an appointment owned by the authenticated customer, respecting the salon's cancellation notice policy.",
                 "tags": [
                     "appointments"
                 ],
@@ -2805,6 +3036,9 @@
                         }
                     }
                 ],
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/handler.CancelAppointmentRequest"
+                },
                 "responses": {
                     "200": {
                         "description": "OK",
@@ -2828,6 +3062,26 @@
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -2866,6 +3120,17 @@
                     }
                 },
                 "required": true
+            },
+            "handler.CancelAppointmentRequest": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/handler.CancelAppointmentRequest"
+                        }
+                    }
+                },
+                "description": "Cancellation reason",
+                "required": true
             }
         },
         "securitySchemes": {
@@ -2898,6 +3163,10 @@
                     "business_user_id": {
                         "type": "string"
                     },
+                    "cancellation_lead_hours": {
+                        "description": "CancellationLeadHours is populated for customer appointment lists so the\nUI can surface the salon's cancellation notice window.",
+                        "type": "integer"
+                    },
                     "cancellation_reason": {
                         "type": "string"
                     },
@@ -2915,6 +3184,10 @@
                     },
                     "id": {
                         "type": "string"
+                    },
+                    "no_show_after_hours": {
+                        "description": "NoShowAfterHours is populated for staff reservation lists so the UI can\nsurface when a no-show may be recorded.",
+                        "type": "integer"
                     },
                     "service_id": {
                         "type": "string"
@@ -2934,13 +3207,18 @@
             "dto.Business": {
                 "type": "object",
                 "required": [
+                    "cancellation_lead_hours",
                     "created_at",
                     "id",
                     "name",
+                    "no_show_after_hours",
                     "slug",
                     "updated_at"
                 ],
                 "properties": {
+                    "cancellation_lead_hours": {
+                        "type": "integer"
+                    },
                     "created_at": {
                         "type": "string"
                     },
@@ -2949,6 +3227,9 @@
                     },
                     "name": {
                         "type": "string"
+                    },
+                    "no_show_after_hours": {
+                        "type": "integer"
                     },
                     "slug": {
                         "type": "string"
@@ -3502,6 +3783,23 @@
                     }
                 }
             },
+            "handler.SalonPolicyResponse": {
+                "type": "object",
+                "required": [
+                    "cancellation_lead_hours",
+                    "no_show_after_hours"
+                ],
+                "properties": {
+                    "cancellation_lead_hours": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "no_show_after_hours": {
+                        "type": "integer",
+                        "example": 2
+                    }
+                }
+            },
             "handler.ServiceInput": {
                 "type": "object",
                 "required": [
@@ -3588,6 +3886,23 @@
                 "type": "object",
                 "additionalProperties": {
                     "type": "string"
+                }
+            },
+            "handler.UpdateSalonPolicyRequest": {
+                "type": "object",
+                "required": [
+                    "cancellation_lead_hours",
+                    "no_show_after_hours"
+                ],
+                "properties": {
+                    "cancellation_lead_hours": {
+                        "type": "integer",
+                        "example": 2
+                    },
+                    "no_show_after_hours": {
+                        "type": "integer",
+                        "example": 2
+                    }
                 }
             },
             "handler.UpdateSectionRequest": {

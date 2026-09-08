@@ -8,11 +8,13 @@ import (
 )
 
 type Business struct {
-	ID        uuid.UUID `json:"id" validate:"required"`
-	Name      string    `json:"name" validate:"required"`
-	Slug      string    `json:"slug" validate:"required"`
-	CreatedAt time.Time `json:"created_at" validate:"required"`
-	UpdatedAt time.Time `json:"updated_at" validate:"required"`
+	ID                    uuid.UUID `json:"id" validate:"required"`
+	Name                  string    `json:"name" validate:"required"`
+	Slug                  string    `json:"slug" validate:"required"`
+	CreatedAt             time.Time `json:"created_at" validate:"required"`
+	UpdatedAt             time.Time `json:"updated_at" validate:"required"`
+	CancellationLeadHours int       `json:"cancellation_lead_hours" validate:"required"`
+	NoShowAfterHours      int       `json:"no_show_after_hours" validate:"required"`
 }
 
 // Me is the authenticated user's own onboarding state, synthesized from the
@@ -96,6 +98,12 @@ type Appointment struct {
 	CreatedAt          time.Time `json:"created_at" validate:"required"`
 	// ServiceName is populated for staff-facing reservation lists only.
 	ServiceName string `json:"service_name,omitempty"`
+	// CancellationLeadHours is populated for customer appointment lists so the
+	// UI can surface the salon's cancellation notice window.
+	CancellationLeadHours int `json:"cancellation_lead_hours,omitempty"`
+	// NoShowAfterHours is populated for staff reservation lists so the UI can
+	// surface when a no-show may be recorded.
+	NoShowAfterHours int `json:"no_show_after_hours,omitempty"`
 }
 
 type TimeSlot struct {

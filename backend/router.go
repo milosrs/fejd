@@ -127,6 +127,8 @@ func newRouter(
 				r.Delete("/sections/{sectionID}", adminHandler.DeleteSection)
 				r.Post("/images", imageHandler.UploadBusinessImage)
 				r.Post("/services/{serviceID}/image", imageHandler.UploadServiceImage)
+				r.Get("/policy", adminHandler.GetSalonPolicy)
+				r.Put("/policy", adminHandler.UpdateSalonPolicy)
 			})
 
 			r.Post("/admin/business/{businessID}/employees/{userID}/image", imageHandler.UploadEmployeeImage)
@@ -150,6 +152,7 @@ func newRouter(
 				Route("/admin/business/{businessID}/me/appointments", func(r chi.Router) {
 					r.Get("/", adminHandler.ListMyReservations)
 					r.Delete("/{appointmentID}", adminHandler.CancelMyReservation)
+					r.Post("/{appointmentID}/no-show", adminHandler.MarkNoShow)
 				})
 		})
 
