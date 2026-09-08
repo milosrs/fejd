@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"fejd-backend/internal/keycloak"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
@@ -23,9 +24,21 @@ func newTestInvitationHandler(t *testing.T) (*InvitationHandler, *store.Business
 	businessStore := store.NewBusinessStore(pool)
 	buStore := store.NewBusinessUserStore(pool)
 	invitationStore := store.NewInvitationStore(pool)
-	invitationService := service.NewInvitationService(invitationStore, pool, "https://app.example.com")
+	invitationService := service.NewInvitationService(invitationStore, businessStore, buStore, &noopInvitationUsers{}, pool, "https://app.example.com")
 	h := NewInvitationHandler(invitationService, 48*time.Hour)
 	return h, businessStore, buStore, pool
+}
+
+// noopInvitationUsers satisfies service.InvitationUserManager for handler
+// tests that only exercise invitation creation.
+type noopInvitationUsers struct{}
+
+func (noopInvitationUsers) GetUser(context.Context, string) (*keycloak.User, error) {
+	return &keycloak.User{}, nil
+}
+func (noopInvitationUsers) AddRealmRole(context.Context, string, string) error { return nil }
+func (noopInvitationUsers) UpdateUserAttributes(context.Context, string, map[string][]string) error {
+	return nil
 }
 
 func TestInvitationHandler_CreateInvitation_AsEmployee(t *testing.T) {

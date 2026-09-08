@@ -115,7 +115,7 @@ func main() {
 	)
 
 	invitationStore := store.NewInvitationStore(pool)
-	invitationService := service.NewInvitationService(invitationStore, pool, cfg.Jobs.InviteBaseURL)
+	invitationService := service.NewInvitationService(invitationStore, businessStore, buStore, keycloakAdmin, pool, cfg.Jobs.InviteBaseURL)
 	invitationHandler := handler.NewInvitationHandler(invitationService, time.Duration(cfg.Jobs.InviteExpiryHours)*time.Hour)
 
 	adminHandler := handler.NewAdminHandler(
