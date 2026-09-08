@@ -13,6 +13,10 @@ services:
       KEYCLOAK_REALM: fejd
       KEYCLOAK_CLIENT_ID: fejd-backend
       KEYCLOAK_CLIENT_SECRET: EYlizeFHVtfRPhomKqasA4mgRYGLfJBL
+      KEYCLOAK_AUDIENCES: salon-mobile,fejd-frontend
+      KEYCLOAK_ADMIN_CLIENT_ID: fejd-admin
+      KEYCLOAK_ADMIN_CLIENT_SECRET: H6vKp9sQ2wXrT4yL8mN1cB3dV5fG7jZ0
+      INVITE_BASE_URL: http://localhost:5173
       SMTP_HOST: smtp
       SMTP_PORT: "25"
       SMTP_FROM: no-reply@fejd.local
@@ -44,6 +48,10 @@ services:
       VITE_KEYCLOAK_URL: http://localhost:9090
       VITE_KEYCLOAK_REALM: fejd
       VITE_KEYCLOAK_CLIENT_ID: fejd-frontend
+      # Store listing URLs shown on the invite landing page when the app isn't
+      # installed. Fill in once the app is published (see .kilo/plans/invite-link-qr/09-infrastructure.md).
+      VITE_APP_STORE_URL: ""
+      VITE_PLAY_STORE_URL: ""
     ports:
       - "5173:5173"
     volumes:
