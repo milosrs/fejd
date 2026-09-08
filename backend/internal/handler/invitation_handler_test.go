@@ -9,28 +9,34 @@ import (
 	"testing"
 	"time"
 
+	"fejd-backend/internal/dto"
 	"fejd-backend/internal/keycloak"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
 
+	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func newTestInvitationHandler(t *testing.T) (*InvitationHandler, *store.BusinessStore, *store.BusinessUserStore, *pgxpool.Pool) {
+func newTestInvitationHandlerWith(t *testing.T, users service.InvitationUserManager) (*InvitationHandler, *store.BusinessStore, *store.BusinessUserStore, *pgxpool.Pool) {
 	pool := setupHandlerTestDB(t)
 	businessStore := store.NewBusinessStore(pool)
 	buStore := store.NewBusinessUserStore(pool)
 	invitationStore := store.NewInvitationStore(pool)
-	invitationService := service.NewInvitationService(invitationStore, businessStore, buStore, &noopInvitationUsers{}, pool, "https://app.example.com")
+	invitationService := service.NewInvitationService(invitationStore, businessStore, buStore, users, pool, "https://app.example.com")
 	h := NewInvitationHandler(invitationService, 48*time.Hour)
 	return h, businessStore, buStore, pool
 }
 
-// noopInvitationUsers satisfies service.InvitationUserManager for handler
-// tests that only exercise invitation creation.
+func newTestInvitationHandler(t *testing.T) (*InvitationHandler, *store.BusinessStore, *store.BusinessUserStore, *pgxpool.Pool) {
+	return newTestInvitationHandlerWith(t, &noopInvitationUsers{})
+}
+
+// noopInvitationUsers satisfies service.InvitationUserManager for tests that
+// only exercise invitation creation or public resolution.
 type noopInvitationUsers struct{}
 
 func (noopInvitationUsers) GetUser(context.Context, string) (*keycloak.User, error) {
@@ -39,6 +45,31 @@ func (noopInvitationUsers) GetUser(context.Context, string) (*keycloak.User, err
 func (noopInvitationUsers) AddRealmRole(context.Context, string, string) error { return nil }
 func (noopInvitationUsers) UpdateUserAttributes(context.Context, string, map[string][]string) error {
 	return nil
+}
+
+// recordingUsers records role grants and attribute updates for assertions.
+type recordingUsers struct {
+	roles []string
+	attrs []map[string][]string
+}
+
+func (r *recordingUsers) GetUser(ctx context.Context, userID string) (*keycloak.User, error) {
+	return &keycloak.User{Email: "emp@example.com"}, nil
+}
+func (r *recordingUsers) AddRealmRole(ctx context.Context, userID, role string) error {
+	r.roles = append(r.roles, role)
+	return nil
+}
+func (r *recordingUsers) UpdateUserAttributes(ctx context.Context, userID string, attrs map[string][]string) error {
+	r.attrs = append(r.attrs, attrs)
+	return nil
+}
+
+func createInvite(t *testing.T, h *InvitationHandler, businessID uuid.UUID, createdBy string) string {
+	t.Helper()
+	out, err := h.invitations.CreateInvitation(context.Background(), businessID, createdBy, time.Hour)
+	require.NoError(t, err)
+	return out.Token
 }
 
 func TestInvitationHandler_CreateInvitation_AsEmployee(t *testing.T) {
@@ -106,4 +137,131 @@ func TestInvitationHandler_CreateInvitation_InvalidBusinessID(t *testing.T) {
 	h.CreateInvitation(rr, req)
 
 	require.Equal(t, http.StatusBadRequest, rr.Code)
+}
+
+func TestInvitationHandler_GetInvitation_Public(t *testing.T) {
+	h, businessStore, _, pool := newTestInvitationHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+	token := createInvite(t, h, b.ID, "owner")
+
+	req := withPathParams(
+		httptest.NewRequest(http.MethodGet, "/api/invitations/"+token, nil),
+		map[string]string{"token": token},
+	)
+	rr := httptest.NewRecorder()
+
+	h.GetInvitation(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var resp PublicInvitationResponse
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	assert.Equal(t, "Salon", resp.SalonName)
+	assert.Equal(t, "salon", resp.SalonSlug)
+	assert.Equal(t, "employee", resp.Role)
+}
+
+func TestInvitationHandler_GetInvitation_NotFound(t *testing.T) {
+	h, _, _, _ := newTestInvitationHandler(t)
+
+	req := withPathParams(
+		httptest.NewRequest(http.MethodGet, "/api/invitations/does-not-exist", nil),
+		map[string]string{"token": "does-not-exist"},
+	)
+	rr := httptest.NewRecorder()
+
+	h.GetInvitation(rr, req)
+
+	require.Equal(t, http.StatusNotFound, rr.Code)
+}
+
+func TestInvitationHandler_AcceptInvitation_LinksEmployee(t *testing.T) {
+	users := &recordingUsers{}
+	h, businessStore, buStore, pool := newTestInvitationHandlerWith(t, users)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+	require.NoError(t, buStore.Create(ctx, pool, &models.BusinessUser{
+		BusinessID: b.ID, UserID: "owner", Role: "admin",
+	}))
+
+	token := createInvite(t, h, b.ID, "owner")
+
+	req := withPathParams(
+		withUser(httptest.NewRequest(http.MethodPost, "/api/invitations/"+token+"/accept", nil), "emp-1", "pending"),
+		map[string]string{"token": token},
+	)
+	rr := httptest.NewRecorder()
+
+	h.AcceptInvitation(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var business dto.Business
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &business))
+	assert.Equal(t, "salon", business.Slug)
+
+	bu, err := buStore.GetByBusinessAndUser(ctx, b.ID, "emp-1")
+	require.NoError(t, err)
+	assert.Equal(t, "employee", bu.Role)
+	assert.True(t, bu.Active)
+
+	require.Len(t, users.roles, 1)
+	assert.Equal(t, "Employee", users.roles[0])
+	require.Len(t, users.attrs, 1)
+	assert.Equal(t, []string{"approved"}, users.attrs[0]["approval_status"])
+}
+
+func TestInvitationHandler_AcceptInvitation_SingleUse(t *testing.T) {
+	h, businessStore, buStore, pool := newTestInvitationHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+	require.NoError(t, buStore.Create(ctx, pool, &models.BusinessUser{
+		BusinessID: b.ID, UserID: "owner", Role: "admin",
+	}))
+
+	token := createInvite(t, h, b.ID, "owner")
+
+	accept := func(userID string) *httptest.ResponseRecorder {
+		req := withPathParams(
+			withUser(httptest.NewRequest(http.MethodPost, "/api/invitations/"+token+"/accept", nil), userID, "approved"),
+			map[string]string{"token": token},
+		)
+		rr := httptest.NewRecorder()
+		h.AcceptInvitation(rr, req)
+		return rr
+	}
+
+	require.Equal(t, http.StatusOK, accept("emp-1").Code)
+	require.Equal(t, http.StatusGone, accept("emp-2").Code)
+
+	_, err := buStore.GetByBusinessAndUser(ctx, b.ID, "emp-2")
+	require.Error(t, err, "second user must not be linked")
+}
+
+func TestInvitationHandler_AcceptInvitation_OwnerForbidden(t *testing.T) {
+	h, businessStore, buStore, pool := newTestInvitationHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+	require.NoError(t, buStore.Create(ctx, pool, &models.BusinessUser{
+		BusinessID: b.ID, UserID: "owner", Role: "admin",
+	}))
+
+	token := createInvite(t, h, b.ID, "owner")
+
+	req := withPathParams(
+		withUser(httptest.NewRequest(http.MethodPost, "/api/invitations/"+token+"/accept", nil), "owner", "approved"),
+		map[string]string{"token": token},
+	)
+	rr := httptest.NewRecorder()
+
+	h.AcceptInvitation(rr, req)
+
+	require.Equal(t, http.StatusConflict, rr.Code)
 }

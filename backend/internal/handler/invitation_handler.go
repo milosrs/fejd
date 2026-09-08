@@ -2,10 +2,12 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
 	"fejd-backend/internal/authutil"
+	"fejd-backend/internal/dto"
 	"fejd-backend/internal/service"
 
 	"github.com/go-chi/chi/v5"
@@ -71,4 +73,80 @@ func (h *InvitationHandler) CreateInvitation(w http.ResponseWriter, r *http.Requ
 		Token:     out.Token,
 		ExpiresAt: out.ExpiresAt,
 	})
+}
+
+// GetInvitation godoc
+// @Summary      Resolve an invite link
+// @Description  Returns the target salon for an invite token, so the landing page can greet the invitee before they register. Never returns the token itself.
+// @Tags         invitations
+// @Produce      json
+// @Param        token path string true "Invitation token"
+// @Success      200 {object} PublicInvitationResponse
+// @Failure      404 {object} ErrorResponse
+// @Failure      410 {object} ErrorResponse
+// @Router       /api/invitations/{token} [get]
+func (h *InvitationHandler) GetInvitation(w http.ResponseWriter, r *http.Request) {
+	inv, err := h.invitations.GetInvitation(r.Context(), chi.URLParam(r, "token"))
+	if err != nil {
+		if status, ok := invitationErrorStatus(err); ok {
+			writeError(w, status, err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, PublicInvitationResponse{
+		SalonName: inv.SalonName,
+		SalonSlug: inv.SalonSlug,
+		Role:      inv.Role,
+		ExpiresAt: inv.ExpiresAt,
+	})
+}
+
+// AcceptInvitation godoc
+// @Summary      Accept an invite link
+// @Description  Links the authenticated user to the invited salon as an employee and grants the Employee role. Idempotent; works for new and existing users.
+// @Tags         invitations
+// @Produce      json
+// @Param        token path string true "Invitation token"
+// @Success      200 {object} dto.Business
+// @Failure      401 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Failure      409 {object} ErrorResponse
+// @Failure      410 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/invitations/{token}/accept [post]
+func (h *InvitationHandler) AcceptInvitation(w http.ResponseWriter, r *http.Request) {
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	business, err := h.invitations.AcceptInvitation(r.Context(), chi.URLParam(r, "token"), userID)
+	if err != nil {
+		if status, ok := invitationErrorStatus(err); ok {
+			writeError(w, status, err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.BusinessFromModel(*business))
+}
+
+// invitationErrorStatus maps invitation service sentinel errors to HTTP codes.
+func invitationErrorStatus(err error) (int, bool) {
+	switch {
+	case errors.Is(err, service.ErrInvitationNotFound):
+		return http.StatusNotFound, true
+	case errors.Is(err, service.ErrInvitationExpired), errors.Is(err, service.ErrInvitationUsed):
+		return http.StatusGone, true
+	case errors.Is(err, service.ErrCannotInviteOwner):
+		return http.StatusConflict, true
+	default:
+		return 0, false
+	}
 }

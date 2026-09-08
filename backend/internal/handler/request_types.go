@@ -42,6 +42,13 @@ type InvitationResponse struct {
 	ExpiresAt time.Time `json:"expires_at" validate:"required"`
 }
 
+type PublicInvitationResponse struct {
+	SalonName string    `json:"salon_name" validate:"required"`
+	SalonSlug string    `json:"salon_slug" validate:"required"`
+	Role      string    `json:"role" validate:"required"`
+	ExpiresAt time.Time `json:"expires_at" validate:"required"`
+}
+
 type RemoveEmployeeResponse struct {
 	Reassigned int    `json:"reassigned" validate:"required"`
 	Cancelled  int    `json:"cancelled" validate:"required"`

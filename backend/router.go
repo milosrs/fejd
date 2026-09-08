@@ -66,6 +66,10 @@ func newRouter(
 
 		r.Get("/i18n/{locale}", i18nHandler.GetTranslations)
 
+		// Public resolve of an invite token (no auth): the landing page greets
+		// the invitee before they register.
+		r.Get("/invitations/{token}", invitationHandler.GetInvitation)
+
 		// GET /api/me is exempt from approval so a pending user can read their
 		// own status; POST /api/me/business is gated.
 		r.Route("/me", func(r chi.Router) {
@@ -89,6 +93,10 @@ func newRouter(
 			r.Post("/appointments", appointmentHandler.Create)
 			r.Get("/my/appointments", appointmentHandler.ListMyAppointments)
 			r.Delete("/my/appointments/{appointmentID}", appointmentHandler.Cancel)
+
+			// Accept is authenticated but NOT approval-gated, so a brand-new or
+			// still-pending user can redeem an invite right after registering.
+			r.Post("/invitations/{token}/accept", invitationHandler.AcceptInvitation)
 		})
 
 		// Owner-facing: Authenticate + RequireApproved.

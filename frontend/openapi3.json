@@ -2113,6 +2113,135 @@
                 }
             }
         },
+        "/api/invitations/{token}": {
+            "get": {
+                "description": "Returns the target salon for an invite token, so the landing page can greet the invitee before they register. Never returns the token itself.",
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Resolve an invite link",
+                "parameters": [
+                    {
+                        "description": "Invitation token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.PublicInvitationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/invitations/{token}/accept": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Links the authenticated user to the invited salon as an employee and grants the Employee role. Idempotent; works for new and existing users.",
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Accept an invite link",
+                "parameters": [
+                    {
+                        "description": "Invitation token",
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/dto.Business"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "410": {
+                        "description": "Gone",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/me": {
             "get": {
                 "security": [
@@ -2910,6 +3039,29 @@
                     "message": {
                         "type": "string",
                         "example": "operation complete"
+                    }
+                }
+            },
+            "handler.PublicInvitationResponse": {
+                "type": "object",
+                "required": [
+                    "expires_at",
+                    "role",
+                    "salon_name",
+                    "salon_slug"
+                ],
+                "properties": {
+                    "expires_at": {
+                        "type": "string"
+                    },
+                    "role": {
+                        "type": "string"
+                    },
+                    "salon_name": {
+                        "type": "string"
+                    },
+                    "salon_slug": {
+                        "type": "string"
                     }
                 }
             },
