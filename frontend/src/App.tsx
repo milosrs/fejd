@@ -10,6 +10,7 @@ import { BookingPage } from "./pages/BookingPage"
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage"
 import { AdminSchedulePage } from "./pages/AdminSchedulePage"
 import { AdminServicesPage } from "./pages/AdminServicesPage"
+import { MySchedulePage } from "./pages/MySchedulePage"
 import { SalonLayout } from "./components/SalonLayout"
 import { I18nProvider } from "./lib/i18n"
 import { ThemeProvider } from "#components/theme-provider"
@@ -105,6 +106,7 @@ function App() {
                 <Route path="/my/appointments" element={<ProtectedRoute><OnboardingGate><MyAppointmentsPage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/schedule" element={<ProtectedRoute><OnboardingGate><AdminSchedulePage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/services" element={<ProtectedRoute><OnboardingGate><AdminServicesPage /></OnboardingGate></ProtectedRoute>} />
+                <Route path="/admin/business/:businessId/my-schedule" element={<ProtectedRoute><OnboardingGate><MySchedulePage /></OnboardingGate></ProtectedRoute>} />
 
                 <Route path="/:slug" element={<SalonLayout />}>
                   <Route index element={<LandingPage />} />

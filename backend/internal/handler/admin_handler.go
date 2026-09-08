@@ -3,6 +3,7 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fejd-backend/internal/authutil"
 	"fejd-backend/internal/db"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
@@ -596,6 +597,139 @@ func (h *AdminHandler) DeleteUnavailability(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := h.slotService.DeleteEmployeeUnavailability(r.Context(), businessID, targetUserID, unavailabilityID); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "unavailability deleted"})
+}
+
+// ListMyUnavailability godoc
+// @Summary      List my blocked time slots
+// @Description  Returns the blocked time ranges the authenticated member (owner or employee) reserved for themselves.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Success      200 {array} dto.EmployeeUnavailability
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/me/unavailability [get]
+func (h *AdminHandler) ListMyUnavailability(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	unavail, err := h.slotService.ListEmployeeUnavailability(r.Context(), businessID, userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.EmployeeUnavailabilitysFromModels(unavail))
+}
+
+// AddMyUnavailability godoc
+// @Summary      Reserve one of my time slots
+// @Description  Blocks a time range for the authenticated member so it is not offered to customers.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body CreateUnavailabilityRequest true "Blocked range"
+// @Success      201 {object} dto.EmployeeUnavailability
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/me/unavailability [post]
+func (h *AdminHandler) AddMyUnavailability(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	var body CreateUnavailabilityRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	startTime, err := time.Parse(time.RFC3339, body.StartTime)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid start_time format, use RFC3339")
+		return
+	}
+
+	endTime, err := time.Parse(time.RFC3339, body.EndTime)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid end_time format, use RFC3339")
+		return
+	}
+
+	u := &models.EmployeeUnavailability{
+		StartTime: startTime,
+		EndTime:   endTime,
+		Reason:    body.Reason,
+	}
+
+	if err := h.slotService.AddEmployeeUnavailability(r.Context(), businessID, userID, u); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, dto.EmployeeUnavailabilityFromModel(*u))
+}
+
+// DeleteMyUnavailability godoc
+// @Summary      Remove one of my blocked time slots
+// @Description  Deletes a blocked time range the authenticated member reserved for themselves.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        unavailabilityID path string true "Unavailability UUID"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/me/unavailability/{unavailabilityID} [delete]
+func (h *AdminHandler) DeleteMyUnavailability(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	unavailabilityID, err := uuid.Parse(chi.URLParam(r, "unavailabilityID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid unavailability ID")
+		return
+	}
+
+	if err := h.slotService.DeleteOwnEmployeeUnavailability(r.Context(), businessID, userID, unavailabilityID); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}

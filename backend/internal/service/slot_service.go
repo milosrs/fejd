@@ -287,6 +287,45 @@ func (s *SlotService) AddEmployeeUnavailability(ctx context.Context, businessID 
 	return nil
 }
 
+// ListEmployeeUnavailability returns the blocked-time ranges for the member
+// identified by userID within the business (used by the self-service view).
+func (s *SlotService) ListEmployeeUnavailability(ctx context.Context, businessID uuid.UUID, userID string) ([]models.EmployeeUnavailability, error) {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	return s.unavailability.ListByBusinessUser(ctx, bu.ID)
+}
+
+// DeleteOwnEmployeeUnavailability removes one of the caller's own blocked-time
+// ranges. Unlike DeleteEmployeeUnavailability (admin, any employee), this is
+// scoped to the caller's own rows.
+func (s *SlotService) DeleteOwnEmployeeUnavailability(ctx context.Context, businessID uuid.UUID, userID string, unavailabilityID uuid.UUID) error {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, bu.ID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+
+		if err := s.unavailability.DeleteForBusinessUser(ctx, tx, bu.ID, unavailabilityID); err != nil {
+			return fmt.Errorf("failed to delete unavailability: %w", err)
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, bu.ID)
+	return nil
+}
+
 // DeleteEmployeeUnavailability removes an unavailability block.
 func (s *SlotService) DeleteEmployeeUnavailability(ctx context.Context, businessID uuid.UUID, userID string, unavailabilityID uuid.UUID) error {
 	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)

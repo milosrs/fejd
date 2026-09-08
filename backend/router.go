@@ -134,6 +134,15 @@ func newRouter(
 
 			r.With(customMiddleware.RequireBusinessMember(buStore)).
 				Post("/admin/business/{businessID}/invitations", invitationHandler.CreateInvitation)
+
+			// Self-service blocked time: any active member (owner or employee)
+			// may reserve their own slots so they are hidden from customers.
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Route("/admin/business/{businessID}/me/unavailability", func(r chi.Router) {
+					r.Get("/", adminHandler.ListMyUnavailability)
+					r.Post("/", adminHandler.AddMyUnavailability)
+					r.Delete("/{unavailabilityID}", adminHandler.DeleteMyUnavailability)
+				})
 		})
 
 		r.With(optionalAuthenticate).Get("/images/{imageID}", imageHandler.GetImage)

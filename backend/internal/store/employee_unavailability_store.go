@@ -49,6 +49,52 @@ func (s *EmployeeUnavailabilityStore) Delete(ctx context.Context, q Querier, id 
 	return err
 }
 
+// DeleteForBusinessUser removes an unavailability row only if it belongs to the
+// given employee. Used by the self-service path so a member can only delete
+// their own blocks.
+func (s *EmployeeUnavailabilityStore) DeleteForBusinessUser(ctx context.Context, q Querier, businessUserID, id uuid.UUID) error {
+	sql, args, err := psql.
+		Delete("employee_unavailability").
+		Where(sq.Eq{"id": id, "business_user_id": businessUserID}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}
+
+// ListByBusinessUser returns all unavailability rows for an employee ordered by
+// start time.
+func (s *EmployeeUnavailabilityStore) ListByBusinessUser(ctx context.Context, businessUserID uuid.UUID) ([]models.EmployeeUnavailability, error) {
+	sql, args, err := psql.
+		Select("id", "business_user_id", "start_time", "end_time", "COALESCE(reason, '')").
+		From("employee_unavailability").
+		Where(sq.Eq{"business_user_id": businessUserID}).
+		OrderBy("start_time").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list unavailability: %w", err)
+	}
+	defer rows.Close()
+
+	var result []models.EmployeeUnavailability
+	for rows.Next() {
+		var u models.EmployeeUnavailability
+		if err := rows.Scan(&u.ID, &u.BusinessUserID, &u.StartTime, &u.EndTime, &u.Reason); err != nil {
+			return nil, fmt.Errorf("failed to scan unavailability: %w", err)
+		}
+		result = append(result, u)
+	}
+	return result, nil
+}
+
 // ListOverlapping returns unavailability rows overlapping [from, to) for the
 // given employee. Used by the slot engine and the booking soft-check.
 func (s *EmployeeUnavailabilityStore) ListOverlapping(ctx context.Context, businessUserID uuid.UUID, from, to time.Time) ([]models.EmployeeUnavailability, error) {

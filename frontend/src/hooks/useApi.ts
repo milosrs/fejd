@@ -17,6 +17,8 @@ const URL_ADMIN_SERVICES = "/api/admin/business/{businessID}/services" as const
 const URL_ADMIN_SERVICES_DELETE = "/api/admin/business/{businessID}/services/{serviceID}" as const
 const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serviceID}/image" as const
 const URL_ADMIN_INVITATIONS = "/api/admin/business/{businessID}/invitations" as const
+const URL_MY_UNAVAILABILITY = "/api/admin/business/{businessID}/me/unavailability" as const
+const URL_MY_UNAVAILABILITY_DELETE = "/api/admin/business/{businessID}/me/unavailability/{unavailabilityID}" as const
 const URL_INVITATION = "/api/invitations/{token}" as const
 const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
@@ -243,6 +245,39 @@ export async function uploadEmployeeImage(businessId: string, userId: string, fi
   const { data } = await POST(URL_ADMIN_EMPLOYEE_IMAGE, {
     params: { path: { businessID: businessId, userID: userId } },
     body: { file } as any,
+  })
+  return data
+}
+
+export type EmployeeUnavailability = Schemas["dto.EmployeeUnavailability"]
+
+export function useMyUnavailability(businessId: string) {
+  return useQuery({
+    queryKey: ["my-unavailability", businessId],
+    queryFn: async () => {
+      const { data } = await GET(URL_MY_UNAVAILABILITY, {
+        params: { path: { businessID: businessId } },
+      })
+      return data
+    },
+    enabled: !!businessId,
+  })
+}
+
+export async function reserveOwnSlot(
+  businessId: string,
+  input: Schemas["handler.CreateUnavailabilityRequest"],
+) {
+  const { data } = await POST(URL_MY_UNAVAILABILITY, {
+    params: { path: { businessID: businessId } },
+    body: input,
+  })
+  return data
+}
+
+export async function deleteOwnSlot(businessId: string, unavailabilityId: string) {
+  const { data } = await DELETE(URL_MY_UNAVAILABILITY_DELETE, {
+    params: { path: { businessID: businessId, unavailabilityID: unavailabilityId } },
   })
   return data
 }

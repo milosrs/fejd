@@ -184,6 +184,14 @@ func AppointmentsFromModels(ms []models.Appointment) []Appointment {
 	return out
 }
 
+func EmployeeUnavailabilitysFromModels(ms []models.EmployeeUnavailability) []EmployeeUnavailability {
+	out := make([]EmployeeUnavailability, len(ms))
+	for i, m := range ms {
+		out[i] = EmployeeUnavailabilityFromModel(m)
+	}
+	return out
+}
+
 func TimeSlotsFromModels(ms []models.TimeSlot) []TimeSlot {
 	out := make([]TimeSlot, len(ms))
 	for i, m := range ms {
