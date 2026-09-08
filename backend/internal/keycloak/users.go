@@ -2,13 +2,19 @@ package keycloak
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// ErrUserNotFound is returned by user lookups when no matching user exists.
+var ErrUserNotFound = errors.New("keycloak user not found")
 
 func (c *Client) SearchUsersByAttribute(ctx context.Context, attr, value string) ([]User, error) {
 	params := url.Values{}
@@ -57,6 +63,88 @@ func (c *Client) ListUsersByRequiredActionAndAge(ctx context.Context, action str
 
 func (c *Client) DeleteUser(ctx context.Context, userID string) error {
 	return c.do(ctx, "DELETE", "/admin/realms/"+c.realm+"/users/"+userID, nil, nil)
+}
+
+// GetUser returns a single user by Keycloak user ID, or ErrUserNotFound.
+func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
+	path := "/admin/realms/" + c.realm + "/users/" + userID
+	resp, err := c.request(ctx, "GET", path, nil)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusNotFound {
+		return nil, ErrUserNotFound
+	}
+	if resp.StatusCode >= 400 {
+		body, _ := io.ReadAll(resp.Body)
+		return nil, fmt.Errorf("keycloak admin api error: GET %s -> %d: %s", path, resp.StatusCode, string(body))
+	}
+
+	var user User
+	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
+		return nil, err
+	}
+	return &user, nil
+}
+
+// GetUserByEmail returns the user whose email matches exactly, or
+// ErrUserNotFound when there is no such user.
+func (c *Client) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	params := url.Values{}
+	params.Set("email", email)
+	params.Set("exact", "true")
+
+	var users []User
+	if err := c.do(ctx, "GET", "/admin/realms/"+c.realm+"/users?"+params.Encode(), nil, &users); err != nil {
+		return nil, err
+	}
+	if len(users) == 0 {
+		return nil, ErrUserNotFound
+	}
+	return &users[0], nil
+}
+
+// AddRealmRole grants a realm role to a user by role name. It is idempotent:
+// granting a role the user already holds is treated as success.
+func (c *Client) AddRealmRole(ctx context.Context, userID, roleName string) error {
+	path := "/admin/realms/" + c.realm + "/users/" + userID + "/role-mappings/realm"
+	body := []map[string]string{{"name": roleName}}
+
+	resp, err := c.request(ctx, "POST", path, body)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if roleMappingSuccess(resp.StatusCode) {
+		return nil
+	}
+	respBody, _ := io.ReadAll(resp.Body)
+	return fmt.Errorf("keycloak admin api error: POST %s -> %d: %s", path, resp.StatusCode, string(respBody))
+}
+
+// ListRealmRoles returns the names of the realm roles mapped to a user.
+func (c *Client) ListRealmRoles(ctx context.Context, userID string) ([]string, error) {
+	var roles []struct {
+		Name string `json:"name"`
+	}
+	if err := c.do(ctx, "GET", "/admin/realms/"+c.realm+"/users/"+userID+"/role-mappings/realm", nil, &roles); err != nil {
+		return nil, err
+	}
+
+	names := make([]string, len(roles))
+	for i, r := range roles {
+		names[i] = r.Name
+	}
+	return names, nil
+}
+
+// roleMappingSuccess reports whether a role-mapping status code represents a
+// successful grant (201 created, 204 no content, 409 already mapped).
+func roleMappingSuccess(status int) bool {
+	return status == http.StatusCreated || status == http.StatusNoContent || status == http.StatusConflict
 }
 
 // CreateUserInput describes a user to create via the admin API.

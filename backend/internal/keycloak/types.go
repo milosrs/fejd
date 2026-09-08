@@ -10,6 +10,8 @@ type User struct {
 	ID               string              `json:"id"`
 	Username         string              `json:"username"`
 	Email            string              `json:"email"`
+	FirstName        string              `json:"firstName"`
+	LastName         string              `json:"lastName"`
 	Attributes       map[string][]string `json:"attributes"`
 	RequiredActions  []string            `json:"requiredActions"`
 	CreatedTimestamp int64               `json:"createdTimestamp"`
