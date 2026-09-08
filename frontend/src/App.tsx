@@ -15,6 +15,8 @@ import { I18nProvider } from "./lib/i18n"
 import { ThemeProvider } from "#components/theme-provider"
 import { ModeToggle } from "#components/mode-toggle"
 import { OnboardingGate } from "#components/OnboardingGate"
+import { InviteLandingPage } from "./components/invite/InviteLandingPage"
+import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -43,6 +45,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
 
   return (
     <>
+      <InviteAcceptHandler />
       {authenticated && (
         <header className="flex items-center justify-end gap-4 border-b px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
           <span className="text-sm text-muted-foreground">
@@ -97,6 +100,7 @@ function App() {
             <AppInit>
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/invite/:token" element={<InviteLandingPage />} />
 
                 <Route path="/my/appointments" element={<ProtectedRoute><OnboardingGate><MyAppointmentsPage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/schedule" element={<ProtectedRoute><OnboardingGate><AdminSchedulePage /></OnboardingGate></ProtectedRoute>} />

@@ -7,10 +7,12 @@ interface AuthState {
   authenticated: boolean
   userInfo: AuthUserInfo | null
   roles: string[]
+  pendingInviteToken: string | null
   init: () => Promise<void>
   login: () => Promise<void>
   register: () => Promise<void>
   logout: () => Promise<void>
+  setPendingInviteToken: (token: string | null) => void
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -18,6 +20,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   authenticated: false,
   userInfo: null,
   roles: [],
+  pendingInviteToken: null,
 
   init: async () => {
     // Native: the appUrlOpen redirect resolves auth asynchronously; sync the
@@ -28,6 +31,11 @@ export const useAuthStore = create<AuthState>((set) => ({
         userInfo: auth.getUserInfo(),
         roles: auth.getRoles(),
       })
+    })
+
+    // Native deep links: an invite link opened while the app runs lands here.
+    auth.onInviteLink((token) => {
+      set({ pendingInviteToken: token })
     })
 
     try {
@@ -54,6 +62,10 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   logout: async () => {
     await auth.logout()
-    set({ authenticated: false, userInfo: null, roles: [] })
+    set({ authenticated: false, userInfo: null, roles: [], pendingInviteToken: null })
+  },
+
+  setPendingInviteToken: (token) => {
+    set({ pendingInviteToken: token })
   },
 }))

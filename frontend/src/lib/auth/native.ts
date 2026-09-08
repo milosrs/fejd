@@ -1,6 +1,7 @@
 import { Browser } from "@capacitor/browser"
 import { App } from "@capacitor/app"
 import { SecureStorage } from "@aparajita/capacitor-secure-storage"
+import { parseInviteToken } from "../invite"
 import type { AuthAdapter, AuthUserInfo } from "./types"
 
 const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || "http://localhost:9090"
@@ -51,9 +52,35 @@ let roles: string[] = []
 let codeVerifier: string | null = null
 let listenerRegistered = false
 const changeListeners = new Set<() => void>()
+const inviteListeners = new Set<(token: string) => void>()
 
 function notify() {
   for (const l of changeListeners) l()
+}
+
+function notifyInvite(token: string) {
+  for (const l of inviteListeners) l(token)
+}
+
+function handleOpenURL(url: string) {
+  const inviteToken = parseInviteToken(url)
+  if (inviteToken) {
+    notifyInvite(inviteToken)
+    return
+  }
+
+  handleRedirect(url)
+    .then(async (handled) => {
+      await Browser.close()
+      if (!handled) {
+        // A non-auth redirect (e.g. logout) still means state changed.
+        notify()
+      }
+    })
+    .catch(async (err) => {
+      console.error("[auth] native redirect failed:", err)
+      await Browser.close()
+    })
 }
 
 interface TokenResponse {
@@ -124,19 +151,15 @@ export const nativeAdapter: AuthAdapter = {
   async init() {
     if (!listenerRegistered) {
       listenerRegistered = true
-      App.addListener("appUrlOpen", async (state) => {
-        try {
-          const handled = await handleRedirect(state.url)
-          await Browser.close()
-          if (!handled) {
-            // A non-auth redirect (e.g. logout) still means state changed.
-            notify()
-          }
-        } catch (err) {
-          console.error("[auth] native redirect failed:", err)
-          await Browser.close()
-        }
+      App.addListener("appUrlOpen", (state) => {
+        handleOpenURL(state.url)
       })
+      // Cold start: the app may have been launched by the invite link itself.
+      App.getLaunchUrl()
+        .then((launch) => {
+          if (launch?.url) handleOpenURL(launch.url)
+        })
+        .catch(() => {})
     }
 
     refreshToken = await SecureStorage.getItem(K_REFRESH)
@@ -226,5 +249,10 @@ export const nativeAdapter: AuthAdapter = {
   onAuthChange(listener: () => void) {
     changeListeners.add(listener)
     return () => changeListeners.delete(listener)
+  },
+
+  onInviteLink(listener: (token: string) => void) {
+    inviteListeners.add(listener)
+    return () => inviteListeners.delete(listener)
   },
 }

@@ -22,4 +22,10 @@ export interface AuthAdapter {
   getRoles(): string[]
   /** Subscribe to auth-state changes; returns an unsubscribe function. */
   onAuthChange(listener: () => void): () => void
+  /**
+   * Subscribe to invite deep links (e.g. `https://app.example.com/invite/{token}`).
+   * The listener receives the raw invite token. Web captures invites via the
+   * `/invite/:token` route instead, so this is only fired on native.
+   */
+  onInviteLink(listener: (token: string) => void): () => void
 }

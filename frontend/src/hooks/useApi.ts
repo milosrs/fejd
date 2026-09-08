@@ -17,6 +17,8 @@ const URL_ADMIN_SERVICES = "/api/admin/business/{businessID}/services" as const
 const URL_ADMIN_SERVICES_DELETE = "/api/admin/business/{businessID}/services/{serviceID}" as const
 const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serviceID}/image" as const
 const URL_ADMIN_INVITATIONS = "/api/admin/business/{businessID}/invitations" as const
+const URL_INVITATION = "/api/invitations/{token}" as const
+const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
 
 type Schemas = components["schemas"]
@@ -206,11 +208,26 @@ export async function inviteEmployee(
 }
 
 export type Invitation = Schemas["handler.InvitationResponse"]
+export type PublicInvitation = Schemas["handler.PublicInvitationResponse"]
 
 export async function createInvitation(businessId: string, body?: { expires_in_hours?: number }) {
   const { data } = await POST(URL_ADMIN_INVITATIONS, {
     params: { path: { businessID: businessId } },
     body: body ?? {},
+  })
+  return data
+}
+
+export async function getInvitation(token: string) {
+  const { data } = await GET(URL_INVITATION, {
+    params: { path: { token } },
+  })
+  return data
+}
+
+export async function acceptInvitation(token: string) {
+  const { data } = await POST(URL_INVITATION_ACCEPT, {
+    params: { path: { token } },
   })
   return data
 }

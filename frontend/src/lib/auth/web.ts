@@ -88,4 +88,10 @@ export const webAdapter: AuthAdapter = {
       listeners.delete(listener)
     }
   },
+
+  // Web captures invites via the /invite/:token route, not deep links, so this
+  // registry is never fired. Kept for interface symmetry with the native adapter.
+  onInviteLink(_listener: (token: string) => void) {
+    return () => {}
+  },
 }
