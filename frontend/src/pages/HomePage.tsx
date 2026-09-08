@@ -1,4 +1,3 @@
-import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
@@ -15,7 +14,9 @@ export function HomePage() {
 
   const isOwner = hasRole(roles, "Owner")
   const hasSalon = me?.has_salon ?? false
-  const ownerBusiness = me?.businesses?.find((b) => b.role === "admin")
+  const businesses = me?.businesses ?? []
+  const primaryBusiness =
+    businesses.find((b) => b.role === "admin") ?? businesses[0]
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background p-8">
@@ -34,14 +35,31 @@ export function HomePage() {
         </div>
       ) : meLoading ? null : isOwner && !hasSalon ? (
         <CreateSalonForm />
-      ) : ownerBusiness ? (
-        <div className="flex flex-col items-center gap-3">
+      ) : businesses.length > 0 ? (
+        <div className="flex w-full max-w-sm flex-col items-center gap-4">
           <Link
-            to={`/${ownerBusiness.slug}`}
-            className="text-sm underline text-foreground"
+            to={`/${primaryBusiness.slug}`}
+            className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80"
           >
             Open my salon
           </Link>
+
+          <div className="flex w-full flex-col items-center gap-3">
+            <h2 className="text-sm font-medium text-muted-foreground">Your salons</h2>
+            {businesses.map((b) => (
+              <Link
+                key={b.id}
+                to={`/${b.slug}`}
+                className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground hover:bg-muted"
+              >
+                <span>{b.name}</span>
+                <span className="text-xs text-muted-foreground">
+                  {b.role === "admin" ? "Owner" : "Employee"}
+                </span>
+              </Link>
+            ))}
+          </div>
+
           <Link to="/my/appointments" className="text-sm underline text-foreground">
             My appointments
           </Link>
