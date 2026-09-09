@@ -29,7 +29,7 @@ up:
 
 # Start all docker services except the frontend (run FE separately: just dev-frontend)
 up-backend:
-    docker compose up -d backend db keycloak
+    docker compose up -d backend db minio keycloak smtp
 
 # Stop all services
 down:

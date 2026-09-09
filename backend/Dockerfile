@@ -9,7 +9,7 @@ RUN go install github.com/swaggo/swag/cmd/swag@latest
 
 COPY . .
 RUN swag init --parseDependency --parseInternal -g main.go -o docs
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/backend ./main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /out/backend .
 
 FROM alpine:3.21
 RUN apk add --no-cache ca-certificates

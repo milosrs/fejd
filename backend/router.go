@@ -35,7 +35,7 @@ func newRouter(
 	r.Use(chiMiddleware.Logger)
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(chiMiddleware.RequestID)
-	r.Use(chiMiddleware.RealIP)
+	r.Use(chiMiddleware.ClientIPFromHeader("X-Real-IP"))
 	r.Use(customMiddleware.CORS(cfg.CORS.AllowedOrigins, cfg.CORS.AllowedSuffix))
 	r.Use(customMiddleware.MaxBodyBytes(cfg.ImageStorage.MaxUploadBytes))
 
