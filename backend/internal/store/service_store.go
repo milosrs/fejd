@@ -79,6 +79,36 @@ func (s *ServiceStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Servi
 	return scanService(s.pool.QueryRow(ctx, sql, args...))
 }
 
+// ListByBusinessUser returns the active services an employee offers.
+func (s *ServiceStore) ListByBusinessUser(ctx context.Context, businessUserID uuid.UUID) ([]models.Service, error) {
+	sql, args, err := psql.
+		Select("s.id", "s.business_id", "s.name", "s.duration_minutes", "s.price", "s.active", "COALESCE(s.description, '')", "s.picture_id", "s.created_at").
+		From("services s").
+		Join("employee_services es ON es.service_id = s.id").
+		Where(sq.Eq{"es.business_user_id": businessUserID, "s.active": true}).
+		OrderBy("s.name").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list services: %w", err)
+	}
+	defer rows.Close()
+
+	var services []models.Service
+	for rows.Next() {
+		svc, err := scanService(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan service: %w", err)
+		}
+		services = append(services, *svc)
+	}
+	return services, nil
+}
+
 func (s *ServiceStore) Create(ctx context.Context, svc *models.Service) error {
 	if svc.ID == uuid.Nil {
 		svc.ID = uuid.New()

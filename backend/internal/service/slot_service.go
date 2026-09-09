@@ -396,6 +396,49 @@ func (s *SlotService) CancelOwnAppointment(ctx context.Context, businessID uuid.
 	return nil
 }
 
+// BookOwnAppointment books an appointment on the caller's own calendar,
+// mirroring the customer booking flow. The customer is optional (walk-in);
+// created_by is always the calling member.
+func (s *SlotService) BookOwnAppointment(ctx context.Context, businessID uuid.UUID, userID string, serviceID uuid.UUID, startTime time.Time, customerUserID string) (*models.Appointment, error) {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	svc, err := s.services.GetByID(ctx, serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("service not found: %w", err)
+	}
+	if svc.BusinessID != businessID {
+		return nil, fmt.Errorf("service does not belong to business")
+	}
+
+	appointment := &models.Appointment{
+		BusinessID:     businessID,
+		ServiceID:      serviceID,
+		BusinessUserID: bu.ID,
+		CustomerUserID: customerUserID,
+		StartTime:      startTime,
+		EndTime:        startTime.Add(time.Duration(svc.DurationMinutes) * time.Minute),
+		Status:         models.AppointmentStatusConfirmed,
+		CreatedBy:      userID,
+	}
+
+	if err := s.BookAppointment(ctx, appointment); err != nil {
+		return nil, err
+	}
+	return appointment, nil
+}
+
+// ListMyServices returns the active services the calling member offers.
+func (s *SlotService) ListMyServices(ctx context.Context, businessID uuid.UUID, userID string) ([]models.Service, error) {
+	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
+	if err != nil {
+		return nil, fmt.Errorf("target user not found in business: %w", err)
+	}
+	return s.services.ListByBusinessUser(ctx, bu.ID)
+}
+
 // ErrNoShowTooEarly is returned when a staff member tries to mark an
 // appointment as no-show before the salon's configured grace period has passed.
 var ErrNoShowTooEarly = errors.New("no-show cannot be marked yet")

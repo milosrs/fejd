@@ -11,6 +11,7 @@ import { Textarea } from "../components/ui/textarea"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Calendar } from "../components/ui/calendar"
 import { ConfirmDialog } from "../components/ui/confirm-dialog"
+import { AddAppointmentDialog } from "../components/AddAppointmentDialog"
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
@@ -57,6 +58,7 @@ export function MyReservationsPage() {
   const [reason, setReason] = useState("")
   const [cancelling, setCancelling] = useState(false)
   const [noShowTarget, setNoShowTarget] = useState<Appointment | null>(null)
+  const [addOpen, setAddOpen] = useState(false)
   const [message, setMessage] = useState("")
 
   if (!authenticated) {
@@ -106,6 +108,7 @@ export function MyReservationsPage() {
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex gap-4 items-center">
           <h1 className="text-xl font-semibold text-foreground">My Reservations</h1>
+          <Button onClick={() => setAddOpen(true)}>Add appointment</Button>
           <Button
             variant="outline"
             size="sm"
@@ -240,6 +243,10 @@ export function MyReservationsPage() {
         onConfirm={handleMarkNoShow}
         onCancel={() => setNoShowTarget(null)}
       />
+
+      {addOpen && (
+        <AddAppointmentDialog businessId={businessId!} onClose={() => setAddOpen(false)} />
+      )}
     </div>
   )
 }

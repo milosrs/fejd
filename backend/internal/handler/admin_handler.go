@@ -988,6 +988,125 @@ func (h *AdminHandler) MarkNoShow(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, MessageResponse{Message: "appointment marked as no-show"})
 }
 
+// ListMyServices godoc
+// @Summary      List services I offer
+// @Description  Returns the active services the authenticated member offers.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Success      200 {array} dto.Service
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/me/services [get]
+func (h *AdminHandler) ListMyServices(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	services, err := h.slotService.ListMyServices(r.Context(), businessID, userID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.ServicesFromModels(services))
+}
+
+// BookOwnAppointment godoc
+// @Summary      Add an appointment to my calendar
+// @Description  Books an appointment on the authenticated member's own calendar, optionally for an existing customer (walk-in if omitted).
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body CreateOwnAppointmentRequest true "Appointment details"
+// @Success      201 {object} dto.Appointment
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      409 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/me/appointments [post]
+func (h *AdminHandler) BookOwnAppointment(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	var body CreateOwnAppointmentRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	if body.ServiceID == uuid.Nil {
+		writeError(w, http.StatusBadRequest, "invalid service_id")
+		return
+	}
+
+	startTime, err := time.Parse(time.RFC3339, body.StartTime)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid start_time format, use RFC3339")
+		return
+	}
+
+	appointment, err := h.slotService.BookOwnAppointment(r.Context(), businessID, userID, body.ServiceID, startTime, body.CustomerUserID)
+	if err != nil {
+		writeError(w, http.StatusConflict, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, dto.AppointmentFromModel(*appointment))
+}
+
+// ListCustomers godoc
+// @Summary      List existing customers
+// @Description  Returns the distinct customer user IDs who have booked with the business.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Success      200 {array} string
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/customers [get]
+func (h *AdminHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	customers, err := h.appointmentStore.ListCustomerUserIDs(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if customers == nil {
+		customers = []string{}
+	}
+
+	writeJSON(w, http.StatusOK, customers)
+}
+
 // CreateSection godoc
 // @Summary      Add a landing page section
 // @Description  Creates a new section on the salon's landing page, creating the page if needed.

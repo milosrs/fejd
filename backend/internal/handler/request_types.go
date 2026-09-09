@@ -21,6 +21,12 @@ type CancelAppointmentRequest struct {
 	CancellationReason string `json:"cancellation_reason,omitempty" example:"unexpected absence"`
 }
 
+type CreateOwnAppointmentRequest struct {
+	ServiceID      uuid.UUID `json:"service_id" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
+	StartTime      string    `json:"start_time" validate:"required" example:"2024-01-01T09:00:00Z"`
+	CustomerUserID string    `json:"customer_user_id,omitempty" example:"550e8400-e29b-41d4-a716-446655440000"`
+}
+
 type SetEmployeeServicesRequest struct {
 	ServiceIDs []uuid.UUID `json:"service_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 }

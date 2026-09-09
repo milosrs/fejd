@@ -24,6 +24,8 @@ const URL_MY_UNAVAILABILITY_DELETE = "/api/admin/business/{businessID}/me/unavai
 const URL_MY_RESERVATIONS = "/api/admin/business/{businessID}/me/appointments" as const
 const URL_MY_RESERVATIONS_DELETE = "/api/admin/business/{businessID}/me/appointments/{appointmentID}" as const
 const URL_MY_RESERVATIONS_NO_SHOW = "/api/admin/business/{businessID}/me/appointments/{appointmentID}/no-show" as const
+const URL_MY_SERVICES = "/api/admin/business/{businessID}/me/services" as const
+const URL_CUSTOMERS = "/api/admin/business/{businessID}/customers" as const
 const URL_INVITATION = "/api/invitations/{token}" as const
 const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
@@ -340,6 +342,43 @@ export async function cancelReservation(businessId: string, appointmentId: strin
 export async function markNoShow(businessId: string, appointmentId: string) {
   const { data } = await POST(URL_MY_RESERVATIONS_NO_SHOW, {
     params: { path: { businessID: businessId, appointmentID: appointmentId } },
+  })
+  return data
+}
+
+export function useMyServices(businessId: string) {
+  return useQuery({
+    queryKey: ["my-services", businessId],
+    queryFn: async () => {
+      const { data } = await GET(URL_MY_SERVICES, {
+        params: { path: { businessID: businessId } },
+      })
+      return data
+    },
+    enabled: !!businessId,
+  })
+}
+
+export function useCustomers(businessId: string) {
+  return useQuery({
+    queryKey: ["customers", businessId],
+    queryFn: async () => {
+      const { data } = await GET(URL_CUSTOMERS, {
+        params: { path: { businessID: businessId } },
+      })
+      return data
+    },
+    enabled: !!businessId,
+  })
+}
+
+export async function bookOwnAppointment(
+  businessId: string,
+  input: Schemas["handler.CreateOwnAppointmentRequest"],
+) {
+  const { data } = await POST(URL_MY_RESERVATIONS, {
+    params: { path: { businessID: businessId } },
+    body: input,
   })
   return data
 }

@@ -151,9 +151,16 @@ func newRouter(
 			r.With(customMiddleware.RequireBusinessMember(buStore)).
 				Route("/admin/business/{businessID}/me/appointments", func(r chi.Router) {
 					r.Get("/", adminHandler.ListMyReservations)
+					r.Post("/", adminHandler.BookOwnAppointment)
 					r.Delete("/{appointmentID}", adminHandler.CancelMyReservation)
 					r.Post("/{appointmentID}/no-show", adminHandler.MarkNoShow)
 				})
+
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Get("/admin/business/{businessID}/me/services", adminHandler.ListMyServices)
+
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Get("/admin/business/{businessID}/customers", adminHandler.ListCustomers)
 		})
 
 		r.With(optionalAuthenticate).Get("/images/{imageID}", imageHandler.GetImage)

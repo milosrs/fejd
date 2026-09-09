@@ -5,7 +5,7 @@ import { today, getLocalTimeZone } from "@internationalized/date"
 import { ThemeProvider } from "../components/theme-provider"
 import { useAuthStore } from "../stores/authStore"
 import type { Me } from "../hooks/useMe"
-import type { EmployeeUnavailability, Appointment } from "../hooks/useApi"
+import type { EmployeeUnavailability, Appointment, Service } from "../hooks/useApi"
 
 export const staffBusinessId = "11111111-1111-4111-8111-111111111111"
 
@@ -167,12 +167,37 @@ export const mockCustomerAppointments: Appointment[] = [
   },
 ]
 
+export const mockMyServices: Service[] = [
+  {
+    id: "22222222-2222-4222-8222-222222222222",
+    business_id: staffBusinessId,
+    name: "Haircut",
+    duration_minutes: 30,
+    price: 25,
+    active: true,
+    created_at: "2024-01-01T00:00:00Z",
+  },
+  {
+    id: "33333333-3333-4333-8333-333333333333",
+    business_id: staffBusinessId,
+    name: "Beard Trim",
+    duration_minutes: 20,
+    price: 15,
+    active: true,
+    created_at: "2024-01-01T00:00:00Z",
+  },
+]
+
+export const mockCustomers: string[] = ["customer-1", "customer-2", "customer-3"]
+
 interface StaffProvidersProps {
   businessId?: string
   me?: Me | null
   roles?: string[]
   unavailability?: EmployeeUnavailability[]
   reservations?: Appointment[]
+  services?: Service[]
+  customers?: string[]
   children: React.ReactNode
 }
 
@@ -182,6 +207,8 @@ export function StaffProviders({
   roles = ["Owner"],
   unavailability = [],
   reservations = [],
+  services = mockMyServices,
+  customers = mockCustomers,
   children,
 }: StaffProvidersProps) {
   const todayKey = today(getLocalTimeZone()).toString()
@@ -192,11 +219,13 @@ export function StaffProviders({
     })
     qc.setQueryData(["my-unavailability", businessId], unavailability)
     qc.setQueryData(["my-reservations", businessId, todayKey], reservations)
+    qc.setQueryData(["my-services", businessId], services)
+    qc.setQueryData(["customers", businessId], customers)
     if (me) {
       qc.setQueryData(["me"], me)
     }
     return qc
-  }, [businessId, me, unavailability, reservations, todayKey])
+  }, [businessId, me, unavailability, reservations, services, customers, todayKey])
 
   useLayoutEffect(() => {
     useAuthStore.setState({

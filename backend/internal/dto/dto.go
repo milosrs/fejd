@@ -89,7 +89,7 @@ type Appointment struct {
 	BusinessID         uuid.UUID `json:"business_id" validate:"required"`
 	ServiceID          uuid.UUID `json:"service_id" validate:"required"`
 	BusinessUserID     uuid.UUID `json:"business_user_id" validate:"required"`
-	CustomerUserID     string    `json:"customer_user_id" validate:"required"`
+	CustomerUserID     string    `json:"customer_user_id,omitempty"`
 	StartTime          time.Time `json:"start_time" validate:"required"`
 	EndTime            time.Time `json:"end_time" validate:"required"`
 	Status             string    `json:"status" validate:"required"`

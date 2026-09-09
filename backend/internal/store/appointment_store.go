@@ -21,7 +21,7 @@ func NewAppointmentStore(pool *pgxpool.Pool) *AppointmentStore {
 
 func (s *AppointmentStore) GetConflictingAppointments(ctx context.Context, businessID, businessUserID uuid.UUID, from, to time.Time) ([]models.Appointment, error) {
 	sql, args, err := psql.
-		Select("id", "business_id", "service_id", "business_user_id", "customer_user_id",
+		Select("id", "business_id", "service_id", "business_user_id", "COALESCE(customer_user_id, '')",
 			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
 		From("appointments").
 		Where(sq.Eq{"business_id": businessID, "business_user_id": businessUserID}).
@@ -53,7 +53,7 @@ func (s *AppointmentStore) GetConflictingAppointments(ctx context.Context, busin
 
 func (s *AppointmentStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Appointment, error) {
 	sql, args, err := psql.
-		Select("id", "business_id", "service_id", "business_user_id", "customer_user_id",
+		Select("id", "business_id", "service_id", "business_user_id", "COALESCE(customer_user_id, '')",
 			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
 		From("appointments").
 		Where(sq.Eq{"id": id}).
@@ -76,7 +76,7 @@ func (s *AppointmentStore) Create(ctx context.Context, q Querier, a *models.Appo
 	sql, args, err := psql.
 		Insert("appointments").
 		Columns("id", "business_id", "service_id", "business_user_id", "customer_user_id", "start_time", "end_time", "status", "created_by", "cancellation_reason").
-		Values(a.ID, a.BusinessID, a.ServiceID, a.BusinessUserID, a.CustomerUserID,
+		Values(a.ID, a.BusinessID, a.ServiceID, a.BusinessUserID, nullableString(a.CustomerUserID),
 			a.StartTime, a.EndTime, a.Status, a.CreatedBy, nullableString(a.CancellationReason)).
 		Suffix("RETURNING created_at").
 		ToSql()
@@ -89,7 +89,7 @@ func (s *AppointmentStore) Create(ctx context.Context, q Querier, a *models.Appo
 
 func (s *AppointmentStore) ListByCustomer(ctx context.Context, customerUserID string) ([]models.Appointment, error) {
 	sql, args, err := psql.
-		Select("id", "business_id", "service_id", "business_user_id", "customer_user_id",
+		Select("id", "business_id", "service_id", "business_user_id", "COALESCE(customer_user_id, '')",
 			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
 		From("appointments").
 		Where(sq.Eq{"customer_user_id": customerUserID}).
@@ -118,7 +118,7 @@ func (s *AppointmentStore) ListByCustomer(ctx context.Context, customerUserID st
 
 func (s *AppointmentStore) ListByBusinessUser(ctx context.Context, businessUserID uuid.UUID, from, to time.Time) ([]models.Appointment, error) {
 	sql, args, err := psql.
-		Select("id", "business_id", "service_id", "business_user_id", "customer_user_id",
+		Select("id", "business_id", "service_id", "business_user_id", "COALESCE(customer_user_id, '')",
 			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
 		From("appointments").
 		Where(sq.Eq{"business_user_id": businessUserID}).
@@ -234,6 +234,37 @@ func scanAppointment(row rowScanner) (*models.Appointment, error) {
 		return nil, err
 	}
 	return &a, nil
+}
+
+// ListCustomerUserIDs returns the distinct Keycloak user IDs of customers who
+// have ever booked with the business (walk-ins with NULL customer are excluded).
+func (s *AppointmentStore) ListCustomerUserIDs(ctx context.Context, businessID uuid.UUID) ([]string, error) {
+	sql, args, err := psql.
+		Select("DISTINCT customer_user_id").
+		From("appointments").
+		Where(sq.Eq{"business_id": businessID}).
+		Where(sq.NotEq{"customer_user_id": nil}).
+		OrderBy("customer_user_id").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list customers: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []string
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("failed to scan customer: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }
 
 func nullableString(s string) any {
