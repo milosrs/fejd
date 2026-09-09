@@ -2,7 +2,9 @@ package middleware
 
 import (
 	"fejd-backend/auth"
+	"fejd-backend/internal/models"
 	"fejd-backend/internal/store"
+	"log"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -80,6 +82,27 @@ func MaxBodyBytes(limit int64) func(http.Handler) http.Handler {
 				return
 			}
 			r.Body = http.MaxBytesReader(w, r.Body, limit)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+// SyncUser best-effort caches the authenticated user's identity attributes
+// (from the JWT claims, never from Keycloak) into the local users table so the
+// app can render names without querying Keycloak. Run it after authentication.
+func SyncUser(userStore *store.UserStore) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			claims := auth.GetClaimsFromRequest(r)
+			if claims != nil && claims.Subject != "" {
+				if err := userStore.Upsert(r.Context(), &models.User{
+					ID:          claims.Subject,
+					DisplayName: claims.DisplayName(),
+					Email:       claims.Email,
+				}); err != nil {
+					log.Printf("[middleware] failed to sync user %q: %v", claims.Subject, err)
+				}
+			}
 			next.ServeHTTP(w, r)
 		})
 	}

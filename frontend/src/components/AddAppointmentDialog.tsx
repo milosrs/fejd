@@ -93,8 +93,8 @@ export function AddAppointmentDialog({
             >
               <option value="">No customer</option>
               {(customers ?? []).map((c) => (
-                <option key={c} value={c}>
-                  {c}
+                <option key={c.user_id} value={c.user_id}>
+                  {c.display_name || c.user_id}
                 </option>
               ))}
             </select>

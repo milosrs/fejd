@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"fejd-backend/internal/keycloak"
 	"fejd-backend/internal/models"
 
 	"github.com/stretchr/testify/assert"
@@ -45,39 +44,4 @@ func TestValidateInvitation(t *testing.T) {
 		inv := &models.Invitation{ExpiresAt: now.Add(time.Hour), MaxUses: 1, UseCount: 0}
 		assert.NoError(t, validateInvitation(inv))
 	})
-}
-
-func TestDisplayNameFromUser(t *testing.T) {
-	cases := []struct {
-		name string
-		user *keycloak.User
-		want string
-	}{
-		{
-			name: "first and last",
-			user: &keycloak.User{FirstName: "Sam", LastName: "Barber", Email: "sam@example.com"},
-			want: "Sam Barber",
-		},
-		{
-			name: "first only",
-			user: &keycloak.User{FirstName: "Sam", Email: "sam@example.com"},
-			want: "Sam",
-		},
-		{
-			name: "fallback to email",
-			user: &keycloak.User{Email: "sam@example.com"},
-			want: "sam@example.com",
-		},
-		{
-			name: "empty",
-			user: &keycloak.User{},
-			want: "",
-		},
-	}
-
-	for _, tc := range cases {
-		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, tc.want, displayNameFromUser(tc.user))
-		})
-	}
 }

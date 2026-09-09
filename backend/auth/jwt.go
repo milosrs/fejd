@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/MicahParks/keyfunc/v3"
@@ -18,7 +19,26 @@ type Claims struct {
 	ResourceAccess map[string]any      `json:"resource_access"`
 	Email          string              `json:"email"`
 	EmailVerified  bool                `json:"email_verified"`
+	Name           string              `json:"name"`
+	GivenName      string              `json:"given_name"`
+	FamilyName     string              `json:"family_name"`
 	ApprovalStatus string              `json:"approval_status"`
+}
+
+// DisplayName derives a human-readable name from the identity claims, falling
+// back to email. It never queries Keycloak.
+func (c *Claims) DisplayName() string {
+	if c == nil {
+		return ""
+	}
+	name := strings.TrimSpace(c.Name)
+	if name == "" {
+		name = strings.TrimSpace(c.GivenName + " " + c.FamilyName)
+	}
+	if name != "" {
+		return name
+	}
+	return c.Email
 }
 
 // Keycloak realm roles that gate permissions. Ownership is separate: it lives

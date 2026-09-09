@@ -110,6 +110,23 @@ const (
 	AppointmentStatusNoShow    AppointmentStatus = "no_show"
 )
 
+// User is the local cache of a Keycloak user's identity attributes. It is keyed
+// by the Keycloak subject (sub) and populated from JWT claims at authentication,
+// so the app never needs to query Keycloak for display attributes.
+type User struct {
+	ID          string
+	DisplayName string
+	Email       string
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+}
+
+// Customer is a user who has booked with a business (resolved from local users).
+type Customer struct {
+	UserID      string
+	DisplayName string
+}
+
 type Appointment struct {
 	ID                 uuid.UUID
 	BusinessID         uuid.UUID

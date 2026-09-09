@@ -66,6 +66,7 @@ func main() {
 
 	businessStore := store.NewBusinessStore(pool)
 	buStore := store.NewBusinessUserStore(pool)
+	userStore := store.NewUserStore(pool)
 	serviceStore := store.NewServiceStore(pool)
 	appointmentStore := store.NewAppointmentStore(pool)
 	workingHoursStore := store.NewWorkingHoursStore(pool)
@@ -115,7 +116,7 @@ func main() {
 	)
 
 	invitationStore := store.NewInvitationStore(pool)
-	invitationService := service.NewInvitationService(invitationStore, businessStore, buStore, keycloakAdmin, pool, cfg.Jobs.InviteBaseURL)
+	invitationService := service.NewInvitationService(invitationStore, businessStore, buStore, userStore, keycloakAdmin, pool, cfg.Jobs.InviteBaseURL)
 	invitationHandler := handler.NewInvitationHandler(invitationService, time.Duration(cfg.Jobs.InviteExpiryHours)*time.Hour)
 
 	adminHandler := handler.NewAdminHandler(
@@ -156,6 +157,7 @@ func main() {
 		i18nHandler,
 		invitationHandler,
 		buStore,
+		userStore,
 	)
 
 	port := getEnv("PORT", "8080")

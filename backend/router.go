@@ -29,6 +29,7 @@ func newRouter(
 	i18nHandler *handler.I18nHandler,
 	invitationHandler *handler.InvitationHandler,
 	buStore *store.BusinessUserStore,
+	userStore *store.UserStore,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -74,6 +75,7 @@ func newRouter(
 		// own status; POST /api/me/business is gated.
 		r.Route("/me", func(r chi.Router) {
 			r.Use(authenticate)
+			r.Use(customMiddleware.SyncUser(userStore))
 
 			r.Get("/", meHandler.GetMe)
 
@@ -89,6 +91,7 @@ func newRouter(
 		// owner-facing onboarding and management below.
 		r.Group(func(r chi.Router) {
 			r.Use(authenticate)
+			r.Use(customMiddleware.SyncUser(userStore))
 
 			r.Post("/appointments", appointmentHandler.Create)
 			r.Get("/my/appointments", appointmentHandler.ListMyAppointments)
@@ -103,6 +106,7 @@ func newRouter(
 		r.Group(func(r chi.Router) {
 			r.Use(authenticate)
 			r.Use(requireApproved)
+			r.Use(customMiddleware.SyncUser(userStore))
 
 			r.Route("/admin/business/{businessID}", func(r chi.Router) {
 				r.Use(requireOwner)

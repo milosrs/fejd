@@ -1078,11 +1078,11 @@ func (h *AdminHandler) BookOwnAppointment(w http.ResponseWriter, r *http.Request
 
 // ListCustomers godoc
 // @Summary      List existing customers
-// @Description  Returns the distinct customer user IDs who have booked with the business.
+// @Description  Returns the distinct customers who have booked with the business, with their locally-cached display names.
 // @Tags         admin
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
-// @Success      200 {array} string
+// @Success      200 {array} dto.Customer
 // @Failure      400 {object} ErrorResponse
 // @Failure      401 {object} ErrorResponse
 // @Failure      403 {object} ErrorResponse
@@ -1095,16 +1095,16 @@ func (h *AdminHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	customers, err := h.appointmentStore.ListCustomerUserIDs(r.Context(), businessID)
+	customers, err := h.appointmentStore.ListCustomers(r.Context(), businessID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	if customers == nil {
-		customers = []string{}
+		customers = []models.Customer{}
 	}
 
-	writeJSON(w, http.StatusOK, customers)
+	writeJSON(w, http.StatusOK, dto.CustomersFromModels(customers))
 }
 
 // CreateSection godoc

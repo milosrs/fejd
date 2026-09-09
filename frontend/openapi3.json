@@ -14,7 +14,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the distinct customer user IDs who have booked with the business.",
+                "description": "Returns the distinct customers who have booked with the business, with their locally-cached display names.",
                 "tags": [
                     "admin"
                 ],
@@ -38,7 +38,7 @@
                                 "schema": {
                                     "type": "array",
                                     "items": {
-                                        "type": "string"
+                                        "$ref": "#/components/schemas/dto.Customer"
                                     }
                                 }
                             }
@@ -3490,6 +3490,20 @@
                         "type": "string"
                     },
                     "role": {
+                        "type": "string"
+                    },
+                    "user_id": {
+                        "type": "string"
+                    }
+                }
+            },
+            "dto.Customer": {
+                "type": "object",
+                "required": [
+                    "user_id"
+                ],
+                "properties": {
+                    "display_name": {
                         "type": "string"
                     },
                     "user_id": {

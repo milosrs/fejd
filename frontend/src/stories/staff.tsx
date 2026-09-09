@@ -5,7 +5,7 @@ import { today, getLocalTimeZone } from "@internationalized/date"
 import { ThemeProvider } from "../components/theme-provider"
 import { useAuthStore } from "../stores/authStore"
 import type { Me } from "../hooks/useMe"
-import type { EmployeeUnavailability, Appointment, Service } from "../hooks/useApi"
+import type { EmployeeUnavailability, Appointment, Service, Customer } from "../hooks/useApi"
 
 export const staffBusinessId = "11111111-1111-4111-8111-111111111111"
 
@@ -188,7 +188,11 @@ export const mockMyServices: Service[] = [
   },
 ]
 
-export const mockCustomers: string[] = ["customer-1", "customer-2", "customer-3"]
+export const mockCustomers: Customer[] = [
+  { user_id: "customer-1", display_name: "Alice Johnson" },
+  { user_id: "customer-2", display_name: "Bob Smith" },
+  { user_id: "customer-3", display_name: "" },
+]
 
 interface StaffProvidersProps {
   businessId?: string
@@ -197,7 +201,7 @@ interface StaffProvidersProps {
   unavailability?: EmployeeUnavailability[]
   reservations?: Appointment[]
   services?: Service[]
-  customers?: string[]
+  customers?: Customer[]
   children: React.ReactNode
 }
 

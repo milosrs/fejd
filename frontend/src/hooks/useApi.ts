@@ -317,6 +317,7 @@ export async function deleteOwnSlot(businessId: string, unavailabilityId: string
 }
 
 export type Appointment = Schemas["dto.Appointment"]
+export type Customer = Schemas["dto.Customer"]
 
 export function useMyReservations(businessId: string, date: string) {
   return useQuery({

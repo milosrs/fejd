@@ -99,7 +99,8 @@ func TestAdminHandler_ListCustomers(t *testing.T) {
 	memberGuard(buStore, http.HandlerFunc(h.ListCustomers)).ServeHTTP(rr, req)
 
 	require.Equal(t, http.StatusOK, rr.Code)
-	var customers []string
+	var customers []dto.Customer
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &customers))
-	assert.Contains(t, customers, "customer-1")
+	require.Len(t, customers, 1)
+	assert.Equal(t, "customer-1", customers[0].UserID)
 }

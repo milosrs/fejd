@@ -236,15 +236,17 @@ func scanAppointment(row rowScanner) (*models.Appointment, error) {
 	return &a, nil
 }
 
-// ListCustomerUserIDs returns the distinct Keycloak user IDs of customers who
-// have ever booked with the business (walk-ins with NULL customer are excluded).
-func (s *AppointmentStore) ListCustomerUserIDs(ctx context.Context, businessID uuid.UUID) ([]string, error) {
+// ListCustomers returns the distinct customers who have booked with the
+// business, with their locally-cached display names (walk-ins excluded).
+func (s *AppointmentStore) ListCustomers(ctx context.Context, businessID uuid.UUID) ([]models.Customer, error) {
 	sql, args, err := psql.
-		Select("DISTINCT customer_user_id").
-		From("appointments").
-		Where(sq.Eq{"business_id": businessID}).
-		Where(sq.NotEq{"customer_user_id": nil}).
-		OrderBy("customer_user_id").
+		Select("a.customer_user_id", "COALESCE(u.display_name, '')").
+		Distinct().
+		From("appointments a").
+		LeftJoin("users u ON u.id = a.customer_user_id").
+		Where(sq.Eq{"a.business_id": businessID}).
+		Where(sq.NotEq{"a.customer_user_id": nil}).
+		OrderBy("COALESCE(u.display_name, '')", "a.customer_user_id").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
@@ -256,15 +258,15 @@ func (s *AppointmentStore) ListCustomerUserIDs(ctx context.Context, businessID u
 	}
 	defer rows.Close()
 
-	var ids []string
+	var customers []models.Customer
 	for rows.Next() {
-		var id string
-		if err := rows.Scan(&id); err != nil {
+		var c models.Customer
+		if err := rows.Scan(&c.UserID, &c.DisplayName); err != nil {
 			return nil, fmt.Errorf("failed to scan customer: %w", err)
 		}
-		ids = append(ids, id)
+		customers = append(customers, c)
 	}
-	return ids, nil
+	return customers, nil
 }
 
 func nullableString(s string) any {

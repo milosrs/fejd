@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"fejd-backend/internal/db"
-	"fejd-backend/internal/keycloak"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/store"
 
@@ -31,9 +30,9 @@ var (
 )
 
 // InvitationUserManager is the Keycloak admin surface the invitation service
-// needs. *keycloak.Client satisfies it; tests provide a fake.
+// needs for role/approval grants only — never for reading user attributes.
+// *keycloak.Client satisfies it; tests provide a fake.
 type InvitationUserManager interface {
-	GetUser(ctx context.Context, userID string) (*keycloak.User, error)
 	AddRealmRole(ctx context.Context, userID, role string) error
 	UpdateUserAttributes(ctx context.Context, userID string, attrs map[string][]string) error
 }
@@ -45,6 +44,7 @@ type InvitationService struct {
 	invitations   *store.InvitationStore
 	businessStore *store.BusinessStore
 	businessUsers *store.BusinessUserStore
+	userStore     *store.UserStore
 	users         InvitationUserManager
 	pool          *pgxpool.Pool
 	baseURL       string
@@ -54,6 +54,7 @@ func NewInvitationService(
 	invitations *store.InvitationStore,
 	businessStore *store.BusinessStore,
 	businessUsers *store.BusinessUserStore,
+	userStore *store.UserStore,
 	users InvitationUserManager,
 	pool *pgxpool.Pool,
 	baseURL string,
@@ -62,6 +63,7 @@ func NewInvitationService(
 		invitations:   invitations,
 		businessStore: businessStore,
 		businessUsers: businessUsers,
+		userStore:     userStore,
 		users:         users,
 		pool:          pool,
 		baseURL:       baseURL,
@@ -181,8 +183,8 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, rawToken, user
 	}
 
 	displayName := ""
-	if u, err := s.users.GetUser(ctx, userID); err == nil {
-		displayName = displayNameFromUser(u)
+	if u, err := s.userStore.GetByID(ctx, userID); err == nil {
+		displayName = u.DisplayName
 	}
 
 	err = db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
@@ -224,14 +226,6 @@ func (s *InvitationService) grantEmployee(ctx context.Context, userID string) er
 		return fmt.Errorf("failed to approve user: %w", err)
 	}
 	return nil
-}
-
-func displayNameFromUser(u *keycloak.User) string {
-	name := strings.TrimSpace(u.FirstName + " " + u.LastName)
-	if name != "" {
-		return name
-	}
-	return u.Email
 }
 
 func validateInvitation(inv *models.Invitation) error {

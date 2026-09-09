@@ -2,7 +2,6 @@ package keycloak
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -63,30 +62,6 @@ func (c *Client) ListUsersByRequiredActionAndAge(ctx context.Context, action str
 
 func (c *Client) DeleteUser(ctx context.Context, userID string) error {
 	return c.do(ctx, "DELETE", "/admin/realms/"+c.realm+"/users/"+userID, nil, nil)
-}
-
-// GetUser returns a single user by Keycloak user ID, or ErrUserNotFound.
-func (c *Client) GetUser(ctx context.Context, userID string) (*User, error) {
-	path := "/admin/realms/" + c.realm + "/users/" + userID
-	resp, err := c.request(ctx, "GET", path, nil)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode == http.StatusNotFound {
-		return nil, ErrUserNotFound
-	}
-	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("keycloak admin api error: GET %s -> %d: %s", path, resp.StatusCode, string(body))
-	}
-
-	var user User
-	if err := json.NewDecoder(resp.Body).Decode(&user); err != nil {
-		return nil, err
-	}
-	return &user, nil
 }
 
 // GetUserByEmail returns the user whose email matches exactly, or

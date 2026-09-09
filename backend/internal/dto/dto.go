@@ -43,6 +43,13 @@ type BusinessUser struct {
 	Avatar      string    `json:"avatar,omitempty"`
 }
 
+// Customer is an existing customer of a business, with the display name cached
+// in the local users table (never fetched from Keycloak).
+type Customer struct {
+	UserID      string `json:"user_id" validate:"required"`
+	DisplayName string `json:"display_name"`
+}
+
 type Service struct {
 	ID              uuid.UUID  `json:"id" validate:"required"`
 	BusinessID      uuid.UUID  `json:"business_id" validate:"required"`

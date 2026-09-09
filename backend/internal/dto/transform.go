@@ -156,6 +156,21 @@ func BusinessUsersFromModels(ms []models.BusinessUser) []BusinessUser {
 	return out
 }
 
+func CustomerFromModel(m models.Customer) Customer {
+	return Customer{
+		UserID:      m.UserID,
+		DisplayName: m.DisplayName,
+	}
+}
+
+func CustomersFromModels(ms []models.Customer) []Customer {
+	out := make([]Customer, len(ms))
+	for i, m := range ms {
+		out[i] = CustomerFromModel(m)
+	}
+	return out
+}
+
 func ServicesFromModels(ms []models.Service) []Service {
 	out := make([]Service, len(ms))
 	for i, m := range ms {

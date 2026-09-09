@@ -13,7 +13,7 @@ export interface paths {
         };
         /**
          * List existing customers
-         * @description Returns the distinct customer user IDs who have booked with the business.
+         * @description Returns the distinct customers who have booked with the business, with their locally-cached display names.
          */
         get: {
             parameters: {
@@ -33,7 +33,7 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": string[];
+                        "application/json": components["schemas"]["dto.Customer"][];
                     };
                 };
                 /** @description Bad Request */
@@ -3138,6 +3138,10 @@ export interface components {
             display_name?: string;
             id: string;
             role: string;
+            user_id: string;
+        };
+        "dto.Customer": {
+            display_name?: string;
             user_id: string;
         };
         "dto.EmployeeUnavailability": {

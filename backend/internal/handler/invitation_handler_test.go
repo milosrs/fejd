@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"fejd-backend/internal/dto"
-	"fejd-backend/internal/keycloak"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
@@ -25,8 +24,9 @@ func newTestInvitationHandlerWith(t *testing.T, users service.InvitationUserMana
 	pool := setupHandlerTestDB(t)
 	businessStore := store.NewBusinessStore(pool)
 	buStore := store.NewBusinessUserStore(pool)
+	userStore := store.NewUserStore(pool)
 	invitationStore := store.NewInvitationStore(pool)
-	invitationService := service.NewInvitationService(invitationStore, businessStore, buStore, users, pool, "https://app.example.com")
+	invitationService := service.NewInvitationService(invitationStore, businessStore, buStore, userStore, users, pool, "https://app.example.com")
 	h := NewInvitationHandler(invitationService, 48*time.Hour)
 	return h, businessStore, buStore, pool
 }
@@ -39,9 +39,6 @@ func newTestInvitationHandler(t *testing.T) (*InvitationHandler, *store.Business
 // only exercise invitation creation or public resolution.
 type noopInvitationUsers struct{}
 
-func (noopInvitationUsers) GetUser(context.Context, string) (*keycloak.User, error) {
-	return &keycloak.User{}, nil
-}
 func (noopInvitationUsers) AddRealmRole(context.Context, string, string) error { return nil }
 func (noopInvitationUsers) UpdateUserAttributes(context.Context, string, map[string][]string) error {
 	return nil
@@ -53,9 +50,6 @@ type recordingUsers struct {
 	attrs []map[string][]string
 }
 
-func (r *recordingUsers) GetUser(ctx context.Context, userID string) (*keycloak.User, error) {
-	return &keycloak.User{Email: "emp@example.com"}, nil
-}
 func (r *recordingUsers) AddRealmRole(ctx context.Context, userID, role string) error {
 	r.roles = append(r.roles, role)
 	return nil
