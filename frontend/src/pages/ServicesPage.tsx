@@ -6,6 +6,7 @@ import { useServiceMutations } from "../hooks/useServiceMutations"
 import { useBookingStore } from "../stores/bookingStore"
 import { useAuthStore } from "../stores/authStore"
 import { useI18n } from "../lib/i18n"
+import { salonPath } from "../lib/salonDomain"
 import { ServiceCard, ServiceCardSkeleton } from "../components/services/ServiceCard"
 import { ServiceForm, type ServiceFormValues } from "../components/services/ServiceForm"
 import { ConfirmDialog } from "../components/ui/confirm-dialog"
@@ -43,7 +44,7 @@ export function ServicesPage() {
     }
     reset()
     setService(serviceId)
-    navigate(`/${slug}/book?service=${serviceId}`)
+    navigate(`${salonPath(slug, "/book")}?service=${serviceId}`)
   }
 
   const handleSubmit = (values: ServiceFormValues) => {

@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useParams, useNavigate, useSearchParams } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
@@ -9,6 +9,7 @@ import { useBookingStore } from "../stores/bookingStore"
 import { useTimeSlotStream } from "../hooks/useTimeSlotStream"
 import { useAuthStore } from "../stores/authStore"
 import { useI18n } from "../lib/i18n"
+import { salonPath } from "../lib/salonDomain"
 import { Button } from "../components/ui/button"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Calendar } from "../components/ui/calendar"
@@ -29,10 +30,9 @@ function mapBookingError(msg: string, t: (key: string) => string): string {
 }
 
 export function BookingPage() {
-  const { slug } = useParams<{ slug: string }>()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { salon } = useSalonContext()
+  const { slug, salon } = useSalonContext()
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
   const { t, ready } = useI18n()
@@ -49,7 +49,7 @@ export function BookingPage() {
     clearSlot,
   } = useBookingStore()
 
-  useTimeSlotStream(slug!)
+  useTimeSlotStream(slug)
 
   const urlService = searchParams.get("service")
   useEffect(() => {
@@ -59,9 +59,9 @@ export function BookingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [urlService])
 
-  const { data: services } = useServices(slug!)
+  const { data: services } = useServices(slug)
   const { data: barbers, isLoading: barbersLoading } = useServiceEmployees(
-    slug!,
+    slug,
     selectedServiceId ?? "",
   )
 
@@ -116,7 +116,7 @@ export function BookingPage() {
                 {format(new Date(bookedTime), "EEEE, MMMM d, yyyy 'at' h:mm a")}
               </p>
               <p className="text-sm text-muted-foreground">{t("booking.success.body")}</p>
-              <Button onClick={() => navigate(`/${slug}`)} className="mt-2">
+              <Button onClick={() => navigate(salonPath(slug))} className="mt-2">
                 Done
               </Button>
             </CardContent>
@@ -130,7 +130,7 @@ export function BookingPage() {
     <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(`/${slug}`)}>
+          <Button variant="ghost" onClick={() => navigate(salonPath(slug))}>
             <ArrowLeft className="size-4" /> Back
           </Button>
           <h1 className="text-lg font-semibold text-foreground">Booking</h1>
@@ -194,7 +194,7 @@ export function BookingPage() {
                       <BarberAvailabilityCard
                         key={b.id}
                         barber={b}
-                        slug={slug!}
+                        slug={slug}
                         serviceId={selectedServiceId!}
                         date={selectedDate}
                         selectedStartTime={selectedSlot?.start_time}

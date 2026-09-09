@@ -19,6 +19,7 @@ import { ModeToggle } from "#components/mode-toggle"
 import { OnboardingGate } from "#components/OnboardingGate"
 import { InviteLandingPage } from "./components/invite/InviteLandingPage"
 import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
+import { subdomainSlug } from "./lib/salonDomain"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -94,6 +95,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 }
 
 function App() {
+  // On a salon subdomain the salon site is served from the root; on the app
+  // host, native, and local dev it is served from /:slug.
+  const hostSlug = subdomainSlug()
+
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
       <QueryClientProvider client={queryClient}>
@@ -101,7 +106,25 @@ function App() {
           <BrowserRouter>
             <AppInit>
               <Routes>
-                <Route path="/" element={<HomePage />} />
+                {hostSlug ? (
+                  <Route path="/" element={<SalonLayout slug={hostSlug} />}>
+                    <Route index element={<LandingPage />} />
+                    <Route path="services" element={<ServicesPage />} />
+                    <Route path="barbers" element={<BarbersPage />} />
+                    <Route path="book" element={<BookingPage />} />
+                  </Route>
+                ) : (
+                  <>
+                    <Route path="/" element={<HomePage />} />
+                    <Route path="/:slug" element={<SalonLayout />}>
+                      <Route index element={<LandingPage />} />
+                      <Route path="services" element={<ServicesPage />} />
+                      <Route path="barbers" element={<BarbersPage />} />
+                      <Route path="book" element={<BookingPage />} />
+                    </Route>
+                  </>
+                )}
+
                 <Route path="/invite/:token" element={<InviteLandingPage />} />
 
                 <Route path="/my/appointments" element={<ProtectedRoute><OnboardingGate><MyAppointmentsPage /></OnboardingGate></ProtectedRoute>} />
@@ -109,13 +132,6 @@ function App() {
                 <Route path="/admin/business/:businessId/services" element={<ProtectedRoute><OnboardingGate><AdminServicesPage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/my-schedule" element={<ProtectedRoute><OnboardingGate><MySchedulePage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/my-reservations" element={<ProtectedRoute><OnboardingGate><MyReservationsPage /></OnboardingGate></ProtectedRoute>} />
-
-                <Route path="/:slug" element={<SalonLayout />}>
-                  <Route index element={<LandingPage />} />
-                  <Route path="services" element={<ServicesPage />} />
-                  <Route path="barbers" element={<BarbersPage />} />
-                  <Route path="book" element={<BookingPage />} />
-                </Route>
               </Routes>
             </AppInit>
           </BrowserRouter>

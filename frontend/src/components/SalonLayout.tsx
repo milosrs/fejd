@@ -3,6 +3,7 @@ import { useState } from "react"
 import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonContext"
 import { Button } from "./ui/button"
 import { SalonPolicyDialog } from "./SalonPolicyDialog"
+import { salonPath } from "../lib/salonDomain"
 
 function SalonShell() {
   const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
@@ -26,17 +27,17 @@ function SalonShell() {
   }
 
   const nav = [
-    { to: `/${slug}`, label: "Home", end: true },
-    { to: `/${slug}/services`, label: "Services", end: false },
-    { to: `/${slug}/barbers`, label: "Barbers", end: false },
-    { to: `/${slug}/book`, label: "Book", end: false },
+    { to: salonPath(slug), label: "Home", end: true },
+    { to: salonPath(slug, "/services"), label: "Services", end: false },
+    { to: salonPath(slug, "/barbers"), label: "Barbers", end: false },
+    { to: salonPath(slug, "/book"), label: "Book", end: false },
   ]
 
   return (
     <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2">
-          <Link to={`/${slug}`} className="text-lg font-semibold text-foreground">
+          <Link to={salonPath(slug)} className="text-lg font-semibold text-foreground">
             {salon.business.name}
           </Link>
           <nav className="flex flex-wrap items-center gap-1">
@@ -95,9 +96,9 @@ function SalonShell() {
   )
 }
 
-export function SalonLayout({ initialEditing }: { initialEditing?: boolean }) {
+export function SalonLayout({ initialEditing, slug }: { initialEditing?: boolean; slug?: string }) {
   return (
-    <SalonProvider initialEditing={initialEditing}>
+    <SalonProvider initialEditing={initialEditing} slug={slug}>
       <SalonShell />
     </SalonProvider>
   )

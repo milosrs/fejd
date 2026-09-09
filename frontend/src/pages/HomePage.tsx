@@ -1,7 +1,8 @@
-import { Link } from "react-router-dom"
+import { Link, useNavigate } from "react-router-dom"
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
 import { hasRole } from "../lib/ownership"
+import { openSalon, salonUrl } from "../lib/salonDomain"
 import { Button } from "../components/ui/button"
 import { CreateSalonForm } from "../components/CreateSalonForm"
 
@@ -10,6 +11,7 @@ export function HomePage() {
   const roles = useAuthStore((s) => s.roles)
   const login = useAuthStore((s) => s.login)
   const register = useAuthStore((s) => s.register)
+  const navigate = useNavigate()
   const { data: me, isLoading: meLoading } = useMe()
 
   const isOwner = hasRole(roles, "Owner")
@@ -37,26 +39,34 @@ export function HomePage() {
         <CreateSalonForm />
       ) : businesses.length > 0 ? (
         <div className="flex w-full max-w-sm flex-col items-center gap-4">
-          <Link
-            to={`/${primaryBusiness.slug}`}
+          <a
+            href={salonUrl(primaryBusiness.slug)}
+            onClick={(e) => {
+              e.preventDefault()
+              openSalon(navigate, primaryBusiness.slug)
+            }}
             className="inline-flex items-center justify-center rounded-2xl bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/80"
           >
             Open my salon
-          </Link>
+          </a>
 
           <div className="flex w-full flex-col items-center gap-3">
             <h2 className="text-sm font-medium text-muted-foreground">Your salons</h2>
             {businesses.map((b) => (
-              <Link
+              <a
                 key={b.id}
-                to={`/${b.slug}`}
+                href={salonUrl(b.slug)}
+                onClick={(e) => {
+                  e.preventDefault()
+                  openSalon(navigate, b.slug)
+                }}
                 className="flex w-full items-center justify-between rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground hover:bg-muted"
               >
                 <span>{b.name}</span>
                 <span className="text-xs text-muted-foreground">
                   {b.role === "admin" ? "Owner" : "Employee"}
                 </span>
-              </Link>
+              </a>
             ))}
           </div>
 

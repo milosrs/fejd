@@ -1,5 +1,6 @@
 import { useEffect, useRef, useCallback } from "react"
 import { useQueryClient } from "@tanstack/react-query"
+import { API_BASE_URL } from "../lib/api"
 
 export function useTimeSlotStream(businessSlug: string) {
   const queryClient = useQueryClient()
@@ -8,7 +9,7 @@ export function useTimeSlotStream(businessSlug: string) {
   const connect = useCallback(() => {
     if (!businessSlug) return
 
-    const url = `${import.meta.env.VITE_API_URL || "http://localhost:8080"}/api/sse/business/${businessSlug}/slots`
+    const url = `${API_BASE_URL}/api/sse/business/${businessSlug}/slots`
     const es = new EventSource(url)
 
     es.addEventListener("slots_updated", (event) => {

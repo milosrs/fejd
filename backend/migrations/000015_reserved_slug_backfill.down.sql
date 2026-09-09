@@ -1,0 +1,2 @@
+-- No-op: the original slugs cannot be recovered, and reverting would re-create
+-- the reserved-subdomain collision this migration resolves.

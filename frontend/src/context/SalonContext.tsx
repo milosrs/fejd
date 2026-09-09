@@ -4,6 +4,7 @@ import { useSalon, type Salon } from "../hooks/useSalon"
 import { useMe } from "../hooks/useMe"
 import { useAuthStore } from "../stores/authStore"
 import { isOwnerOfBusiness, hasRole } from "../lib/ownership"
+import { subdomainSlug } from "../lib/salonDomain"
 
 interface SalonContextValue {
   slug: string
@@ -19,11 +20,14 @@ const SalonContext = createContext<SalonContextValue | null>(null)
 export function SalonProvider({
   children,
   initialEditing = false,
+  slug: hostSlug,
 }: {
   children: React.ReactNode
   initialEditing?: boolean
+  slug?: string
 }) {
-  const { slug = "" } = useParams<{ slug: string }>()
+  const { slug: paramSlug } = useParams<{ slug: string }>()
+  const slug = hostSlug ?? paramSlug ?? subdomainSlug() ?? ""
   const { data, isLoading, error } = useSalon(slug)
   const [editing, setEditing] = useState(initialEditing)
 

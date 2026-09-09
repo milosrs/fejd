@@ -1,6 +1,7 @@
 import { useNavigate } from "react-router-dom"
 import type { HeroContent } from "../../lib/sections"
 import { resolveImageUrl } from "../../lib/images"
+import { salonPath } from "../../lib/salonDomain"
 import { Button } from "../ui/button"
 
 interface HeroSectionProps {
@@ -44,7 +45,7 @@ export function HeroSection({
           <p className="max-w-xl text-muted-foreground">{content.subheadline}</p>
         )}
         {content.cta_text && slug && (
-          <Button onClick={() => navigate(`/${slug}/book`)}>{content.cta_text}</Button>
+          <Button onClick={() => navigate(salonPath(slug, "/book"))}>{content.cta_text}</Button>
         )}
       </div>
     </section>

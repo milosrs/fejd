@@ -59,7 +59,16 @@ export default defineConfig({
   plugins,
   server: {
     host: '0.0.0.0',
-    port: 5173
+    port: 5173,
+    proxy: {
+      // Web dev uses a same-origin /api (like production) proxied to the backend.
+      // Inside docker-compose the backend is reachable as "backend", so the
+      // target is overridable via VITE_API_PROXY_TARGET.
+      '/api': {
+        target: process.env.VITE_API_PROXY_TARGET || 'http://localhost:8080',
+        changeOrigin: true,
+      },
+    },
   },
   test: {
     projects: [{

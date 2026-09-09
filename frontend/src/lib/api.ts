@@ -3,6 +3,7 @@ import type { Middleware } from "openapi-fetch"
 import type { paths } from "./api-types"
 import { auth } from "./auth"
 import { useAuthStore } from "../stores/authStore"
+import { Capacitor } from "@capacitor/core"
 
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
@@ -35,12 +36,18 @@ const errorMiddleware: Middleware = {
   },
 }
 
+// On web the API is same-origin (served through the reverse proxy alongside the
+// SPA), so the base is empty and requests resolve against the current subdomain.
+// The native app has no reverse proxy and needs the absolute API URL.
+const isNative = Capacitor.isNativePlatform()
+const configuredBase = import.meta.env.VITE_API_URL || ""
+
 const apiClient = createClient<paths>({
-  baseUrl: import.meta.env.VITE_API_URL || "http://localhost:8080",
+  baseUrl: isNative ? configuredBase : "",
   headers: { "Content-Type": "application/json" },
 })
 
-export const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8080"
+export const API_BASE_URL = isNative ? configuredBase : ""
 
 apiClient.use(authMiddleware)
 apiClient.use(errorMiddleware)

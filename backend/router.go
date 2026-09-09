@@ -11,7 +11,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	chiMiddleware "github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger/v2"
 )
 
@@ -37,14 +36,7 @@ func newRouter(
 	r.Use(chiMiddleware.Recoverer)
 	r.Use(chiMiddleware.RequestID)
 	r.Use(chiMiddleware.RealIP)
-	r.Use(cors.Handler(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
-		ExposedHeaders:   []string{"Link"},
-		AllowCredentials: true,
-		MaxAge:           300,
-	}))
+	r.Use(customMiddleware.CORS(cfg.CORS.AllowedOrigins, cfg.CORS.AllowedSuffix))
 	r.Use(customMiddleware.MaxBodyBytes(cfg.ImageStorage.MaxUploadBytes))
 
 	r.Get("/health", func(w http.ResponseWriter, r *http.Request) {

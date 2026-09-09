@@ -773,9 +773,11 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
+        "https://*.fejd.com/*",
         "http://localhost:5173/*"
       ],
       "webOrigins": [
+        "https://*.fejd.com",
         "http://localhost:5173"
       ],
       "notBefore": 0,

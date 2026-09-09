@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useOnboardingStore } from "../stores/onboardingStore"
+import { openSalon } from "../lib/salonDomain"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -16,7 +17,7 @@ export function CreateSalonForm() {
     setCreating(true)
     try {
       const slug = await createBusiness(name.trim())
-      if (slug) navigate(`/${slug}`)
+      if (slug) openSalon(navigate, slug)
     } catch {
       // keep the form open; the backend surfaces a 4xx
     } finally {

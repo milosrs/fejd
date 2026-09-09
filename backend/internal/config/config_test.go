@@ -105,3 +105,24 @@ func TestLoadRejectsNonPositiveInviteExpiry(t *testing.T) {
 	_, err := Load()
 	require.Error(t, err)
 }
+
+func TestLoadCORSParsing(t *testing.T) {
+	t.Setenv("CORS_ALLOWED_ORIGINS", " http://localhost:5173, https://www.fejd.com ")
+	t.Setenv("CORS_ALLOWED_SUFFIX", "fejd.com")
+	t.Setenv("FEJD_DOMAIN", "fejd.com")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.Equal(t, []string{"http://localhost:5173", "https://www.fejd.com"}, cfg.CORS.AllowedOrigins)
+	assert.Equal(t, "fejd.com", cfg.CORS.AllowedSuffix)
+	assert.Equal(t, "fejd.com", cfg.AppDomain)
+}
+
+func TestLoadCORSDefaults(t *testing.T) {
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.Contains(t, cfg.CORS.AllowedOrigins, "http://localhost:5173")
+	assert.Contains(t, cfg.CORS.AllowedOrigins, "capacitor://localhost")
+	assert.Empty(t, cfg.CORS.AllowedSuffix)
+	assert.Empty(t, cfg.AppDomain)
+}

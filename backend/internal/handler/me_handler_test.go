@@ -207,3 +207,62 @@ func TestSlugify(t *testing.T) {
 		assert.Equal(t, tc.want, slugify(tc.in), "slugify(%q)", tc.in)
 	}
 }
+
+func TestIsValidDNSLabel(t *testing.T) {
+	cases := []struct {
+		in   string
+		want bool
+	}{
+		{"dragicevic", true},
+		{"my-salon", true},
+		{"a1-b2", true},
+		{"", false},
+		{"-leading", false},
+		{"trailing-", false},
+		{"UPPER", false},
+		{"has_underscore", false},
+		{"dot.in.label", false},
+		{"x", true},
+	}
+	for _, tc := range cases {
+		assert.Equal(t, tc.want, isValidDNSLabel(tc.in), "isValidDNSLabel(%q)", tc.in)
+	}
+
+	long := make([]byte, 64)
+	for i := range long {
+		long[i] = 'a'
+	}
+	assert.False(t, isValidDNSLabel(string(long)))
+}
+
+func TestIsReservedSubdomain(t *testing.T) {
+	assert.True(t, isReservedSubdomain("www"))
+	assert.True(t, isReservedSubdomain("auth"))
+	assert.False(t, isReservedSubdomain("dragicevic"))
+}
+
+func TestSanitizeSlug(t *testing.T) {
+	assert.Equal(t, "salon", sanitizeSlug(""))
+	assert.Equal(t, "salon", sanitizeSlug("---"))
+
+	long := make([]byte, 100)
+	for i := range long {
+		long[i] = 'a'
+	}
+	assert.Len(t, sanitizeSlug(string(long)), 63)
+}
+
+func TestMeHandler_CreateBusiness_ReservedSlug(t *testing.T) {
+	h, _, _, _ := newTestMeHandler(t)
+
+	body := `{"name":"Www"}`
+	req := withRoles(withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "user-1", "approved"), auth.RoleOwner)
+	rr := httptest.NewRecorder()
+
+	h.CreateBusiness(rr, req)
+
+	require.Equal(t, http.StatusCreated, rr.Code)
+	var b dto.Business
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &b))
+	assert.Equal(t, "www-2", b.Slug)
+}

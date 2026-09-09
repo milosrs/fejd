@@ -55,6 +55,18 @@ type KeycloakConfig struct {
 	AdminClientSecret string
 }
 
+// CORSConfig controls cross-origin access to the API.
+type CORSConfig struct {
+	// AllowedOrigins are exact origins permitted to call the API (local dev
+	// servers and the native app webview origins). Salon subdomains are covered
+	// separately by AllowedSuffix.
+	AllowedOrigins []string
+	// AllowedSuffix, when non-empty, permits any origin whose host is equal to
+	// or a subdomain of this suffix (e.g. "fejd.com" allows
+	// "https://dragicevic.fejd.com").
+	AllowedSuffix string
+}
+
 // JobsConfig holds scheduled-job settings.
 type JobsConfig struct {
 	PendingScanInterval time.Duration
@@ -81,6 +93,8 @@ type Config struct {
 	Keycloak     KeycloakConfig
 	Jobs         JobsConfig
 	Email        EmailConfig
+	CORS         CORSConfig
+	AppDomain    string
 }
 
 // Load reads configuration from environment variables, applies defaults, and
@@ -131,6 +145,12 @@ func Load() (*Config, error) {
 			SMTPFrom:              getEnv("SMTP_FROM", ""),
 			SuperadminNotifyEmail: getEnv("SUPERADMIN_NOTIFY_EMAIL", ""),
 		},
+		CORS: CORSConfig{
+			AllowedOrigins: splitCSV(getEnv("CORS_ALLOWED_ORIGINS",
+				"http://localhost:5173,http://localhost:8080,http://localhost,https://localhost,capacitor://localhost")),
+			AllowedSuffix: getEnv("CORS_ALLOWED_SUFFIX", ""),
+		},
+		AppDomain: getEnv("FEJD_DOMAIN", ""),
 	}
 
 	if err := cfg.validate(); err != nil {

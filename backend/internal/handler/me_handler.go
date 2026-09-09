@@ -21,6 +21,21 @@ import (
 
 const maxSlugLength = 100
 
+// maxDNSLabelLength caps a slug so it can serve as a single DNS label (a
+// subdomain) as well as a path segment. RFC 1035 limits labels to 63 octets.
+const maxDNSLabelLength = 63
+
+// reservedSubdomains are labels that must never become a salon slug, because
+// they are (or will be) used for Fejd infrastructure: the app shell, the API
+// edge, auth, etc. Keep in sync with the backfill migration
+// 000015_reserved_slug_backfill.up.sql.
+var reservedSubdomains = map[string]struct{}{
+	"www": {}, "api": {}, "app": {}, "auth": {}, "keycloak": {},
+	"admin": {}, "m": {}, "static": {}, "cdn": {}, "smtp": {},
+	"mail": {}, "help": {}, "support": {}, "status": {}, "docs": {},
+	"blog": {}, "staging": {}, "dev": {}, "test": {},
+}
+
 type MeHandler struct {
 	businessStore *store.BusinessStore
 	buStore       *store.BusinessUserStore
@@ -151,9 +166,13 @@ func (h *MeHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *MeHandler) availableSlug(r *http.Request, name string) (string, error) {
-	base := slugify(name)
+	base := sanitizeSlug(slugify(name))
 	slug := base
 	for i := 2; ; i++ {
+		if !isValidDNSLabel(slug) || isReservedSubdomain(slug) {
+			slug = fmt.Sprintf("%s-%d", base, i)
+			continue
+		}
 		exists, err := h.businessStore.SlugExists(r.Context(), h.pool, slug)
 		if err != nil {
 			return "", err
@@ -163,6 +182,43 @@ func (h *MeHandler) availableSlug(r *http.Request, name string) (string, error) 
 		}
 		slug = fmt.Sprintf("%s-%d", base, i)
 	}
+}
+
+// sanitizeSlug trims a slugified name to a valid DNS label and guarantees a
+// non-empty result.
+func sanitizeSlug(base string) string {
+	if len(base) > maxDNSLabelLength {
+		base = base[:maxDNSLabelLength]
+	}
+	base = strings.Trim(base, "-")
+	if base == "" {
+		return "salon"
+	}
+	return base
+}
+
+// isValidDNSLabel reports whether s is a valid single DNS label: at most 63
+// characters, lowercase alphanumerics and hyphens, no leading/trailing hyphen.
+func isValidDNSLabel(s string) bool {
+	if s == "" || len(s) > maxDNSLabelLength {
+		return false
+	}
+	if s[0] == '-' || s[len(s)-1] == '-' {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-' {
+			continue
+		}
+		return false
+	}
+	return true
+}
+
+func isReservedSubdomain(s string) bool {
+	_, ok := reservedSubdomains[s]
+	return ok
 }
 
 func slugify(name string) string {

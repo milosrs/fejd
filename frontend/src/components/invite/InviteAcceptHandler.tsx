@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../../stores/authStore"
 import { useAcceptInvitation } from "../../hooks/useInvitations"
+import { openSalon } from "../../lib/salonDomain"
 
 /**
  * Watches the pending invite token and, once the user is authenticated, redeems
@@ -22,7 +23,7 @@ export function InviteAcceptHandler() {
     accept.mutate(token, {
       onSuccess: (business) => {
         setToken(null)
-        if (business) navigate(`/${business.slug}`)
+        if (business) openSalon(navigate, business.slug)
       },
       onError: () => {
         setToken(null)
