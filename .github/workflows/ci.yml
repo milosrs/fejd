@@ -75,10 +75,14 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-playwright-
 
-      - name: Install Playwright Browsers & Dependencies
-        uses: microsoft/playwright-github-action@v1
-        with:
-          chromium: true
+      - name: Clean APT sources
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/google-chrome.list
+          sudo rm -rf /var/lib/apt/lists/*
+          sudo apt-get update
+
+      - name: Install Playwright Chromium & System Deps
+        run: pnpm exec playwright install --with-deps chromium
 
       - name: Run tests
         run: pnpm test
