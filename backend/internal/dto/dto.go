@@ -15,6 +15,7 @@ type Business struct {
 	UpdatedAt             time.Time `json:"updated_at" validate:"required"`
 	CancellationLeadHours int       `json:"cancellation_lead_hours" validate:"required"`
 	NoShowAfterHours      int       `json:"no_show_after_hours" validate:"required"`
+	SlotIntervalMinutes   int       `json:"slot_interval_minutes" validate:"required"`
 }
 
 // Me is the authenticated user's own onboarding state, synthesized from the
@@ -43,6 +44,13 @@ type BusinessUser struct {
 	DisplayName string    `json:"display_name"`
 	Active      bool      `json:"active" validate:"required"`
 	Avatar      string    `json:"avatar,omitempty"`
+}
+
+// BusinessHours is a salon-level default working-hours row. Times are "HH:MM".
+type BusinessHours struct {
+	DayOfWeek int    `json:"day_of_week" validate:"required"`
+	StartTime string `json:"start_time" validate:"required"`
+	EndTime   string `json:"end_time" validate:"required"`
 }
 
 // Customer is an existing customer of a business, with the display name cached

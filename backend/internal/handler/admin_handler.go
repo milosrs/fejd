@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"fejd-backend/internal/authutil"
 	"fejd-backend/internal/db"
 	"fejd-backend/internal/dto"
@@ -33,6 +34,7 @@ type AdminHandler struct {
 	serviceStore        *store.ServiceStore
 	pageStore           *store.PageStore
 	sectionStore        *store.SectionStore
+	businessHoursStore  *store.BusinessHoursStore
 	workingHoursService *service.WorkingHoursService
 	appointmentStore    *store.AppointmentStore
 	slotService         *service.SlotService
@@ -47,6 +49,7 @@ func NewAdminHandler(
 	serviceStore *store.ServiceStore,
 	pageStore *store.PageStore,
 	sectionStore *store.SectionStore,
+	businessHoursStore *store.BusinessHoursStore,
 	workingHoursService *service.WorkingHoursService,
 	appointmentStore *store.AppointmentStore,
 	slotService *service.SlotService,
@@ -60,6 +63,7 @@ func NewAdminHandler(
 		serviceStore:        serviceStore,
 		pageStore:           pageStore,
 		sectionStore:        sectionStore,
+		businessHoursStore:  businessHoursStore,
 		workingHoursService: workingHoursService,
 		appointmentStore:    appointmentStore,
 		slotService:         slotService,
@@ -648,7 +652,7 @@ func (h *AdminHandler) AddUnavailability(w http.ResponseWriter, r *http.Request)
 	}
 
 	if err := h.slotService.AddEmployeeUnavailability(r.Context(), businessID, targetUserID, u); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeUnavailabilityError(w, err)
 		return
 	}
 
@@ -777,7 +781,7 @@ func (h *AdminHandler) AddMyUnavailability(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.slotService.AddEmployeeUnavailability(r.Context(), businessID, userID, u); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeUnavailabilityError(w, err)
 		return
 	}
 
@@ -947,7 +951,7 @@ func (h *AdminHandler) serviceNameMap(ctx context.Context, businessID uuid.UUID)
 
 // GetSalonPolicy godoc
 // @Summary      Get salon policy
-// @Description  Returns the salon's cancellation and no-show policies.
+// @Description  Returns the salon's cancellation, no-show, slot interval and working-hours policies.
 // @Tags         admin
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
@@ -970,15 +974,23 @@ func (h *AdminHandler) GetSalonPolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	hours, err := h.businessHoursStore.ListByBusiness(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
 		CancellationLeadHours: b.CancellationLeadHours,
 		NoShowAfterHours:      b.NoShowAfterHours,
+		SlotIntervalMinutes:   b.SlotIntervalMinutes,
+		WorkingHours:          dto.BusinessHoursFromModels(hours),
 	})
 }
 
 // UpdateSalonPolicy godoc
 // @Summary      Update salon policy
-// @Description  Sets the salon's cancellation and no-show policies.
+// @Description  Sets the salon's cancellation, no-show, slot interval and working-hours policies.
 // @Tags         admin
 // @Accept       json
 // @Produce      json
@@ -1011,8 +1023,40 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "no_show_after_hours must be zero or greater")
 		return
 	}
+	if body.SlotIntervalMinutes <= 0 {
+		writeError(w, http.StatusBadRequest, "slot_interval_minutes must be greater than zero")
+		return
+	}
 
-	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterHours); err != nil {
+	hours := make([]models.BusinessHours, 0, len(body.WorkingHours))
+	for _, wh := range body.WorkingHours {
+		start, err := parseTimeOnly(wh.StartTime)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		end, err := parseTimeOnly(wh.EndTime)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+		if !end.After(start) {
+			writeError(w, http.StatusBadRequest, "end_time must be after start_time")
+			return
+		}
+		hours = append(hours, models.BusinessHours{
+			BusinessID: businessID,
+			DayOfWeek:  wh.DayOfWeek,
+			StartTime:  start,
+			EndTime:    end,
+		})
+	}
+
+	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterHours, body.SlotIntervalMinutes); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if err := h.businessHoursStore.ReplaceByBusiness(r.Context(), businessID, hours); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -1020,7 +1064,30 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
 		CancellationLeadHours: body.CancellationLeadHours,
 		NoShowAfterHours:      body.NoShowAfterHours,
+		SlotIntervalMinutes:   body.SlotIntervalMinutes,
+		WorkingHours:          dto.BusinessHoursFromModels(hours),
 	})
+}
+
+// parseTimeOnly parses an "HH:MM" or "HH:MM:SS" string into a time value.
+func parseTimeOnly(s string) (time.Time, error) {
+	for _, layout := range []string{time.TimeOnly, "15:04"} {
+		if t, err := time.Parse(layout, s); err == nil {
+			return t, nil
+		}
+	}
+	return time.Time{}, fmt.Errorf("invalid time: %s", s)
+}
+
+// writeUnavailabilityError maps an unavailability write error to a friendly
+// HTTP response (e.g. the exclusion constraint fires on overlapping ranges).
+func writeUnavailabilityError(w http.ResponseWriter, err error) {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) && pgErr.Code == "23P01" {
+		writeError(w, http.StatusConflict, "this time range overlaps an existing unavailability period")
+		return
+	}
+	writeError(w, http.StatusInternalServerError, err.Error())
 }
 
 // MarkNoShow godoc

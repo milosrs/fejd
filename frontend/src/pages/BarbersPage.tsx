@@ -127,7 +127,11 @@ export function BarbersPage() {
             <BarberCard
               key={employee.id}
               employee={employee}
-              onRemove={editingOn ? () => setPendingRemoval(employee) : undefined}
+              onRemove={
+                editingOn && employee.role !== "admin"
+                  ? () => setPendingRemoval(employee)
+                  : undefined
+              }
             />
           ))}
         </div>

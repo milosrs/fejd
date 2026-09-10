@@ -28,6 +28,7 @@ export function MySchedulePage() {
   const [reason, setReason] = useState("")
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState("")
+  const [isError, setIsError] = useState(false)
 
   if (!authenticated) {
     return (
@@ -45,6 +46,7 @@ export function MySchedulePage() {
     if (!date || !startTime || !endTime) return
     if (endTime <= startTime) {
       setMessage("End time must be after start time.")
+      setIsError(true)
       return
     }
     setSaving(true)
@@ -57,9 +59,12 @@ export function MySchedulePage() {
       })
       setReason("")
       setMessage("Time slot reserved.")
+      setIsError(false)
       await refresh()
-    } catch {
-      setMessage("Failed to reserve. The slot may already be blocked.")
+    } catch (err) {
+      const e = err as { body?: { error?: string } }
+      setMessage(e?.body?.error ?? "Failed to reserve. The slot may already be blocked.")
+      setIsError(true)
     } finally {
       setSaving(false)
     }
@@ -69,9 +74,11 @@ export function MySchedulePage() {
     try {
       await deleteOwnSlot(businessId!, id)
       setMessage("Blocked slot removed.")
+      setIsError(false)
       await refresh()
     } catch {
       setMessage("Failed to remove blocked slot.")
+      setIsError(true)
     }
   }
 
@@ -121,7 +128,7 @@ export function MySchedulePage() {
               />
             </div>
             {message && (
-              <p className={`text-sm ${message.startsWith("Failed") ? "text-red-500" : "text-green-600"}`}>
+              <p className={`text-sm ${isError ? "text-red-500" : "text-green-600"}`}>
                 {message}
               </p>
             )}

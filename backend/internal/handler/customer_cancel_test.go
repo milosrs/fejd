@@ -45,12 +45,13 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 	appointmentStore := store.NewAppointmentStore(pool)
 	workingHoursStore := store.NewWorkingHoursStore(pool)
 	overrideStore := store.NewWorkingHoursOverrideStore(pool)
+	businessHoursStore := store.NewBusinessHoursStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
 	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
 	hub := sse.NewHub()
 
 	slotService := service.NewSlotService(
-		appointmentStore, workingHoursStore, overrideStore,
+		appointmentStore, workingHoursStore, businessHoursStore, overrideStore,
 		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
 	)
 
@@ -88,7 +89,7 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 
 	return &cancelTestEnv{
 		apptHandler:      NewAppointmentHandler(appointmentStore, serviceStore, businessStore, buStore, slotService),
-		adminHandler:     NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, appointmentStore, slotService, nil, nil, pool),
+		adminHandler:     NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, appointmentStore, slotService, nil, nil, pool),
 		appointmentStore: appointmentStore,
 		businessStore:    businessStore,
 		buStore:          buStore,
@@ -170,9 +171,10 @@ func TestAdminHandler_SalonPolicy(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &policy))
 	assert.Equal(t, 2, policy.CancellationLeadHours)
 	assert.Equal(t, 2, policy.NoShowAfterHours)
+	assert.Equal(t, 30, policy.SlotIntervalMinutes)
 
 	putReq := withPathParams(
-		httptest.NewRequest(http.MethodPut, "/api/admin/business/"+env.businessID.String()+"/policy", bytes.NewBufferString(`{"cancellation_lead_hours":24,"no_show_after_hours":4}`)),
+		httptest.NewRequest(http.MethodPut, "/api/admin/business/"+env.businessID.String()+"/policy", bytes.NewBufferString(`{"cancellation_lead_hours":24,"no_show_after_hours":4,"slot_interval_minutes":45,"working_hours":[{"day_of_week":1,"start_time":"09:00","end_time":"17:00"}]}`)),
 		map[string]string{"businessID": env.businessID.String()},
 	)
 	putReq = withUser(putReq, "owner-1", "approved")
@@ -182,6 +184,9 @@ func TestAdminHandler_SalonPolicy(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &policy))
 	assert.Equal(t, 24, policy.CancellationLeadHours)
 	assert.Equal(t, 4, policy.NoShowAfterHours)
+	assert.Equal(t, 45, policy.SlotIntervalMinutes)
+	assert.Len(t, policy.WorkingHours, 1)
+	assert.Equal(t, "09:00", policy.WorkingHours[0].StartTime)
 
 	// A 5-hour-away appointment is now inside the 24-hour window.
 	req := customerCancelReq(env.policyApptID, "customer-3", `{"cancellation_reason":"too late now"}`)

@@ -55,7 +55,7 @@ func TestAdminHandler_CreateEmployee(t *testing.T) {
 
 	inviter := &fakeInviter{userID: "kc-user-123"}
 	employeeService := service.NewEmployeeService(inviter, buStore, employeeServiceStore, pool, "fejd://callback", 48*3600)
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, nil, employeeService, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, nil, nil, employeeService, pool)
 
 	b := &models.Business{Name: "Salon", Slug: "salon"}
 	require.NoError(t, businessStore.Create(ctx, pool, b))
@@ -105,7 +105,7 @@ func TestAdminHandler_CreateEmployee_NonOwnerRejected(t *testing.T) {
 
 	inviter := &fakeInviter{userID: "kc-user-123"}
 	employeeService := service.NewEmployeeService(inviter, buStore, employeeServiceStore, pool, "fejd://callback", 48*3600)
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, nil, employeeService, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, nil, nil, employeeService, pool)
 
 	b := &models.Business{Name: "Salon", Slug: "salon"}
 	require.NoError(t, businessStore.Create(ctx, pool, b))

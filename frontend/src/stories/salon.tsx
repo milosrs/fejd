@@ -48,6 +48,7 @@ export const mockSalon: Salon = {
     updated_at: "2024-01-01T00:00:00Z",
     cancellation_lead_hours: 2,
     no_show_after_hours: 2,
+    slot_interval_minutes: 30,
   },
   services: [
     {

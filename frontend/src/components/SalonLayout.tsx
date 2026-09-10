@@ -101,8 +101,6 @@ function SalonShell() {
         <SalonPolicyDialog
           businessId={salon.business.id}
           slug={slug}
-          cancellationLeadHours={salon.business.cancellation_lead_hours}
-          noShowAfterHours={salon.business.no_show_after_hours}
           onClose={() => setPolicyOpen(false)}
         />
       )}

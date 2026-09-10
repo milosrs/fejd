@@ -29,16 +29,17 @@ func newUnavailabilityTestHandler(t *testing.T) (*AdminHandler, *store.BusinessS
 	appointmentStore := store.NewAppointmentStore(pool)
 	workingHoursStore := store.NewWorkingHoursStore(pool)
 	overrideStore := store.NewWorkingHoursOverrideStore(pool)
+	businessHoursStore := store.NewBusinessHoursStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
 	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
 	hub := sse.NewHub()
 
 	slotService := service.NewSlotService(
-		appointmentStore, workingHoursStore, overrideStore,
+		appointmentStore, workingHoursStore, businessHoursStore, overrideStore,
 		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
 	)
 
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, appointmentStore, slotService, nil, nil, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, appointmentStore, slotService, nil, nil, pool)
 
 	ctx := context.Background()
 	b := &models.Business{Name: "Salon", Slug: "salon"}

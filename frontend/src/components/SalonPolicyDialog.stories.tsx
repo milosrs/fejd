@@ -13,21 +13,13 @@ const meta: Meta<typeof SalonPolicyDialog> = {
 export default meta
 type Story = StoryObj<typeof SalonPolicyDialog>
 
-function Frame({
-  cancellationLeadHours,
-  noShowAfterHours,
-}: {
-  cancellationLeadHours: number
-  noShowAfterHours: number
-}) {
+function Frame() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   return (
     <QueryClientProvider client={queryClient}>
       <SalonPolicyDialog
         businessId="11111111-1111-4111-8111-111111111111"
         slug="fejd"
-        cancellationLeadHours={cancellationLeadHours}
-        noShowAfterHours={noShowAfterHours}
         onClose={() => {}}
       />
     </QueryClientProvider>
@@ -35,9 +27,9 @@ function Frame({
 }
 
 export const Default: Story = {
-  render: () => <Frame cancellationLeadHours={2} noShowAfterHours={2} />,
+  render: () => <Frame />,
 }
 
 export const LongerNotice: Story = {
-  render: () => <Frame cancellationLeadHours={24} noShowAfterHours={4} />,
+  render: () => <Frame />,
 }

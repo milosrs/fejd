@@ -17,6 +17,7 @@ func BusinessFromModel(m models.Business) Business {
 		UpdatedAt:             m.UpdatedAt,
 		CancellationLeadHours: m.CancellationLeadHours,
 		NoShowAfterHours:      m.NoShowAfterHours,
+		SlotIntervalMinutes:   m.SlotIntervalMinutes,
 	}
 }
 
@@ -46,6 +47,22 @@ func BusinessUserFromModel(m models.BusinessUser) BusinessUser {
 		DisplayName: m.DisplayName,
 		Active:      m.Active,
 	}
+}
+
+func BusinessHoursFromModel(m models.BusinessHours) BusinessHours {
+	return BusinessHours{
+		DayOfWeek: m.DayOfWeek,
+		StartTime: m.StartTime.Format("15:04"),
+		EndTime:   m.EndTime.Format("15:04"),
+	}
+}
+
+func BusinessHoursFromModels(ms []models.BusinessHours) []BusinessHours {
+	out := make([]BusinessHours, len(ms))
+	for i, m := range ms {
+		out[i] = BusinessHoursFromModel(m)
+	}
+	return out
 }
 
 func SectionFromModel(m models.Section) Section {

@@ -1558,7 +1558,7 @@ export interface paths {
         };
         /**
          * Get salon policy
-         * @description Returns the salon's cancellation and no-show policies.
+         * @description Returns the salon's cancellation, no-show, slot interval and working-hours policies.
          */
         get: {
             parameters: {
@@ -1612,7 +1612,7 @@ export interface paths {
         };
         /**
          * Update salon policy
-         * @description Sets the salon's cancellation and no-show policies.
+         * @description Sets the salon's cancellation, no-show, slot interval and working-hours policies.
          */
         put: {
             parameters: {
@@ -2573,8 +2573,8 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List employees who offer a service
-         * @description Returns active employees assigned to the given service.
+         * List staff who offer a service
+         * @description Returns active business users (owner and employees) assigned to the given service.
          */
         get: {
             parameters: {
@@ -3298,8 +3298,14 @@ export interface components {
             id: string;
             name: string;
             no_show_after_hours: number;
+            slot_interval_minutes: number;
             slug: string;
             updated_at: string;
+        };
+        "dto.BusinessHours": {
+            day_of_week: number;
+            end_time: string;
+            start_time: string;
         };
         "dto.BusinessUser": {
             active: boolean;
@@ -3382,6 +3388,14 @@ export interface components {
         "handler.BusinessCreateInput": {
             /** @example My Salon */
             name: string;
+        };
+        "handler.BusinessHoursInput": {
+            /** @example 1 */
+            day_of_week: number;
+            /** @example 17:00 */
+            end_time: string;
+            /** @example 09:00 */
+            start_time: string;
         };
         "handler.BusinessImages": {
             background?: string;
@@ -3486,6 +3500,9 @@ export interface components {
             cancellation_lead_hours: number;
             /** @example 2 */
             no_show_after_hours: number;
+            /** @example 30 */
+            slot_interval_minutes: number;
+            working_hours: components["schemas"]["dto.BusinessHours"][];
         };
         "handler.ServiceInput": {
             /** @example true */
@@ -3531,6 +3548,9 @@ export interface components {
             cancellation_lead_hours: number;
             /** @example 2 */
             no_show_after_hours: number;
+            /** @example 30 */
+            slot_interval_minutes: number;
+            working_hours: components["schemas"]["handler.BusinessHoursInput"][];
         };
         "handler.UpdateSectionRequest": {
             content: Record<string, never>;

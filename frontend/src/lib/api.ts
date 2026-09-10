@@ -3,6 +3,7 @@ import type { Middleware } from "openapi-fetch"
 import type { paths } from "./api-types"
 import { auth } from "./auth"
 import { useAuthStore } from "../stores/authStore"
+import { useToastStore } from "../stores/toastStore"
 import { Capacitor } from "@capacitor/core"
 
 const authMiddleware: Middleware = {
@@ -16,7 +17,7 @@ const authMiddleware: Middleware = {
 }
 
 const errorMiddleware: Middleware = {
-  async onResponse({ response }) {
+  async onResponse({ request, response }) {
     if (response.status === 401) {
       // A 401 usually means a stale token, not a dead session: refresh it and
       // let the query retry with the fresh token. Only fall back to a full
@@ -30,6 +31,11 @@ const errorMiddleware: Middleware = {
     }
     if (!response.ok) {
       const body = await response.clone().json().catch(() => undefined)
+      // Surface write failures as a toast. Reads (GET) are left to the UI's
+      // loading/empty states and are retried, so toasting them would spam.
+      if (response.status !== 401 && request.method !== "GET") {
+        useToastStore.getState().error(body?.error ?? `Request failed (${response.status})`)
+      }
       throw { status: response.status, body }
     }
     return response

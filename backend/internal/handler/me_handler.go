@@ -37,14 +37,15 @@ var reservedSubdomains = map[string]struct{}{
 }
 
 type MeHandler struct {
-	businessStore *store.BusinessStore
-	buStore       *store.BusinessUserStore
-	userStore     *store.UserStore
-	pool          *pgxpool.Pool
+	businessStore      *store.BusinessStore
+	buStore            *store.BusinessUserStore
+	userStore          *store.UserStore
+	businessHoursStore *store.BusinessHoursStore
+	pool               *pgxpool.Pool
 }
 
-func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUserStore, userStore *store.UserStore, pool *pgxpool.Pool) *MeHandler {
-	return &MeHandler{businessStore: businessStore, buStore: buStore, userStore: userStore, pool: pool}
+func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUserStore, userStore *store.UserStore, businessHoursStore *store.BusinessHoursStore, pool *pgxpool.Pool) *MeHandler {
+	return &MeHandler{businessStore: businessStore, buStore: buStore, userStore: userStore, businessHoursStore: businessHoursStore, pool: pool}
 }
 
 // GetMe godoc
@@ -157,7 +158,10 @@ func (h *MeHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {
 			UserID:     userID,
 			Role:       "admin",
 		}
-		return h.buStore.Create(r.Context(), tx, owner)
+		if err := h.buStore.Create(r.Context(), tx, owner); err != nil {
+			return err
+		}
+		return h.businessHoursStore.SeedDefaults(r.Context(), tx, business.ID)
 	})
 	if err != nil {
 		var pgErr *pgconn.PgError

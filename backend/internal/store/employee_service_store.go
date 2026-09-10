@@ -195,3 +195,33 @@ func (s *EmployeeServiceStore) ListByService(ctx context.Context, serviceID uuid
 	}
 	return result, nil
 }
+
+// ListServiceProviderIDs returns the distinct business_user IDs that offer at
+// least one service in the business.
+func (s *EmployeeServiceStore) ListServiceProviderIDs(ctx context.Context, businessID uuid.UUID) ([]uuid.UUID, error) {
+	sql, args, err := psql.
+		Select("DISTINCT es.business_user_id").
+		From("employee_services es").
+		Join("services s ON s.id = es.service_id").
+		Where(sq.Eq{"s.business_id": businessID}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list service providers: %w", err)
+	}
+	defer rows.Close()
+
+	var ids []uuid.UUID
+	for rows.Next() {
+		var id uuid.UUID
+		if err := rows.Scan(&id); err != nil {
+			return nil, fmt.Errorf("failed to scan service provider: %w", err)
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
+}

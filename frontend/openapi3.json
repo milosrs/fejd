@@ -1752,7 +1752,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the salon's cancellation and no-show policies.",
+                "description": "Returns the salon's cancellation, no-show, slot interval and working-hours policies.",
                 "tags": [
                     "admin"
                 ],
@@ -1817,7 +1817,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Sets the salon's cancellation and no-show policies.",
+                "description": "Sets the salon's cancellation, no-show, slot interval and working-hours policies.",
                 "tags": [
                     "admin"
                 ],
@@ -2856,11 +2856,11 @@
         },
         "/api/business/{slug}/services/{serviceID}/employees": {
             "get": {
-                "description": "Returns active employees assigned to the given service.",
+                "description": "Returns active business users (owner and employees) assigned to the given service.",
                 "tags": [
                     "public"
                 ],
-                "summary": "List employees who offer a service",
+                "summary": "List staff who offer a service",
                 "parameters": [
                     {
                         "description": "Business slug",
@@ -3630,6 +3630,7 @@
                     "id",
                     "name",
                     "no_show_after_hours",
+                    "slot_interval_minutes",
                     "slug",
                     "updated_at"
                 ],
@@ -3649,10 +3650,32 @@
                     "no_show_after_hours": {
                         "type": "integer"
                     },
+                    "slot_interval_minutes": {
+                        "type": "integer"
+                    },
                     "slug": {
                         "type": "string"
                     },
                     "updated_at": {
+                        "type": "string"
+                    }
+                }
+            },
+            "dto.BusinessHours": {
+                "type": "object",
+                "required": [
+                    "day_of_week",
+                    "end_time",
+                    "start_time"
+                ],
+                "properties": {
+                    "day_of_week": {
+                        "type": "integer"
+                    },
+                    "end_time": {
+                        "type": "string"
+                    },
+                    "start_time": {
                         "type": "string"
                     }
                 }
@@ -3955,6 +3978,28 @@
                     }
                 }
             },
+            "handler.BusinessHoursInput": {
+                "type": "object",
+                "required": [
+                    "day_of_week",
+                    "end_time",
+                    "start_time"
+                ],
+                "properties": {
+                    "day_of_week": {
+                        "type": "integer",
+                        "example": 1
+                    },
+                    "end_time": {
+                        "type": "string",
+                        "example": "17:00"
+                    },
+                    "start_time": {
+                        "type": "string",
+                        "example": "09:00"
+                    }
+                }
+            },
             "handler.BusinessImages": {
                 "type": "object",
                 "properties": {
@@ -4244,7 +4289,9 @@
                 "type": "object",
                 "required": [
                     "cancellation_lead_hours",
-                    "no_show_after_hours"
+                    "no_show_after_hours",
+                    "slot_interval_minutes",
+                    "working_hours"
                 ],
                 "properties": {
                     "cancellation_lead_hours": {
@@ -4254,6 +4301,16 @@
                     "no_show_after_hours": {
                         "type": "integer",
                         "example": 2
+                    },
+                    "slot_interval_minutes": {
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "working_hours": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/dto.BusinessHours"
+                        }
                     }
                 }
             },
@@ -4366,7 +4423,9 @@
                 "type": "object",
                 "required": [
                     "cancellation_lead_hours",
-                    "no_show_after_hours"
+                    "no_show_after_hours",
+                    "slot_interval_minutes",
+                    "working_hours"
                 ],
                 "properties": {
                     "cancellation_lead_hours": {
@@ -4376,6 +4435,16 @@
                     "no_show_after_hours": {
                         "type": "integer",
                         "example": 2
+                    },
+                    "slot_interval_minutes": {
+                        "type": "integer",
+                        "example": 30
+                    },
+                    "working_hours": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/handler.BusinessHoursInput"
+                        }
                     }
                 }
             },

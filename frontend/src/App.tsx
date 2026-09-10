@@ -17,6 +17,7 @@ import { AdminServicesPage } from "./pages/AdminServicesPage"
 import { MySchedulePage } from "./pages/MySchedulePage"
 import { MyReservationsPage } from "./pages/MyReservationsPage"
 import { SalonLayout } from "./components/SalonLayout"
+import { Toaster } from "./components/ui/toaster"
 import { I18nProvider } from "./lib/i18n"
 import { ThemeProvider } from "#components/theme-provider"
 import { ModeToggle } from "#components/mode-toggle"
@@ -217,6 +218,7 @@ function App() {
 
   return (
     <ThemeProvider defaultTheme="system" storageKey="vite-ui-theme">
+      <Toaster />
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
           <BrowserRouter>

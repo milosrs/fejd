@@ -18,6 +18,9 @@ type Business struct {
 	// NoShowAfterHours is how many hours after an appointment start a staff
 	// member may mark it as no-show. Soft policy, configurable by the owner.
 	NoShowAfterHours int
+	// SlotIntervalMinutes is the granularity (in minutes) of the booking slot
+	// grid. Soft policy, configurable by the owner.
+	SlotIntervalMinutes int
 }
 
 type BusinessUser struct {
@@ -88,6 +91,16 @@ type WorkingHours struct {
 	DayOfWeek      int
 	StartTime      time.Time
 	EndTime        time.Time
+}
+
+// BusinessHours is a salon-level default working-hours row, used as a fallback
+// for staff who have no per-employee working hours.
+type BusinessHours struct {
+	ID         uuid.UUID
+	BusinessID uuid.UUID
+	DayOfWeek  int
+	StartTime  time.Time
+	EndTime    time.Time
 }
 
 type WorkingHoursOverride struct {

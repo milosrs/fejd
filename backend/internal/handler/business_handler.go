@@ -178,16 +178,33 @@ func (h *BusinessHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	employees, err := h.buStore.ListEmployeesByBusiness(r.Context(), b.ID)
+	members, err := h.buStore.ListByBusiness(r.Context(), b.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to get employees")
 		return
 	}
 
-	users := dto.BusinessUsersFromModels(employees)
+	providerIDs, err := h.employeeServiceStore.ListServiceProviderIDs(r.Context(), b.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get employees")
+		return
+	}
+	offers := make(map[uuid.UUID]bool, len(providerIDs))
+	for _, id := range providerIDs {
+		offers[id] = true
+	}
+
+	staff := make([]models.BusinessUser, 0, len(members))
+	for _, m := range members {
+		if m.Active && offers[m.ID] {
+			staff = append(staff, m)
+		}
+	}
+
+	users := dto.BusinessUsersFromModels(staff)
 	for i := range users {
-		users[i].Avatar = h.avatarURL(r.Context(), employees[i].ID)
-		users[i].DisplayName = h.displayName(r.Context(), employees[i])
+		users[i].Avatar = h.avatarURL(r.Context(), staff[i].ID)
+		users[i].DisplayName = h.displayName(r.Context(), staff[i])
 	}
 
 	writeJSON(w, http.StatusOK, users)

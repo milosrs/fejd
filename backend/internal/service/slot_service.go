@@ -20,6 +20,7 @@ import (
 type SlotService struct {
 	appointments     *store.AppointmentStore
 	workingHours     *store.WorkingHoursStore
+	businessHours    *store.BusinessHoursStore
 	overrides        *store.WorkingHoursOverrideStore
 	services         *store.ServiceStore
 	business         *store.BusinessStore
@@ -33,6 +34,7 @@ type SlotService struct {
 func NewSlotService(
 	appointments *store.AppointmentStore,
 	workingHours *store.WorkingHoursStore,
+	businessHours *store.BusinessHoursStore,
 	overrides *store.WorkingHoursOverrideStore,
 	services *store.ServiceStore,
 	business *store.BusinessStore,
@@ -45,6 +47,7 @@ func NewSlotService(
 	return &SlotService{
 		appointments:     appointments,
 		workingHours:     workingHours,
+		businessHours:    businessHours,
 		overrides:        overrides,
 		services:         services,
 		business:         business,
@@ -109,6 +112,21 @@ func (s *SlotService) GetAvailableSlots(
 				break
 			}
 		}
+
+		// Fall back to the salon's default working hours when the employee has
+		// none of their own.
+		if !found {
+			if salonHours, err := s.businessHours.ListByBusiness(ctx, businessID); err == nil {
+				for _, bh := range salonHours {
+					if bh.DayOfWeek == dayOfWeek {
+						startTime = bh.StartTime
+						endTime = bh.EndTime
+						found = true
+						break
+					}
+				}
+			}
+		}
 	}
 	if !found {
 		return nil, nil
@@ -117,17 +135,19 @@ func (s *SlotService) GetAvailableSlots(
 	dayStart := time.Date(date.Year(), date.Month(), date.Day(), startTime.Hour(), startTime.Minute(), startTime.Second(), 0, date.Location())
 	dayEnd := time.Date(date.Year(), date.Month(), date.Day(), endTime.Hour(), endTime.Minute(), endTime.Second(), 0, date.Location())
 
-	duration := time.Duration(svc.DurationMinutes) * time.Minute
-	// The slot grid is divided by the longest active service the employee
-	// offers, so a shorter service still fits within a block and the grid stays
-	// uniform. Booking still uses the selected service's actual duration.
-	longest, err := s.services.LongestDurationByEmployee(ctx, businessUserID)
+	// The slot grid is divided by the salon's configurable slot interval, so
+	// customers can start a booking on a fixed cadence. Booking still uses the
+	// selected service's actual duration.
+	b, err := s.business.GetByID(ctx, businessID)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get longest service duration: %w", err)
+		return nil, fmt.Errorf("failed to get business: %w", err)
 	}
-	if longest > 0 {
-		duration = time.Duration(longest) * time.Minute
+	slotInterval := b.SlotIntervalMinutes
+	if slotInterval <= 0 {
+		slotInterval = 30
 	}
+	duration := time.Duration(slotInterval) * time.Minute
+
 	existing, err := s.appointments.GetConflictingAppointments(ctx, businessID, businessUserID, dayStart, dayEnd)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get existing appointments: %w", err)

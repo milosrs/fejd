@@ -72,13 +72,23 @@ type CreateUnavailabilityRequest struct {
 }
 
 type SalonPolicyResponse struct {
-	CancellationLeadHours int `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterHours      int `json:"no_show_after_hours" validate:"required" example:"2"`
+	CancellationLeadHours int                `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterHours      int                `json:"no_show_after_hours" validate:"required" example:"2"`
+	SlotIntervalMinutes   int                `json:"slot_interval_minutes" validate:"required" example:"30"`
+	WorkingHours          []dto.BusinessHours `json:"working_hours" validate:"required"`
 }
 
 type UpdateSalonPolicyRequest struct {
-	CancellationLeadHours int `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterHours      int `json:"no_show_after_hours" validate:"required" example:"2"`
+	CancellationLeadHours int                  `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterHours      int                  `json:"no_show_after_hours" validate:"required" example:"2"`
+	SlotIntervalMinutes   int                  `json:"slot_interval_minutes" validate:"required" example:"30"`
+	WorkingHours          []BusinessHoursInput `json:"working_hours" validate:"required"`
+}
+
+type BusinessHoursInput struct {
+	DayOfWeek int    `json:"day_of_week" validate:"required" example:"1"`
+	StartTime string `json:"start_time" validate:"required" example:"09:00"`
+	EndTime   string `json:"end_time" validate:"required" example:"17:00"`
 }
 
 type WorkingHoursInput struct {

@@ -23,7 +23,8 @@ func newTestMeHandler(t *testing.T) (*MeHandler, *store.BusinessStore, *store.Bu
 	businessStore := store.NewBusinessStore(pool)
 	buStore := store.NewBusinessUserStore(pool)
 	userStore := store.NewUserStore(pool)
-	return NewMeHandler(businessStore, buStore, userStore, pool), businessStore, buStore, pool
+	businessHoursStore := store.NewBusinessHoursStore(pool)
+	return NewMeHandler(businessStore, buStore, userStore, businessHoursStore, pool), businessStore, buStore, pool
 }
 
 func withUser(r *http.Request, userID, approvalStatus string) *http.Request {

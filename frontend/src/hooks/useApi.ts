@@ -119,14 +119,25 @@ export async function getSalonPolicy(businessId: string) {
   return data
 }
 
-export async function updateSalonPolicy(
-  businessId: string,
-  cancellationLeadHours: number,
-  noShowAfterHours: number,
-) {
+export function useSalonPolicy(businessId: string) {
+  return useQuery({
+    queryKey: ["salon-policy", businessId],
+    queryFn: () => getSalonPolicy(businessId),
+    enabled: !!businessId,
+  })
+}
+
+export type SalonPolicyInput = {
+  cancellation_lead_hours: number
+  no_show_after_hours: number
+  slot_interval_minutes: number
+  working_hours: components["schemas"]["handler.BusinessHoursInput"][]
+}
+
+export async function updateSalonPolicy(businessId: string, policy: SalonPolicyInput) {
   const { data } = await PUT(URL_SALON_POLICY, {
     params: { path: { businessID: businessId } },
-    body: { cancellation_lead_hours: cancellationLeadHours, no_show_after_hours: noShowAfterHours },
+    body: policy,
   })
   return data
 }
