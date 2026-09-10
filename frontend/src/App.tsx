@@ -5,6 +5,7 @@ import { UserRound } from "lucide-react"
 import { useAuthStore } from "./stores/authStore"
 import { useMe } from "./hooks/useMe"
 import { uploadAvatar } from "./hooks/useApi"
+import { useHeaderHeightMeasure } from "./hooks/useHeaderHeightMeasure"
 import { HomePage } from "./pages/HomePage"
 import { LandingPage } from "./pages/LandingPage"
 import { ServicesPage } from "./pages/ServicesPage"
@@ -76,6 +77,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
   const location = useLocation()
   const queryClient = useQueryClient()
   const { data: me } = useMe()
+  const topHeaderRef = useHeaderHeightMeasure("--top-header-height")
 
   const businesses = me?.businesses ?? []
   const primaryBusiness =
@@ -117,7 +119,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
     <>
       <InviteAcceptHandler />
       {authenticated && (
-        <header className="border-b">
+        <header ref={topHeaderRef} className="border-b">
           <div className="flex items-center justify-between gap-4 px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
             <div className="flex min-w-0 items-center gap-3">
               <button

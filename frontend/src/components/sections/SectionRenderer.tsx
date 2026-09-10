@@ -13,7 +13,13 @@ import { AboutSection } from "./AboutSection"
 import { GallerySection } from "./GallerySection"
 import { ContactSection } from "./ContactSection"
 
-export function SectionRenderer({ section }: { section: Section }) {
+export function SectionRenderer({
+  section,
+  contained,
+}: {
+  section: Section
+  contained?: boolean
+}) {
   const { pickLocalized } = useI18n()
   const { slug, salon } = useSalonContext()
 
@@ -29,6 +35,7 @@ export function SectionRenderer({ section }: { section: Section }) {
           backgroundUrl={salon?.images.background}
           logoUrl={salon?.images.logo}
           slug={slug}
+          contained={contained}
         />
       )
     case "about":

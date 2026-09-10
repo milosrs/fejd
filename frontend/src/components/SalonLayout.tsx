@@ -4,11 +4,18 @@ import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonCont
 import { Button } from "./ui/button"
 import { SalonPolicyDialog } from "./SalonPolicyDialog"
 import { salonPath } from "../lib/salonDomain"
+import { useHeaderHeightMeasure } from "../hooks/useHeaderHeightMeasure"
+import { useSections } from "../hooks/useSections"
+import { useI18n } from "../lib/i18n"
+import type { HeroContent } from "../lib/sections"
 
 function SalonShell() {
   const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
   const isOwner = useIsOwner()
+  const { data: sections } = useSections(slug)
+  const { pickLocalized } = useI18n()
   const [policyOpen, setPolicyOpen] = useState(false)
+  const salonHeaderRef = useHeaderHeightMeasure("--salon-header-height")
 
   if (isLoading) {
     return (
@@ -33,12 +40,19 @@ function SalonShell() {
     { to: salonPath(slug, "/book"), label: "Book", end: false },
   ]
 
+  const heroContent = pickLocalized<HeroContent>(
+    sections?.find((s) => s.type === "hero")?.content as
+      | Record<string, HeroContent>
+      | undefined,
+  )
+  const title = heroContent?.headline || salon.business.name
+
   return (
     <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
-      <header className="border-b border-border">
+      <header ref={salonHeaderRef} className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2">
           <Link to={salonPath(slug)} className="text-lg font-semibold text-foreground">
-            {salon.business.name}
+            {title}
           </Link>
           <nav className="flex flex-wrap items-center gap-1">
             {nav.map((n) => (

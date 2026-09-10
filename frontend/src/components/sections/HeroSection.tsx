@@ -9,6 +9,7 @@ interface HeroSectionProps {
   backgroundUrl?: string
   logoUrl?: string
   slug?: string
+  contained?: boolean
 }
 
 export function HeroSection({
@@ -16,13 +17,20 @@ export function HeroSection({
   backgroundUrl,
   logoUrl,
   slug,
+  contained,
 }: HeroSectionProps) {
   const navigate = useNavigate()
   const background = resolveImageUrl(backgroundUrl)
   const logo = resolveImageUrl(logoUrl)
 
   return (
-    <section className="relative overflow-hidden rounded-xl border border-border">
+    <section
+      className={`relative overflow-hidden bg-background ${
+        contained
+          ? "rounded-xl border border-border"
+          : "left-1/2 -mt-8 w-[100dvw] -translate-x-1/2 min-h-[calc(100dvh_-_var(--top-header-height,0px)_-_var(--salon-header-height,0px))]"
+      }`}
+    >
       {background && (
         <img
           src={background}
@@ -30,12 +38,18 @@ export function HeroSection({
           className="absolute inset-0 h-full w-full object-cover"
         />
       )}
-      <div className="relative flex flex-col items-center gap-4 px-6 py-16 text-center">
+      <div
+        className={`relative flex flex-col items-center justify-center gap-4 px-6 text-center ${
+          contained
+            ? "py-12"
+            : "min-h-[calc(100dvh_-_var(--top-header-height,0px)_-_var(--salon-header-height,0px))] py-16"
+        }`}
+      >
         {logo && (
           <img
             src={logo}
             alt=""
-            className="h-16 w-16 rounded-full border-2 border-border bg-background object-cover"
+            className="h-54 w-54 rounded-full border-2 border-border bg-background object-cover"
           />
         )}
         {(content.headline || content.subheadline) && (

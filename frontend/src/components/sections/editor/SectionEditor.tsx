@@ -72,7 +72,7 @@ export function SectionEditor({
             <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">
               Live preview
             </p>
-            <SectionRenderer section={previewSection} />
+            <SectionRenderer section={previewSection} contained />
           </div>
         </div>
 
