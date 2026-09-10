@@ -25,7 +25,7 @@ export function SectionEditor({
   onSave: (content: Record<string, unknown>) => void
   onDelete?: () => void
   saving?: boolean
-  onUploadImage?: (file: File) => void
+  onUploadImage?: (file: File, purpose: string) => void
   uploading?: boolean
 }) {
   const type = isSectionType(section.type) ? section.type : "hero"

@@ -12,6 +12,7 @@ const URL_SALON_POLICY = "/api/admin/business/{businessID}/policy" as const
 const URL_ADMIN_EMPLOYEES = "/api/admin/business/{businessID}/employees" as const
 const URL_ADMIN_EMPLOYEE_DELETE = "/api/admin/business/{businessID}/employees/{userID}" as const
 const URL_ADMIN_EMPLOYEE_IMAGE = "/api/admin/business/{businessID}/employees/{userID}/image" as const
+const URL_ADMIN_BUSINESS_IMAGES = "/api/admin/business/{businessID}/images" as const
 const URL_ADMIN_WORKING_HOURS = "/api/admin/business/{businessID}/employees/{userID}/working-hours" as const
 const URL_ADMIN_OVERRIDES = "/api/admin/business/{businessID}/employees/{userID}/overrides" as const
 const URL_ADMIN_OVERRIDES_DELETE = "/api/admin/business/{businessID}/employees/{userID}/overrides/{overrideID}" as const
@@ -29,6 +30,7 @@ const URL_CUSTOMERS = "/api/admin/business/{businessID}/customers" as const
 const URL_INVITATION = "/api/invitations/{token}" as const
 const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
+const URL_ME_AVATAR = "/api/me/avatar" as const
 
 type Schemas = components["schemas"]
 
@@ -204,9 +206,11 @@ export async function deleteService(businessId: string, serviceId: string) {
 }
 
 export async function uploadServiceImage(businessId: string, serviceId: string, file: File) {
+  const formData = new FormData()
+  formData.append("file", file)
   const { data } = await POST(URL_ADMIN_SERVICE_IMAGE, {
     params: { path: { businessID: businessId, serviceID: serviceId } },
-    body: { file } as any,
+    body: formData as any,
   })
   return data
 }
@@ -276,9 +280,37 @@ export async function removeEmployee(businessId: string, userId: string) {
 }
 
 export async function uploadEmployeeImage(businessId: string, userId: string, file: File) {
+  const formData = new FormData()
+  formData.append("file", file)
   const { data } = await POST(URL_ADMIN_EMPLOYEE_IMAGE, {
     params: { path: { businessID: businessId, userID: userId } },
-    body: { file } as any,
+    body: formData as any,
+  })
+  return data
+}
+
+export async function uploadAvatar(file: File) {
+  const formData = new FormData()
+  formData.append("file", file)
+  const { data } = await POST(URL_ME_AVATAR, {
+    body: formData as any,
+  })
+  return data
+}
+
+export type BusinessImagePurpose = "hero" | "logo" | "background"
+
+export async function uploadBusinessImage(
+  businessId: string,
+  file: File,
+  purpose: BusinessImagePurpose,
+) {
+  const formData = new FormData()
+  formData.append("purpose", purpose)
+  formData.append("file", file)
+  const { data } = await POST(URL_ADMIN_BUSINESS_IMAGES, {
+    params: { path: { businessID: businessId } },
+    body: formData as any,
   })
   return data
 }

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
 import { hasRole } from "../lib/ownership"
@@ -69,30 +69,8 @@ export function HomePage() {
               </a>
             ))}
           </div>
-
-          <Link to="/my/appointments" className="text-sm underline text-foreground">
-            My appointments
-          </Link>
-
-          <Link
-            to={`/admin/business/${primaryBusiness.id}/my-schedule`}
-            className="text-sm underline text-foreground"
-          >
-            Reserve my time
-          </Link>
-
-          <Link
-            to={`/admin/business/${primaryBusiness.id}/my-reservations`}
-            className="text-sm underline text-foreground"
-          >
-            My reservations
-          </Link>
         </div>
-      ) : (
-        <Link to="/my/appointments" className="text-sm underline text-foreground">
-          My appointments
-        </Link>
-      )}
+      ) : null}
     </div>
   )
 }

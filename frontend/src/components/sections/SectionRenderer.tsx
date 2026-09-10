@@ -26,7 +26,7 @@ export function SectionRenderer({ section }: { section: Section }) {
       return (
         <HeroSection
           content={(content ?? {}) as HeroContent}
-          heroImageUrl={salon?.images.hero}
+          backgroundUrl={salon?.images.background}
           logoUrl={salon?.images.logo}
           slug={slug}
         />

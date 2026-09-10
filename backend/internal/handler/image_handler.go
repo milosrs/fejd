@@ -191,6 +191,39 @@ func (h *ImageHandler) UploadEmployeeImage(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusCreated, dto.ImageFromModel(*img))
 }
 
+// UploadAvatar godoc
+// @Summary      Upload the caller's profile picture
+// @Description  Uploads the authenticated user's profile picture (multipart file). Replaces any previous picture.
+// @Tags         me
+// @Accept       mpfd
+// @Produce      json
+// @Param        file formData file true "Image file"
+// @Success      201 {object} dto.Image
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/me/avatar [post]
+func (h *ImageHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	data, contentType, err := h.readImage(w, r)
+	if err != nil {
+		return
+	}
+
+	img, err := h.images.UploadUserAvatar(r.Context(), userID, data, contentType)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, dto.ImageFromModel(*img))
+}
+
 // DeleteImage godoc
 // @Summary      Delete an image
 // @Description  Deletes an image. Admins delete the whole image; an employee may remove only their own avatar link.
@@ -279,7 +312,7 @@ func (h *ImageHandler) GetImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if h.isPublic(links) {
+	if h.isPublic(links) || h.images.IsProfilePicture(r.Context(), imageID) {
 		h.servePublic(w, r, img)
 		return
 	}
@@ -294,7 +327,8 @@ func (h *ImageHandler) GetImage(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !h.images.UserCanAccess(r.Context(), ar.UserID, img, links) {
+	if !h.images.UserCanAccess(r.Context(), ar.UserID, img, links) &&
+		!h.images.IsUserAvatar(r.Context(), ar.UserID, imageID) {
 		writeError(w, http.StatusNotFound, "image not found")
 		return
 	}

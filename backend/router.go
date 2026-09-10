@@ -70,6 +70,7 @@ func newRouter(
 			r.Use(customMiddleware.SyncUser(userStore))
 
 			r.Get("/", meHandler.GetMe)
+			r.Post("/avatar", imageHandler.UploadAvatar)
 
 			r.Group(func(r chi.Router) {
 				r.Use(requireApproved)

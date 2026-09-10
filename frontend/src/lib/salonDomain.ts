@@ -65,3 +65,25 @@ export function openSalon(navigate: (to: string) => void, slug: string): void {
   }
   navigate(`/${slug}`)
 }
+
+// appHomeUrl returns the URL of the app shell home (the "all salons" listing).
+// On a salon subdomain this is the app host (or the apex domain); otherwise it
+// is the path-based root.
+export function appHomeUrl(): string {
+  if (!Capacitor.isNativePlatform() && BASE_DOMAIN) {
+    const host = APP_HOST || BASE_DOMAIN
+    return `https://${host}/`
+  }
+  return "/"
+}
+
+// openAppHome navigates back to the app shell (the all-salons listing): a
+// full-page navigation on a salon subdomain, an internal router navigation
+// otherwise.
+export function openAppHome(navigate: (to: string) => void): void {
+  if (!Capacitor.isNativePlatform() && BASE_DOMAIN) {
+    window.location.assign(appHomeUrl())
+    return
+  }
+  navigate("/")
+}

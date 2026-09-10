@@ -114,6 +114,22 @@ services:
       - "9001:9001"
     volumes:
       - miniodata:/data
+    restart: unless-stopped
+
+  minio-init-buckets:
+    image: minio/mc:latest
+    container_name: fejd-minio-init-buckets
+    depends_on:
+      - minio
+    entrypoint: >
+      sh -c "
+        until mc alias set myminio http://minio:9000 minioadmin minioadmin; do
+          echo 'Waiting for MinIO to be ready...'
+          sleep 2
+        done &&
+        mc mb myminio/fejd-images || true &&
+        mc policy set public myminio/fejd-images || true
+      "
 
   smtp:
     build:

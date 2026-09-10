@@ -30,6 +30,7 @@ type ImageService struct {
 	images        *store.ImageStore
 	links         *store.ImageLinkStore
 	businessUsers *store.BusinessUserStore
+	users         *store.UserStore
 	pool          *pgxpool.Pool
 }
 
@@ -39,6 +40,7 @@ func NewImageService(
 	images *store.ImageStore,
 	links *store.ImageLinkStore,
 	businessUsers *store.BusinessUserStore,
+	users *store.UserStore,
 	pool *pgxpool.Pool,
 ) *ImageService {
 	return &ImageService{
@@ -47,6 +49,7 @@ func NewImageService(
 		images:        images,
 		links:         links,
 		businessUsers: businessUsers,
+		users:         users,
 		pool:          pool,
 	}
 }
@@ -230,10 +233,102 @@ func (s *ImageService) OwnsAvatarLink(ctx context.Context, userID string, links 
 	return uuid.Nil, false
 }
 
+// UploadUserAvatar stores a profile picture for a user and points
+// users.avatar_id at it, replacing any previous avatar. The image carries no
+// business_id (a profile picture belongs to the user, not a salon) and no
+// image_links row, so access is granted only to the owning user.
+func (s *ImageService) UploadUserAvatar(ctx context.Context, userID string, data []byte, contentType string) (*models.Image, error) {
+	if int64(len(data)) > s.cfg.MaxUploadBytes {
+		return nil, fmt.Errorf("image exceeds maximum upload size of %d bytes", s.cfg.MaxUploadBytes)
+	}
+
+	img := &models.Image{
+		ID:          uuid.New(),
+		ContentType: contentType,
+	}
+
+	objectKey := ""
+	switch s.cfg.Backend {
+	case config.BackendPostgres:
+		img.Storage = string(config.BackendPostgres)
+		img.Data = data
+	default:
+		if s.storage == nil {
+			return nil, fmt.Errorf("object storage is not configured")
+		}
+		objectKey = fmt.Sprintf("users/%s/%s", userID, uuid.NewString())
+		img.Storage = string(s.cfg.Backend)
+		img.ObjectKey = objectKey
+		if err := s.storage.Put(ctx, objectKey, data, contentType); err != nil {
+			return nil, fmt.Errorf("failed to store image bytes: %w", err)
+		}
+	}
+
+	oldAvatarID, err := s.setUserAvatar(ctx, userID, img)
+	if err != nil {
+		if objectKey != "" {
+			s.removeObject(ctx, objectKey)
+		}
+		return nil, err
+	}
+
+	if oldAvatarID != uuid.Nil {
+		if err := s.deleteImageIfOrphaned(ctx, oldAvatarID); err != nil {
+			log.Printf("[images] failed to clean up replaced avatar %s: %v", oldAvatarID, err)
+		}
+	}
+
+	return img, nil
+}
+
+func (s *ImageService) setUserAvatar(ctx context.Context, userID string, img *models.Image) (uuid.UUID, error) {
+	var oldAvatarID uuid.UUID
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := s.images.Create(ctx, tx, img); err != nil {
+			return fmt.Errorf("failed to create image: %w", err)
+		}
+
+		old, err := s.users.GetAvatarIDForUpdate(ctx, tx, userID)
+		if err != nil {
+			return err
+		}
+		if old != nil {
+			oldAvatarID = *old
+		}
+
+		return s.users.SetAvatar(ctx, tx, userID, &img.ID)
+	})
+	if err != nil {
+		return uuid.Nil, err
+	}
+	return oldAvatarID, nil
+}
+
+// IsUserAvatar reports whether the image is the given user's own profile
+// picture.
+func (s *ImageService) IsUserAvatar(ctx context.Context, userID string, imageID uuid.UUID) bool {
+	u, err := s.users.GetByID(ctx, userID)
+	if err != nil {
+		return false
+	}
+	return u.AvatarID != nil && *u.AvatarID == imageID
+}
+
+// IsProfilePicture reports whether the image is any user's profile picture.
+// Profile pictures have no image_links row (they are referenced directly by
+// users.avatar_id), so they are served as public images the same way employee
+// avatars are.
+func (s *ImageService) IsProfilePicture(ctx context.Context, imageID uuid.UUID) bool {
+	exists, err := s.users.AvatarImageExists(ctx, imageID)
+	if err != nil {
+		return false
+	}
+	return exists
+}
+
 // Delete removes an image and its links (cascading). Object-store bytes are
 // deleted first; on failure the DB row is kept so the object stays traceable.
-func (s *ImageService) Delete(ctx context.Context, img *models.Image) error {
-	if img.Storage != string(config.BackendPostgres) {
+func (s *ImageService) Delete(ctx context.Context, img *models.Image) error {	if img.Storage != string(config.BackendPostgres) {
 		if s.storage == nil {
 			return fmt.Errorf("object storage is not configured")
 		}

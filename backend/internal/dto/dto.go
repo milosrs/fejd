@@ -23,6 +23,8 @@ type Me struct {
 	ApprovalStatus string       `json:"approval_status" validate:"required"`
 	HasSalon       bool         `json:"has_salon" validate:"required"`
 	Businesses     []MeBusiness `json:"businesses" validate:"required"`
+	// Avatar is the URL path of the caller's profile picture, if set.
+	Avatar string `json:"avatar,omitempty"`
 }
 
 // MeBusiness is a business the caller belongs to (as admin or employee).

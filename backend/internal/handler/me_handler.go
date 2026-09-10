@@ -39,11 +39,12 @@ var reservedSubdomains = map[string]struct{}{
 type MeHandler struct {
 	businessStore *store.BusinessStore
 	buStore       *store.BusinessUserStore
+	userStore     *store.UserStore
 	pool          *pgxpool.Pool
 }
 
-func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUserStore, pool *pgxpool.Pool) *MeHandler {
-	return &MeHandler{businessStore: businessStore, buStore: buStore, pool: pool}
+func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUserStore, userStore *store.UserStore, pool *pgxpool.Pool) *MeHandler {
+	return &MeHandler{businessStore: businessStore, buStore: buStore, userStore: userStore, pool: pool}
 }
 
 // GetMe godoc
@@ -79,10 +80,16 @@ func (h *MeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	avatar := ""
+	if u, err := h.userStore.GetByID(r.Context(), userID); err == nil && u.AvatarID != nil {
+		avatar = "/api/images/" + u.AvatarID.String()
+	}
+
 	writeJSON(w, http.StatusOK, dto.Me{
 		ApprovalStatus: authutil.GetApprovalStatus(r),
 		HasSalon:       hasSalon,
 		Businesses:     dto.MeBusinessesFromModels(memberships),
+		Avatar:         avatar,
 	})
 }
 

@@ -117,8 +117,10 @@ type User struct {
 	ID          string
 	DisplayName string
 	Email       string
-	CreatedAt   time.Time
-	UpdatedAt   time.Time
+	// AvatarID references the user's profile picture in the images table.
+	AvatarID  *uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
 }
 
 // Customer is a user who has booked with a business (resolved from local users).

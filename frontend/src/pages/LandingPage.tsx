@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useSalonContext, useIsOwner } from "../context/SalonContext"
 import { useSections } from "../hooks/useSections"
 import { useI18n } from "../lib/i18n"
@@ -6,6 +7,7 @@ import { isSectionType, KNOWN_SECTION_TYPES, type Section } from "../lib/section
 import { SectionRenderer } from "../components/sections/SectionRenderer"
 import { SectionEditor } from "../components/sections/editor/SectionEditor"
 import { useSectionMutations } from "../hooks/useSectionMutations"
+import { uploadBusinessImage, type BusinessImagePurpose } from "../hooks/useApi"
 import { Button } from "../components/ui/button"
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react"
 
@@ -29,6 +31,19 @@ export function LandingPage() {
 
   const businessId = salon?.business.id ?? ""
   const { create, update, remove, reorder } = useSectionMutations(businessId, slug)
+
+  const queryClient = useQueryClient()
+  const uploadImage = useMutation({
+    mutationFn: (vars: { file: File; purpose: BusinessImagePurpose }) =>
+      uploadBusinessImage(businessId, vars.file, vars.purpose),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["salon", slug] })
+    },
+  })
+
+  const handleUploadImage = (file: File, purpose: string) => {
+    uploadImage.mutate({ file, purpose: purpose as BusinessImagePurpose })
+  }
 
   const [editingSection, setEditingSection] = useState<Section | null>(null)
   const [showAddPicker, setShowAddPicker] = useState(false)
@@ -155,6 +170,8 @@ export function LandingPage() {
             setEditingSection(null)
           }}
           saving={update.isPending}
+          onUploadImage={handleUploadImage}
+          uploading={uploadImage.isPending}
         />
       )}
     </section>

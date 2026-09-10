@@ -87,7 +87,7 @@ func main() {
 		}
 	}
 
-	imageService := service.NewImageService(cfg.ImageStorage, imageStorage, imageStore, imageLinkStore, buStore, pool)
+	imageService := service.NewImageService(cfg.ImageStorage, imageStorage, imageStore, imageLinkStore, buStore, userStore, pool)
 
 	hub := sse.NewHub()
 
@@ -127,7 +127,7 @@ func main() {
 
 	imageHandler := handler.NewImageHandler(imageService, serviceStore, buStore)
 
-	meHandler := handler.NewMeHandler(businessStore, buStore, pool)
+	meHandler := handler.NewMeHandler(businessStore, buStore, userStore, pool)
 
 	i18nHandler := handler.NewI18nHandler(translationStore)
 

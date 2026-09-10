@@ -3123,6 +3123,55 @@
                 }
             }
         },
+        "/api/me/avatar": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Uploads the authenticated user's profile picture (multipart file). Replaces any previous picture.",
+                "tags": [
+                    "me"
+                ],
+                "summary": "Upload the caller's profile picture",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/postApiAdminBusiness_businessid_employees_userid_image"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/dto.Image"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/me/business": {
             "post": {
                 "security": [
@@ -3568,6 +3617,10 @@
                 ],
                 "properties": {
                     "approval_status": {
+                        "type": "string"
+                    },
+                    "avatar": {
+                        "description": "Avatar is the URL path of the caller's profile picture, if set.",
                         "type": "string"
                     },
                     "businesses": {

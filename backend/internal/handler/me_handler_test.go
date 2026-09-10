@@ -22,7 +22,8 @@ func newTestMeHandler(t *testing.T) (*MeHandler, *store.BusinessStore, *store.Bu
 	pool := setupHandlerTestDB(t)
 	businessStore := store.NewBusinessStore(pool)
 	buStore := store.NewBusinessUserStore(pool)
-	return NewMeHandler(businessStore, buStore, pool), businessStore, buStore, pool
+	userStore := store.NewUserStore(pool)
+	return NewMeHandler(businessStore, buStore, userStore, pool), businessStore, buStore, pool
 }
 
 func withUser(r *http.Request, userID, approvalStatus string) *http.Request {

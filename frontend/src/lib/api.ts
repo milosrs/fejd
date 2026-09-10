@@ -42,9 +42,12 @@ const errorMiddleware: Middleware = {
 const isNative = Capacitor.isNativePlatform()
 const configuredBase = import.meta.env.VITE_API_URL || ""
 
+// No default Content-Type: openapi-fetch sets application/json for JSON bodies
+// automatically, and leaves it unset for FormData so the browser can add the
+// multipart boundary. A fixed application/json default would break multipart
+// uploads.
 const apiClient = createClient<paths>({
   baseUrl: isNative ? configuredBase : "",
-  headers: { "Content-Type": "application/json" },
 })
 
 export const API_BASE_URL = isNative ? configuredBase : ""

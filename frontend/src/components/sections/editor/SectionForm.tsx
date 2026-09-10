@@ -34,7 +34,7 @@ export function HeroSectionForm({
 }: {
   value: HeroContent
   onChange: (value: HeroContent) => void
-  onUploadImage?: (file: File) => void
+  onUploadImage?: (file: File, purpose: string) => void
   uploading?: boolean
 }) {
   return (
@@ -58,9 +58,22 @@ export function HeroSectionForm({
         />
       </Field>
       {onUploadImage && (
-        <Field label="Hero image">
-          <ImageUploadButton onPicked={onUploadImage} uploading={uploading} />
-        </Field>
+        <>
+          <Field label="Logo">
+            <ImageUploadButton
+              label="Upload logo"
+              onPicked={(file) => onUploadImage(file, "logo")}
+              uploading={uploading}
+            />
+          </Field>
+          <Field label="Background">
+            <ImageUploadButton
+              label="Upload background"
+              onPicked={(file) => onUploadImage(file, "background")}
+              uploading={uploading}
+            />
+          </Field>
+        </>
       )}
     </div>
   )
@@ -168,7 +181,7 @@ export function SectionForm({
   type: SectionType
   value: SectionContent
   onChange: (value: SectionContent) => void
-  onUploadImage?: (file: File) => void
+  onUploadImage?: (file: File, purpose: string) => void
   uploading?: boolean
 }) {
   switch (type) {

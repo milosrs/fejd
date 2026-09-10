@@ -25,7 +25,7 @@ func (s *ImageStore) Create(ctx context.Context, q Querier, img *models.Image) e
 	sql, args, err := psql.
 		Insert("images").
 		Columns("id", "business_id", "storage", "object_key", "data", "url", "content_type").
-		Values(img.ID, img.BusinessID, img.Storage, nullableString(img.ObjectKey), img.Data, nullableString(img.URL), nullableString(img.ContentType)).
+		Values(img.ID, nullableBusinessID(img.BusinessID), img.Storage, nullableString(img.ObjectKey), img.Data, nullableString(img.URL), nullableString(img.ContentType)).
 		Suffix("RETURNING created_at").
 		ToSql()
 	if err != nil {
@@ -46,10 +46,21 @@ func (s *ImageStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Image, 
 	}
 
 	var img models.Image
-	if err := s.pool.QueryRow(ctx, sql, args...).Scan(&img.ID, &img.BusinessID, &img.Storage, &img.ObjectKey, &img.Data, &img.URL, &img.ContentType, &img.CreatedAt); err != nil {
+	var businessID *uuid.UUID
+	if err := s.pool.QueryRow(ctx, sql, args...).Scan(&img.ID, &businessID, &img.Storage, &img.ObjectKey, &img.Data, &img.URL, &img.ContentType, &img.CreatedAt); err != nil {
 		return nil, fmt.Errorf("image not found: %w", err)
 	}
+	if businessID != nil {
+		img.BusinessID = *businessID
+	}
 	return &img, nil
+}
+
+func nullableBusinessID(id uuid.UUID) any {
+	if id == uuid.Nil {
+		return nil
+	}
+	return id
 }
 
 func (s *ImageStore) Delete(ctx context.Context, q Querier, id uuid.UUID) error {

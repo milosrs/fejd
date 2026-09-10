@@ -7,6 +7,7 @@ import (
 
 	"fejd-backend/internal/models"
 
+	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -35,6 +36,51 @@ func TestUserStore_GetByID_NotFound(t *testing.T) {
 	defer db.teardown()
 	_, err := NewUserStore(db.pool).GetByID(context.Background(), "missing")
 	require.Error(t, err)
+}
+
+func TestUserStore_Avatar(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.teardown()
+	ctx := context.Background()
+	store := NewUserStore(db.pool)
+
+	require.NoError(t, store.Upsert(ctx, &models.User{ID: "user-1", DisplayName: "Sam"}))
+
+	avatarID := uuid.New()
+	_, err := db.pool.Exec(ctx,
+		`INSERT INTO images (id, storage, data, content_type) VALUES ($1, 'postgres', $2, 'image/png')`,
+		avatarID, []byte("png"))
+	require.NoError(t, err)
+
+	require.NoError(t, store.SetAvatar(ctx, db.pool, "user-1", &avatarID))
+
+	got, err := store.GetByID(ctx, "user-1")
+	require.NoError(t, err)
+	require.NotNil(t, got.AvatarID)
+	assert.Equal(t, avatarID, *got.AvatarID)
+
+	// Clearing the avatar works.
+	require.NoError(t, store.SetAvatar(ctx, db.pool, "user-1", nil))
+	got, err = store.GetByID(ctx, "user-1")
+	require.NoError(t, err)
+	assert.Nil(t, got.AvatarID)
+}
+
+func TestUserStore_GetAvatarIDForUpdate(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.teardown()
+	ctx := context.Background()
+	store := NewUserStore(db.pool)
+
+	// Missing user returns nil rather than an error.
+	got, err := store.GetAvatarIDForUpdate(ctx, db.pool, "nobody")
+	require.NoError(t, err)
+	assert.Nil(t, got)
+
+	require.NoError(t, store.Upsert(ctx, &models.User{ID: "user-1", DisplayName: "Sam"}))
+	got, err = store.GetAvatarIDForUpdate(ctx, db.pool, "user-1")
+	require.NoError(t, err)
+	assert.Nil(t, got)
 }
 
 func TestAppointmentStore_ListCustomers(t *testing.T) {
