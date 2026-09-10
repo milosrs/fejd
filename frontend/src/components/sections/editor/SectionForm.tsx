@@ -2,6 +2,7 @@ import { Input } from "../../ui/input"
 import { Textarea } from "../../ui/textarea"
 import { Label } from "../../ui/label"
 import { ImageUploadButton } from "../../ui/image-upload-button"
+import { resolveImageUrl } from "../../../lib/images"
 import type {
   AboutContent,
   ContactContent,
@@ -34,7 +35,7 @@ export function HeroSectionForm({
 }: {
   value: HeroContent
   onChange: (value: HeroContent) => void
-  onUploadImage?: (file: File, purpose: string) => void
+  onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
   uploading?: boolean
 }) {
   return (
@@ -107,10 +108,26 @@ export function AboutSectionForm({
 export function GallerySectionForm({
   value,
   onChange,
+  onUploadImage,
+  uploading,
 }: {
   value: GalleryContent
   onChange: (value: GalleryContent) => void
+  onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
+  uploading?: boolean
 }) {
+  const images = value.image_urls ?? []
+
+  const addImage = async (file: File) => {
+    if (!onUploadImage) return
+    const url = await onUploadImage(file, "gallery")
+    if (url) onChange({ ...value, image_urls: [...images, url] })
+  }
+
+  const removeImage = (index: number) => {
+    onChange({ ...value, image_urls: images.filter((_, i) => i !== index) })
+  }
+
   return (
     <div className="space-y-4">
       <Field label="Heading">
@@ -119,16 +136,37 @@ export function GallerySectionForm({
           onChange={(e) => onChange({ ...value, heading: e.target.value })}
         />
       </Field>
-      <Field label="Image URLs (one per line)">
-        <Textarea
-          value={(value.image_urls ?? []).join("\n")}
-          onChange={(e) =>
-            onChange({
-              ...value,
-              image_urls: e.target.value.split("\n").filter((s) => s.trim() !== ""),
-            })
-          }
-        />
+      <Field label="Images">
+        <div className="space-y-3">
+          {images.length > 0 && (
+            <div className="flex flex-wrap gap-2">
+              {images.map((url, index) => (
+                <div key={`${url}-${index}`} className="relative">
+                  <img
+                    src={resolveImageUrl(url)}
+                    alt=""
+                    className="h-16 w-16 rounded-lg border border-border object-cover"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Remove image"
+                    onClick={() => removeImage(index)}
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs leading-none hover:bg-destructive/90"
+                  >
+                    ×
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {onUploadImage && (
+            <ImageUploadButton
+              label="Add image"
+              onPicked={addImage}
+              uploading={uploading}
+            />
+          )}
+        </div>
       </Field>
     </div>
   )
@@ -181,7 +219,7 @@ export function SectionForm({
   type: SectionType
   value: SectionContent
   onChange: (value: SectionContent) => void
-  onUploadImage?: (file: File, purpose: string) => void
+  onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
   uploading?: boolean
 }) {
   switch (type) {
@@ -197,7 +235,14 @@ export function SectionForm({
     case "about":
       return <AboutSectionForm value={value as AboutContent} onChange={onChange} />
     case "gallery":
-      return <GallerySectionForm value={value as GalleryContent} onChange={onChange} />
+      return (
+        <GallerySectionForm
+          value={value as GalleryContent}
+          onChange={onChange}
+          onUploadImage={onUploadImage}
+          uploading={uploading}
+        />
+      )
     case "contact":
       return <ContactSectionForm value={value as ContactContent} onChange={onChange} />
     default:

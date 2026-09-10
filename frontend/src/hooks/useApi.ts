@@ -298,7 +298,7 @@ export async function uploadAvatar(file: File) {
   return data
 }
 
-export type BusinessImagePurpose = "hero" | "logo" | "background"
+export type BusinessImagePurpose = "hero" | "logo" | "background" | "gallery"
 
 export async function uploadBusinessImage(
   businessId: string,

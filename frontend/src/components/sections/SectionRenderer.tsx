@@ -8,6 +8,7 @@ import type {
   SectionContent,
 } from "../../lib/sections"
 import { useSalonContext } from "../../context/SalonContext"
+import { useSalonDraftStore } from "../../stores/salonDraftStore"
 import { HeroSection } from "./HeroSection"
 import { AboutSection } from "./AboutSection"
 import { GallerySection } from "./GallerySection"
@@ -22,6 +23,7 @@ export function SectionRenderer({
 }) {
   const { pickLocalized } = useI18n()
   const { slug, salon } = useSalonContext()
+  const draft = useSalonDraftStore((s) => s.drafts[slug])
 
   const content = pickLocalized<SectionContent>(
     section.content as Record<string, SectionContent>,
@@ -32,8 +34,8 @@ export function SectionRenderer({
       return (
         <HeroSection
           content={(content ?? {}) as HeroContent}
-          backgroundUrl={salon?.images.background}
-          logoUrl={salon?.images.logo}
+          backgroundUrl={contained ? (draft?.background ?? salon?.images.background) : salon?.images.background}
+          logoUrl={contained ? (draft?.logo ?? salon?.images.logo) : salon?.images.logo}
           slug={slug}
           contained={contained}
         />
@@ -41,7 +43,7 @@ export function SectionRenderer({
     case "about":
       return <AboutSection content={(content ?? {}) as AboutContent} />
     case "gallery":
-      return <GallerySection content={(content ?? {}) as GalleryContent} />
+      return <GallerySection content={(content ?? {}) as GalleryContent} contained={contained} />
     case "contact":
       return <ContactSection content={(content ?? {}) as ContactContent} />
     default:

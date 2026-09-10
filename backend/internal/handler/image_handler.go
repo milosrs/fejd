@@ -32,12 +32,12 @@ func NewImageHandler(images *service.ImageService, services *store.ServiceStore,
 
 // UploadBusinessImage godoc
 // @Summary      Upload a business image
-// @Description  Uploads a business hero/logo/background image (multipart file). Visibility is public.
+// @Description  Uploads a business hero/logo/background/gallery image (multipart file). Visibility is public.
 // @Tags         admin
 // @Accept       mpfd
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
-// @Param        purpose formData string false "hero|logo|background (default hero)"
+// @Param        purpose formData string false "hero|logo|background|gallery (default hero)"
 // @Param        file formData file true "Image file"
 // @Success      201 {object} dto.Image
 // @Failure      400 {object} ErrorResponse
@@ -61,13 +61,18 @@ func (h *ImageHandler) UploadBusinessImage(w http.ResponseWriter, r *http.Reques
 		purpose = "hero"
 	}
 	switch purpose {
-	case "hero", "logo", "background":
+	case "hero", "logo", "background", "gallery":
 	default:
-		writeError(w, http.StatusBadRequest, "invalid purpose, must be hero, logo or background")
+		writeError(w, http.StatusBadRequest, "invalid purpose, must be hero, logo, background or gallery")
 		return
 	}
 
-	img, err := h.images.UploadAndLink(r.Context(), businessID, data, contentType, "business", businessID, purpose, models.VisibilityPublic)
+	var img *models.Image
+	if purpose == "gallery" {
+		img, err = h.images.UploadAndAppendLink(r.Context(), businessID, data, contentType, "business", businessID, purpose, models.VisibilityPublic)
+	} else {
+		img, err = h.images.UploadAndLink(r.Context(), businessID, data, contentType, "business", businessID, purpose, models.VisibilityPublic)
+	}
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

@@ -62,6 +62,7 @@ result-*
 # Keycloak theme build output
 keycloak/themes/
 
+backend/fejd-backend
 # Editor/IDE
 # .idea/
 # .vscode/

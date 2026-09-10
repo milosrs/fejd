@@ -115,6 +115,84 @@ func (s *ImageService) UploadAndLink(
 	return img, nil
 }
 
+// singletonPurposes are purposes that allow at most one link per entity (see
+// the partial unique index in 000004_images_business_and_links.up.sql).
+// Re-uploading a singleton purpose replaces the existing link; every other
+// purpose appends a new link, which is what multi-image purposes like gallery
+// rely on.
+var singletonPurposes = map[string]struct{}{
+	"hero": {}, "logo": {}, "background": {}, "avatar": {}, "picture": {},
+}
+
+func isSingletonPurpose(purpose string) bool {
+	_, ok := singletonPurposes[purpose]
+	return ok
+}
+
+// UploadAndAppendLink stores image bytes and appends a new public link for a
+// multi-image purpose (gallery), so repeated uploads accumulate instead of
+// replacing the previous image.
+func (s *ImageService) UploadAndAppendLink(
+	ctx context.Context,
+	businessID uuid.UUID,
+	data []byte,
+	contentType string,
+	entityType string,
+	entityID uuid.UUID,
+	purpose string,
+	visibility models.Visibility,
+) (*models.Image, error) {
+	if int64(len(data)) > s.cfg.MaxUploadBytes {
+		return nil, fmt.Errorf("image exceeds maximum upload size of %d bytes", s.cfg.MaxUploadBytes)
+	}
+
+	img := &models.Image{
+		ID:          uuid.New(),
+		BusinessID:  businessID,
+		ContentType: contentType,
+	}
+
+	objectKey := ""
+	switch s.cfg.Backend {
+	case config.BackendPostgres:
+		img.Storage = string(config.BackendPostgres)
+		img.Data = data
+	default:
+		if s.storage == nil {
+			return nil, fmt.Errorf("object storage is not configured")
+		}
+		objectKey = fmt.Sprintf("%s/%s", businessID.String(), uuid.NewString())
+		img.Storage = string(s.cfg.Backend)
+		img.ObjectKey = objectKey
+		if err := s.storage.Put(ctx, objectKey, data, contentType); err != nil {
+			return nil, fmt.Errorf("failed to store image bytes: %w", err)
+		}
+	}
+
+	err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := s.images.Create(ctx, tx, img); err != nil {
+			return fmt.Errorf("failed to create image: %w", err)
+		}
+
+		link := &models.ImageLink{
+			ImageID:    img.ID,
+			EntityType: entityType,
+			EntityID:   entityID,
+			Purpose:    purpose,
+			Visibility: visibility,
+		}
+		return s.links.Create(ctx, tx, link)
+	})
+	if err != nil {
+		if objectKey != "" {
+			s.removeObject(ctx, objectKey)
+		}
+		return nil, err
+	}
+
+	return img, nil
+}
+
 func (s *ImageService) upsertLink(ctx context.Context, img *models.Image, entityType string, entityID uuid.UUID, purpose string, visibility models.Visibility) (uuid.UUID, error) {
 	var oldImageID uuid.UUID
 	var err error
