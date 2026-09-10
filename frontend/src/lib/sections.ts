@@ -17,7 +17,6 @@ export interface HeroContent {
 export interface AboutContent {
   heading?: string
   body?: string
-  address?: string
 }
 
 export interface GalleryContent {
@@ -30,6 +29,7 @@ export interface ContactContent {
   phone?: string
   email?: string
   address?: string
+  rating_url?: string
 }
 
 export type SectionContent =

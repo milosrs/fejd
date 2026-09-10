@@ -102,13 +102,6 @@ export function AboutSectionForm({
           onChange={(e) => onChange({ ...value, body: e.target.value })}
         />
       </Field>
-      <Field label="Address">
-        <PlacesAutocompleteInput
-          value={value.address ?? ""}
-          onChange={(address) => onChange({ ...value, address })}
-          placeholder="Street, city, country"
-        />
-      </Field>
     </div>
   )
 }
@@ -208,9 +201,17 @@ export function ContactSectionForm({
         />
       </Field>
       <Field label="Address">
-        <Input
+        <PlacesAutocompleteInput
           value={value.address ?? ""}
-          onChange={(e) => onChange({ ...value, address: e.target.value })}
+          onChange={(address) => onChange({ ...value, address })}
+          placeholder="Street, city, country"
+        />
+      </Field>
+      <Field label="Google review URL">
+        <Input
+          value={value.rating_url ?? ""}
+          onChange={(e) => onChange({ ...value, rating_url: e.target.value })}
+          placeholder="https://..."
         />
       </Field>
     </div>
