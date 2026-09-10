@@ -2,6 +2,7 @@ import { Input } from "../../ui/input"
 import { Textarea } from "../../ui/textarea"
 import { Label } from "../../ui/label"
 import { ImageUploadButton } from "../../ui/image-upload-button"
+import { PlacesAutocompleteInput } from "../../ui/places-autocomplete-input"
 import { resolveImageUrl } from "../../../lib/images"
 import type {
   AboutContent,
@@ -99,6 +100,13 @@ export function AboutSectionForm({
         <Textarea
           value={value.body ?? ""}
           onChange={(e) => onChange({ ...value, body: e.target.value })}
+        />
+      </Field>
+      <Field label="Address">
+        <PlacesAutocompleteInput
+          value={value.address ?? ""}
+          onChange={(address) => onChange({ ...value, address })}
+          placeholder="Street, city, country"
         />
       </Field>
     </div>

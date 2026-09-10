@@ -31,6 +31,10 @@ type SetEmployeeServicesRequest struct {
 	ServiceIDs []uuid.UUID `json:"service_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
 
+type SetServiceEmployeesRequest struct {
+	BusinessUserIDs []uuid.UUID `json:"business_user_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
+}
+
 type CreateEmployeeRequest struct {
 	Name       string      `json:"name" validate:"required" example:"Sam Barber"`
 	Email      string      `json:"email" validate:"required" example:"sam@example.com"`

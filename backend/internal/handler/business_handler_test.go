@@ -27,7 +27,7 @@ func newTestBusinessHandler(t *testing.T) (*BusinessHandler, *store.BusinessStor
 	sectionStore := store.NewSectionStore(pool)
 	imageLinkStore := store.NewImageLinkStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
-	h := NewBusinessHandler(businessStore, buStore, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, nil)
+	h := NewBusinessHandler(businessStore, buStore, nil, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, nil)
 	return h, businessStore, pool
 }
 

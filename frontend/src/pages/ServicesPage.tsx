@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useSalonContext, useIsOwner } from "../context/SalonContext"
-import { useServices, type Service } from "../hooks/useApi"
+import { useServices, useAdminEmployees, useServiceEmployeesAdmin, type Service } from "../hooks/useApi"
 import { useServiceMutations } from "../hooks/useServiceMutations"
 import { useBookingStore } from "../stores/bookingStore"
 import { useAuthStore } from "../stores/authStore"
@@ -27,11 +27,19 @@ export function ServicesPage() {
 
   const businessId = salon?.business.id ?? ""
   const { data, isLoading, isError } = useServices(slug)
-  const { create, update, remove, uploadImage } = useServiceMutations(businessId, slug)
+  const { create, update, remove, uploadImage, setEmployees } = useServiceMutations(businessId, slug)
+  const { data: staffData } = useAdminEmployees(businessId)
 
   const [form, setForm] = useState<FormState>(null)
   const [deleting, setDeleting] = useState<Service | null>(null)
   const [deleteError, setDeleteError] = useState("")
+  const [formError, setFormError] = useState("")
+
+  const editingServiceId = form?.mode === "edit" ? form.service.id : ""
+  const { data: assignedEmployees } = useServiceEmployeesAdmin(businessId, editingServiceId)
+
+  const staff = (staffData ?? []).filter((e) => e.active)
+  const assignedEmployeeIds = (assignedEmployees ?? []).map((e) => e.id)
 
   const editingOn = editing && isOwner
   const services = editingOn ? (data ?? []) : (data ?? []).filter((s) => s.active)
@@ -47,27 +55,27 @@ export function ServicesPage() {
     navigate(`${salonPath(slug, "/book")}?service=${serviceId}`)
   }
 
-  const handleSubmit = (values: ServiceFormValues) => {
+  const handleSubmit = async (values: ServiceFormValues) => {
     if (!form) return
-    if (form.mode === "create") {
-      create.mutate(
-        {
+    const imageFile = values.imageFile ?? null
+    setFormError("")
+
+    try {
+      let serviceId = form.mode === "edit" ? form.service.id : ""
+
+      if (form.mode === "create") {
+        const service = await create.mutateAsync({
           name: values.name,
           description: values.description,
           duration_minutes: values.duration_minutes,
           price: values.price,
           active: true,
-        },
-        {
-          onSuccess: (service) => {
-            if (service) setForm({ mode: "edit", service })
-          },
-        },
-      )
-    } else {
-      update.mutate(
-        {
-          serviceId: form.service.id,
+        })
+        if (!service) return
+        serviceId = service.id
+      } else {
+        await update.mutateAsync({
+          serviceId,
           input: {
             name: values.name,
             description: values.description,
@@ -75,16 +83,28 @@ export function ServicesPage() {
             price: values.price,
             active: form.service.active,
           },
-        },
-        { onSuccess: () => setForm(null) },
-      )
+        })
+      }
+
+      if (imageFile) {
+        await uploadImage.mutateAsync({ serviceId, file: imageFile })
+      }
+
+      await setEmployees.mutateAsync({
+        serviceId,
+        businessUserIds: values.employee_ids,
+      })
+
+      setForm(null)
+    } catch (err) {
+      const e = err as unknown as { body?: { error?: string } }
+      setFormError(e?.body?.error ?? "Failed to save service.")
     }
   }
 
-  const handleUploadImage = (file: File) => {
-    if (form?.mode === "edit") {
-      uploadImage.mutate({ serviceId: form.service.id, file })
-    }
+  const openForm = (state: FormState) => {
+    setFormError("")
+    setForm(state)
   }
 
   const handleDelete = () => {
@@ -106,7 +126,7 @@ export function ServicesPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">Services</h2>
         {editingOn && (
-          <Button size="sm" onClick={() => setForm({ mode: "create" })}>
+          <Button size="sm" onClick={() => openForm({ mode: "create" })}>
             <Plus className="size-3" /> Add service
           </Button>
         )}
@@ -134,7 +154,7 @@ export function ServicesPage() {
               service={service}
               onBook={handleBook}
               note={registerNote}
-              onEdit={editingOn ? () => setForm({ mode: "edit", service }) : undefined}
+              onEdit={editingOn ? () => openForm({ mode: "edit", service }) : undefined}
               onDelete={editingOn ? () => setDeleting(service) : undefined}
             />
           ))}
@@ -145,11 +165,17 @@ export function ServicesPage() {
         <ServiceForm
           key={form.mode === "edit" ? form.service.id : "create"}
           initial={form.mode === "edit" ? form.service : undefined}
+          staff={staff}
+          assignedEmployeeIds={assignedEmployeeIds}
           onClose={() => setForm(null)}
           onSubmit={handleSubmit}
-          onUploadImage={form.mode === "edit" ? handleUploadImage : undefined}
-          uploading={uploadImage.isPending}
-          saving={form.mode === "create" ? create.isPending : update.isPending}
+          saving={
+            create.isPending ||
+            update.isPending ||
+            uploadImage.isPending ||
+            setEmployees.isPending
+          }
+          error={formError}
         />
       )}
 

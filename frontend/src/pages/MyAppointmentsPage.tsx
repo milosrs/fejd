@@ -4,6 +4,8 @@ import { format } from "date-fns"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "../stores/authStore"
 import { useMyAppointments, cancelAppointment, type Appointment } from "../hooks/useApi"
+import { useI18n } from "../lib/i18n"
+import { formatCancellationReason } from "../lib/cancellation"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
@@ -21,6 +23,7 @@ export function MyAppointmentsPage() {
   const login = useAuthStore((s) => s.login)
   const queryClient = useQueryClient()
   const { data: appointments, isLoading } = useMyAppointments()
+  const { t } = useI18n()
 
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
   const [reason, setReason] = useState("")
@@ -88,7 +91,9 @@ export function MyAppointmentsPage() {
                     {" · "}Status: <span className={`font-medium ${apt.status === "confirmed" ? "text-green-600" : apt.status === "cancelled" ? "text-red-600" : "text-foreground"}`}>{apt.status}</span>
                   </p>
                   {apt.cancellation_reason && (
-                    <p className="text-xs text-muted-foreground">Reason: {apt.cancellation_reason}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Reason: {formatCancellationReason(apt.cancellation_reason, t)}
+                    </p>
                   )}
                   {(apt.status === "confirmed" || apt.status === "pending") && (
                     canCancel(apt) ? (

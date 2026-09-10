@@ -84,6 +84,41 @@ func (s *EmployeeServiceStore) ReplaceByBusinessUser(ctx context.Context, busine
 	})
 }
 
+// ReplaceByService atomically replaces the set of employees mapped to a
+// service. Deletion is restricted by the appointments composite FK, so removing
+// an employee that existing appointments reference will fail.
+func (s *EmployeeServiceStore) ReplaceByService(ctx context.Context, serviceID uuid.UUID, businessUserIDs []uuid.UUID) error {
+	return db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		delSQL, delArgs, err := psql.
+			Delete("employee_services").
+			Where(sq.Eq{"service_id": serviceID}).
+			ToSql()
+		if err != nil {
+			return fmt.Errorf("failed to build delete query: %w", err)
+		}
+		if _, err := tx.Exec(ctx, delSQL, delArgs...); err != nil {
+			return fmt.Errorf("failed to clear service employees: %w", err)
+		}
+
+		for _, buID := range businessUserIDs {
+			insSQL, insArgs, err := psql.
+				Insert("employee_services").
+				Columns("business_user_id", "service_id").
+				Values(buID, serviceID).
+				Suffix("ON CONFLICT DO NOTHING").
+				ToSql()
+			if err != nil {
+				return fmt.Errorf("failed to build insert query: %w", err)
+			}
+			if _, err := tx.Exec(ctx, insSQL, insArgs...); err != nil {
+				return fmt.Errorf("failed to assign employee: %w", err)
+			}
+		}
+
+		return nil
+	})
+}
+
 func (s *EmployeeServiceStore) OffersService(ctx context.Context, businessUserID, serviceID uuid.UUID) (bool, error) {
 	sql, args, err := psql.
 		Select("1").
@@ -133,6 +168,7 @@ func (s *EmployeeServiceStore) ListByBusinessUser(ctx context.Context, businessU
 	return result, nil
 }
 
+// ListByService returns every employee-service link for a service.
 func (s *EmployeeServiceStore) ListByService(ctx context.Context, serviceID uuid.UUID) ([]models.EmployeeService, error) {
 	sql, args, err := psql.
 		Select("business_user_id", "service_id").

@@ -118,6 +118,8 @@ func newRouter(
 				r.Post("/services", adminHandler.CreateService)
 				r.Put("/services/{serviceID}", adminHandler.UpdateService)
 				r.Delete("/services/{serviceID}", adminHandler.DeleteService)
+				r.Get("/services/{serviceID}/employees", adminHandler.GetServiceEmployees)
+				r.Put("/services/{serviceID}/employees", adminHandler.SetServiceEmployees)
 				r.Put("/sections/reorder", adminHandler.ReorderSections)
 				r.Post("/sections", adminHandler.CreateSection)
 				r.Put("/sections/{sectionID}", adminHandler.UpdateSection)

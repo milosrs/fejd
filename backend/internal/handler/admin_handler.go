@@ -435,7 +435,14 @@ func (h *AdminHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, dto.BusinessUsersFromModels(users))
+	dtos := dto.BusinessUsersFromModels(users)
+	if h.imageService != nil {
+		for i := range dtos {
+			dtos[i].Avatar = h.imageService.BusinessUserAvatarURL(r.Context(), users[i].ID)
+		}
+	}
+
+	writeJSON(w, http.StatusOK, dtos)
 }
 
 // RemoveEmployee godoc
@@ -513,6 +520,84 @@ func (h *AdminHandler) SetEmployeeServices(w http.ResponseWriter, r *http.Reques
 	}
 
 	writeJSON(w, http.StatusOK, MessageResponse{Message: "employee services updated"})
+}
+
+// GetServiceEmployees godoc
+// @Summary      List employees mapped to a service
+// @Description  Returns the business users (owner and employees) currently mapped to a service.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        serviceID path string true "Service UUID"
+// @Success      200 {array} dto.BusinessUser
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/services/{serviceID}/employees [get]
+func (h *AdminHandler) GetServiceEmployees(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	serviceID, err := uuid.Parse(chi.URLParam(r, "serviceID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidServiceID.Error())
+		return
+	}
+
+	users, err := h.slotService.ListServiceEmployees(r.Context(), businessID, serviceID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "service not found")
+		return
+	}
+	if users == nil {
+		users = []models.BusinessUser{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.BusinessUsersFromModels(users))
+}
+
+// SetServiceEmployees godoc
+// @Summary      Set service employees
+// @Description  Replaces the set of employees mapped to a service.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        serviceID path string true "Service UUID"
+// @Param        body body SetServiceEmployeesRequest true "Business user IDs"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/services/{serviceID}/employees [put]
+func (h *AdminHandler) SetServiceEmployees(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	serviceID, err := uuid.Parse(chi.URLParam(r, "serviceID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidServiceID.Error())
+		return
+	}
+
+	var body SetServiceEmployeesRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	if err := h.slotService.SetServiceEmployees(r.Context(), businessID, serviceID, body.BusinessUserIDs); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "service employees updated"})
 }
 
 // AddUnavailability godoc

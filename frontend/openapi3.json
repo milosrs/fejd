@@ -877,7 +877,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Uploads a business hero/logo/background image (multipart file). Visibility is public.",
+                "description": "Uploads a business hero/logo/background/gallery image (multipart file). Visibility is public.",
                 "tags": [
                     "admin"
                 ],
@@ -900,7 +900,7 @@
                                 "type": "object",
                                 "properties": {
                                     "purpose": {
-                                        "description": "hero|logo|background (default hero)",
+                                        "description": "hero|logo|background|gallery (default hero)",
                                         "type": "string"
                                     },
                                     "file": {
@@ -2386,6 +2386,150 @@
                     },
                     "401": {
                         "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/admin/business/{businessID}/services/{serviceID}/employees": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the business users (owner and employees) currently mapped to a service.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List employees mapped to a service",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service UUID",
+                        "name": "serviceID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/dto.BusinessUser"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replaces the set of employees mapped to a service.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Set service employees",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service UUID",
+                        "name": "serviceID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.SetServiceEmployeesRequest"
+                            }
+                        }
+                    },
+                    "description": "Business user IDs",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
                         "content": {
                             "application/json": {
                                 "schema": {
@@ -4152,6 +4296,23 @@
                 ],
                 "properties": {
                     "service_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "550e8400-e29b-41d4-a716-446655440000"
+                        ]
+                    }
+                }
+            },
+            "handler.SetServiceEmployeesRequest": {
+                "type": "object",
+                "required": [
+                    "business_user_ids"
+                ],
+                "properties": {
+                    "business_user_ids": {
                         "type": "array",
                         "items": {
                             "type": "string"

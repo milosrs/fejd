@@ -768,7 +768,7 @@ export interface paths {
         put?: never;
         /**
          * Upload a business image
-         * @description Uploads a business hero/logo/background image (multipart file). Visibility is public.
+         * @description Uploads a business hero/logo/background/gallery image (multipart file). Visibility is public.
          */
         post: {
             parameters: {
@@ -783,7 +783,7 @@ export interface paths {
             requestBody?: {
                 content: {
                     "multipart/form-data": {
-                        /** @description hero|logo|background (default hero) */
+                        /** @description hero|logo|background|gallery (default hero) */
                         purpose?: string;
                         /**
                          * Format: binary
@@ -2115,6 +2115,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/business/{businessID}/services/{serviceID}/employees": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List employees mapped to a service
+         * @description Returns the business users (owner and employees) currently mapped to a service.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Service UUID */
+                    serviceID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.BusinessUser"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Set service employees
+         * @description Replaces the set of employees mapped to a service.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Service UUID */
+                    serviceID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Business user IDs */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.SetServiceEmployeesRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/business/{businessID}/services/{serviceID}/image": {
         parameters: {
             query?: never;
@@ -3393,6 +3506,14 @@ export interface components {
              *     ]
              */
             service_ids: string[];
+        };
+        "handler.SetServiceEmployeesRequest": {
+            /**
+             * @example [
+             *       "550e8400-e29b-41d4-a716-446655440000"
+             *     ]
+             */
+            business_user_ids: string[];
         };
         "handler.SetWorkingHoursRequest": {
             working_hours: components["schemas"]["handler.WorkingHoursInput"][];

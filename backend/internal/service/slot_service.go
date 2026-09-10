@@ -261,6 +261,120 @@ func (s *SlotService) SetEmployeeServices(ctx context.Context, businessID uuid.U
 	return nil
 }
 
+// SetServiceEmployees replaces the set of employees mapped to a service.
+// Employees removed from the service have their future reservations cancelled
+// (with a localized reason) before the mapping is replaced.
+func (s *SlotService) SetServiceEmployees(ctx context.Context, businessID, serviceID uuid.UUID, businessUserIDs []uuid.UUID) error {
+	svc, err := s.services.GetByID(ctx, serviceID)
+	if err != nil || svc.BusinessID != businessID {
+		return fmt.Errorf("service not found in business")
+	}
+
+	old, err := s.employeeServices.ListByService(ctx, serviceID)
+	if err != nil {
+		return fmt.Errorf("failed to list service employees: %w", err)
+	}
+
+	for _, buID := range businessUserIDs {
+		bu, err := s.businessUser.GetByID(ctx, buID)
+		if err != nil || bu.BusinessID != businessID {
+			return fmt.Errorf("employee not found in business")
+		}
+	}
+
+	keep := make(map[uuid.UUID]struct{}, len(businessUserIDs))
+	for _, buID := range businessUserIDs {
+		keep[buID] = struct{}{}
+	}
+
+	affected := map[uuid.UUID]struct{}{}
+	var removed []uuid.UUID
+	for _, link := range old {
+		affected[link.BusinessUserID] = struct{}{}
+		if _, ok := keep[link.BusinessUserID]; !ok {
+			removed = append(removed, link.BusinessUserID)
+		}
+	}
+	for _, buID := range businessUserIDs {
+		affected[buID] = struct{}{}
+	}
+
+	for _, buID := range removed {
+		if err := s.cancelServiceAppointments(ctx, businessID, buID, serviceID); err != nil {
+			return err
+		}
+	}
+
+	if err := s.employeeServices.ReplaceByService(ctx, serviceID, businessUserIDs); err != nil {
+		return fmt.Errorf("failed to set service employees: %w", err)
+	}
+
+	for buID := range affected {
+		s.publishSlotsChanged(businessID, buID)
+	}
+	return nil
+}
+
+// cancellationReasonNoService is the translation key stored as the reason when
+// a service is unmapped from an employee; the frontend appends the unmapping
+// date and localizes the label.
+const cancellationReasonNoService = "cancellation.reason.noService"
+
+// cancelServiceAppointments cancels an employee's future pending/confirmed
+// reservations for a service, used when the service is unmapped from them.
+func (s *SlotService) cancelServiceAppointments(ctx context.Context, businessID, businessUserID, serviceID uuid.UUID) error {
+	now := time.Now()
+	future, err := s.appointments.ListByBusinessUser(ctx, businessUserID, now, now.AddDate(1, 0, 0))
+	if err != nil {
+		return fmt.Errorf("failed to list future appointments: %w", err)
+	}
+
+	reason := fmt.Sprintf("%s|%s", cancellationReasonNoService, now.UTC().Format(time.DateOnly))
+	for _, appt := range future {
+		if appt.ServiceID != serviceID {
+			continue
+		}
+		if appt.Status != models.AppointmentStatusPending && appt.Status != models.AppointmentStatusConfirmed {
+			continue
+		}
+
+		if err := s.appointments.CancelByID(ctx, appt.ID, reason); err != nil {
+			return fmt.Errorf("failed to cancel appointment: %w", err)
+		}
+
+		s.hub.Publish(businessID.String(), map[string]any{
+			"type":             "appointment_cancelled",
+			"appointment_id":   appt.ID.String(),
+			"customer_user_id": appt.CustomerUserID,
+			"start_time":       appt.StartTime.Format(time.RFC3339),
+		})
+	}
+	return nil
+}
+
+// ListServiceEmployees returns the business users mapped to a service.
+func (s *SlotService) ListServiceEmployees(ctx context.Context, businessID, serviceID uuid.UUID) ([]models.BusinessUser, error) {
+	svc, err := s.services.GetByID(ctx, serviceID)
+	if err != nil || svc.BusinessID != businessID {
+		return nil, fmt.Errorf("service not found in business")
+	}
+
+	links, err := s.employeeServices.ListByService(ctx, serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list service employees: %w", err)
+	}
+
+	users := make([]models.BusinessUser, 0, len(links))
+	for _, link := range links {
+		bu, err := s.businessUser.GetByID(ctx, link.BusinessUserID)
+		if err != nil {
+			continue
+		}
+		users = append(users, *bu)
+	}
+	return users, nil
+}
+
 // AddEmployeeUnavailability marks an employee unavailable (e.g. vacation). The
 // write takes the same per-employee advisory lock as booking so it serializes
 // against concurrent bookings.

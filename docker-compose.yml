@@ -48,6 +48,7 @@ services:
       VITE_KEYCLOAK_URL: http://localhost:9090
       VITE_KEYCLOAK_REALM: fejd
       VITE_KEYCLOAK_CLIENT_ID: fejd-frontend
+      VITE_GOOGLE_MAPS_API_KEY: AIzaSyCZrRxDGp_7R1vuy-o20Fa4W9gWtPEB2vo
       # Store listing URLs shown on the invite landing page when the app isn't
       # installed. Fill in once the app is published (see .kilo/plans/invite-link-qr/09-infrastructure.md).
       VITE_APP_STORE_URL: ""

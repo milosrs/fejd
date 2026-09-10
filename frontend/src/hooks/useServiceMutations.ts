@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { createService, updateService, deleteService, uploadServiceImage } from "./useApi"
+import { createService, updateService, deleteService, uploadServiceImage, setServiceEmployees } from "./useApi"
 import type { components } from "../lib/api-types"
 
 type ServiceInput = components["schemas"]["handler.ServiceInput"]
@@ -37,5 +37,16 @@ export function useServiceMutations(businessId: string, slug: string) {
     },
   })
 
-  return { create, update, remove, uploadImage }
+  const setEmployees = useMutation({
+    mutationFn: (vars: { serviceId: string; businessUserIds: string[] }) =>
+      setServiceEmployees(businessId, vars.serviceId, vars.businessUserIds),
+    onSuccess: (_data, vars) => {
+      queryClient.invalidateQueries({ queryKey: ["services", slug] })
+      queryClient.invalidateQueries({
+        queryKey: ["admin-service-employees", businessId, vars.serviceId],
+      })
+    },
+  })
+
+  return { create, update, remove, uploadImage, setEmployees }
 }

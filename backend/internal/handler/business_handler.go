@@ -17,6 +17,7 @@ import (
 type BusinessHandler struct {
 	businessStore       *store.BusinessStore
 	buStore             *store.BusinessUserStore
+	userStore           *store.UserStore
 	serviceStore        *store.ServiceStore
 	pageStore           *store.PageStore
 	sectionStore        *store.SectionStore
@@ -28,6 +29,7 @@ type BusinessHandler struct {
 func NewBusinessHandler(
 	businessStore *store.BusinessStore,
 	buStore *store.BusinessUserStore,
+	userStore *store.UserStore,
 	serviceStore *store.ServiceStore,
 	pageStore *store.PageStore,
 	sectionStore *store.SectionStore,
@@ -38,6 +40,7 @@ func NewBusinessHandler(
 	return &BusinessHandler{
 		businessStore:        businessStore,
 		buStore:              buStore,
+		userStore:            userStore,
 		serviceStore:         serviceStore,
 		pageStore:            pageStore,
 		sectionStore:         sectionStore,
@@ -184,6 +187,7 @@ func (h *BusinessHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 	users := dto.BusinessUsersFromModels(employees)
 	for i := range users {
 		users[i].Avatar = h.avatarURL(r.Context(), employees[i].ID)
+		users[i].DisplayName = h.displayName(r.Context(), employees[i])
 	}
 
 	writeJSON(w, http.StatusOK, users)
@@ -191,20 +195,47 @@ func (h *BusinessHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 
 func (h *BusinessHandler) avatarURL(ctx context.Context, businessUserID uuid.UUID) string {
 	links, err := h.imageLinkStore.ListByEntity(ctx, "business_user", businessUserID)
+	if err == nil {
+		for _, l := range links {
+			if l.Purpose == "avatar" {
+				return "/api/images/" + l.ImageID.String()
+			}
+		}
+	}
+
+	if h.userStore == nil {
+		return ""
+	}
+	bu, err := h.buStore.GetByID(ctx, businessUserID)
 	if err != nil {
 		return ""
 	}
-	for _, l := range links {
-		if l.Purpose == "avatar" {
-			return "/api/images/" + l.ImageID.String()
-		}
+	u, err := h.userStore.GetByID(ctx, bu.UserID)
+	if err != nil || u.AvatarID == nil {
+		return ""
 	}
-	return ""
+	return "/api/images/" + u.AvatarID.String()
+}
+
+// displayName returns a business user's display name, falling back to their
+// account profile name when the salon row has none (e.g. the owner).
+func (h *BusinessHandler) displayName(ctx context.Context, bu models.BusinessUser) string {
+	if bu.DisplayName != "" {
+		return bu.DisplayName
+	}
+	if h.userStore == nil {
+		return ""
+	}
+	u, err := h.userStore.GetByID(ctx, bu.UserID)
+	if err != nil {
+		return ""
+	}
+	return u.DisplayName
 }
 
 // GetServiceEmployees godoc
-// @Summary      List employees who offer a service
-// @Description  Returns active employees assigned to the given service.
+// @Summary      List staff who offer a service
+// @Description  Returns active business users (owner and employees) assigned to the given service.
 // @Tags         public
 // @Produce      json
 // @Param        slug path string true "Business slug"
@@ -239,7 +270,7 @@ func (h *BusinessHandler) GetServiceEmployees(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	employees, err := h.buStore.ListEmployeesByBusiness(r.Context(), b.ID)
+	members, err := h.buStore.ListByBusiness(r.Context(), b.ID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list employees")
 		return
@@ -250,16 +281,17 @@ func (h *BusinessHandler) GetServiceEmployees(w http.ResponseWriter, r *http.Req
 		capable[l.BusinessUserID] = true
 	}
 
-	result := make([]models.BusinessUser, 0, len(employees))
-	for _, emp := range employees {
-		if capable[emp.ID] {
-			result = append(result, emp)
+	result := make([]models.BusinessUser, 0, len(members))
+	for _, m := range members {
+		if m.Active && capable[m.ID] {
+			result = append(result, m)
 		}
 	}
 
 	users := dto.BusinessUsersFromModels(result)
 	for i := range users {
 		users[i].Avatar = h.avatarURL(r.Context(), result[i].ID)
+		users[i].DisplayName = h.displayName(r.Context(), result[i])
 	}
 
 	writeJSON(w, http.StatusOK, users)

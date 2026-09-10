@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate, useSearchParams } from "react-router-dom"
+import { Navigate, useNavigate, useSearchParams } from "react-router-dom"
 import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
@@ -10,8 +10,9 @@ import { useTimeSlotStream } from "../hooks/useTimeSlotStream"
 import { useAuthStore } from "../stores/authStore"
 import { useI18n } from "../lib/i18n"
 import { salonPath } from "../lib/salonDomain"
+import { resolveImageUrl } from "../lib/images"
 import { Button } from "../components/ui/button"
-import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card"
 import { Calendar } from "../components/ui/calendar"
 import { BarberAvailabilityCard } from "../components/booking/BarberAvailabilityCard"
 import { ArrowLeft, CheckCircle2 } from "lucide-react"
@@ -52,24 +53,25 @@ export function BookingPage() {
   useTimeSlotStream(slug)
 
   const urlService = searchParams.get("service")
+  const effectiveServiceId = selectedServiceId ?? urlService
+
   useEffect(() => {
     if (urlService && urlService !== selectedServiceId) {
       setService(urlService)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [urlService])
+  }, [urlService, selectedServiceId, setService])
 
-  const { data: services } = useServices(slug)
+  const { data: services, isLoading: servicesLoading } = useServices(slug)
   const { data: barbers, isLoading: barbersLoading } = useServiceEmployees(
     slug,
-    selectedServiceId ?? "",
+    effectiveServiceId ?? "",
   )
 
   const [booking, setBooking] = useState(false)
   const [error, setError] = useState("")
   const [bookedTime, setBookedTime] = useState<string | null>(null)
 
-  const service = (services ?? []).find((s) => s.id === selectedServiceId)
+  const service = (services ?? []).find((s) => s.id === effectiveServiceId)
   const barber = (barbers ?? []).find((b) => b.id === selectedEmployeeId)
 
   const handleBook = async () => {
@@ -77,14 +79,14 @@ export function BookingPage() {
       login()
       return
     }
-    if (!selectedSlot || !selectedEmployeeId || !selectedServiceId) return
+    if (!selectedSlot || !selectedEmployeeId || !effectiveServiceId) return
 
     setBooking(true)
     setError("")
     try {
       await createAppointment({
         business_id: salon!.business.id,
-        service_id: selectedServiceId,
+        service_id: effectiveServiceId,
         business_user_id: selectedEmployeeId,
         start_time: selectedSlot.start_time,
       })
@@ -104,7 +106,7 @@ export function BookingPage() {
 
   if (bookedTime) {
     return (
-    <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
+      <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
         <main className="max-w-4xl mx-auto px-4 py-8">
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
@@ -126,45 +128,82 @@ export function BookingPage() {
     )
   }
 
+  // Booking requires a service: arriving without one redirects to the services
+  // page to pick a service first.
+  if (!effectiveServiceId) {
+    return <Navigate to={salonPath(slug, "/services")} replace />
+  }
+
+  if (servicesLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <p className="text-muted-foreground">Loading…</p>
+      </div>
+    )
+  }
+
+  if (!service) {
+    return <Navigate to={salonPath(slug, "/services")} replace />
+  }
+
+  const serviceImage = service.picture_id
+    ? resolveImageUrl(`/api/images/${service.picture_id}`)
+    : undefined
+
   return (
     <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
-          <Button variant="ghost" onClick={() => navigate(salonPath(slug))}>
+          <Button variant="ghost" onClick={() => navigate(salonPath(slug, "/services"))}>
             <ArrowLeft className="size-4" /> Back
           </Button>
           <h1 className="text-lg font-semibold text-foreground">Booking</h1>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        {!service ? (
-          <Card>
-            <CardHeader>
-              <CardTitle>{t("booking.step.service")}</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {(services ?? []).filter((s) => s.active).map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => setService(s.id)}
-                  className="flex w-full items-center justify-between rounded-xl border border-border bg-muted/40 px-4 py-3 text-left transition-colors hover:bg-muted"
-                >
-                  <div>
-                    <span className="font-medium text-foreground">{s.name}</span>
-                    <span className="ml-3 text-sm text-muted-foreground">
-                      {s.duration_minutes} min
+      <main className="max-w-4xl mx-auto px-4 py-8">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+          <aside className="space-y-4">
+            <Card>
+              {serviceImage && (
+                <img
+                  src={serviceImage}
+                  alt={service.name}
+                  className="h-48 w-full rounded-t-2xl object-cover"
+                />
+              )}
+              <CardHeader>
+                <CardTitle>{service.name}</CardTitle>
+                {service.description && (
+                  <CardDescription>{service.description}</CardDescription>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">
+                    {t("booking.confirm.service")}
+                  </span>
+                  <span className="font-medium text-foreground">{service.name}</span>
+                </div>
+                <div className="flex justify-between gap-4">
+                  <span className="text-muted-foreground">Duration</span>
+                  <span className="font-medium text-foreground">
+                    {service.duration_minutes} min
+                  </span>
+                </div>
+                {service.price != null && service.price > 0 && (
+                  <div className="flex justify-between gap-4">
+                    <span className="text-muted-foreground">Price</span>
+                    <span className="font-medium text-foreground">
+                      ${service.price.toFixed(2)}
                     </span>
                   </div>
-                  {s.price != null && s.price > 0 && (
-                    <span className="font-medium">${s.price.toFixed(2)}</span>
-                  )}
-                </button>
-              ))}
-            </CardContent>
-          </Card>
-        ) : (
-          <>
+                )}
+              </CardContent>
+            </Card>
+          </aside>
+
+          <div className="space-y-4">
             <Card>
               <CardHeader>
                 <CardTitle>{t("booking.step.date")}</CardTitle>
@@ -195,7 +234,7 @@ export function BookingPage() {
                         key={b.id}
                         barber={b}
                         slug={slug}
-                        serviceId={selectedServiceId!}
+                        serviceId={effectiveServiceId}
                         date={selectedDate}
                         selectedStartTime={selectedSlot?.start_time}
                         onSelectSlot={(employeeId, slot) => selectSlot(employeeId, slot)}
@@ -232,8 +271,8 @@ export function BookingPage() {
                 </CardContent>
               </Card>
             )}
-          </>
-        )}
+          </div>
+        </div>
       </main>
     </div>
   )

@@ -19,6 +19,7 @@ const URL_ADMIN_OVERRIDES_DELETE = "/api/admin/business/{businessID}/employees/{
 const URL_ADMIN_SERVICES = "/api/admin/business/{businessID}/services" as const
 const URL_ADMIN_SERVICES_DELETE = "/api/admin/business/{businessID}/services/{serviceID}" as const
 const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serviceID}/image" as const
+const URL_ADMIN_SERVICE_EMPLOYEES = "/api/admin/business/{businessID}/services/{serviceID}/employees" as const
 const URL_ADMIN_INVITATIONS = "/api/admin/business/{businessID}/invitations" as const
 const URL_MY_UNAVAILABILITY = "/api/admin/business/{businessID}/me/unavailability" as const
 const URL_MY_UNAVAILABILITY_DELETE = "/api/admin/business/{businessID}/me/unavailability/{unavailabilityID}" as const
@@ -211,6 +212,31 @@ export async function uploadServiceImage(businessId: string, serviceId: string, 
   const { data } = await POST(URL_ADMIN_SERVICE_IMAGE, {
     params: { path: { businessID: businessId, serviceID: serviceId } },
     body: formData as any,
+  })
+  return data
+}
+
+export function useServiceEmployeesAdmin(businessId: string, serviceId: string) {
+  return useQuery({
+    queryKey: ["admin-service-employees", businessId, serviceId],
+    queryFn: async () => {
+      const { data } = await GET(URL_ADMIN_SERVICE_EMPLOYEES, {
+        params: { path: { businessID: businessId, serviceID: serviceId } },
+      })
+      return data ?? []
+    },
+    enabled: !!(businessId && serviceId),
+  })
+}
+
+export async function setServiceEmployees(
+  businessId: string,
+  serviceId: string,
+  businessUserIds: string[],
+) {
+  const { data } = await PUT(URL_ADMIN_SERVICE_EMPLOYEES, {
+    params: { path: { businessID: businessId, serviceID: serviceId } },
+    body: { business_user_ids: businessUserIds },
   })
   return data
 }

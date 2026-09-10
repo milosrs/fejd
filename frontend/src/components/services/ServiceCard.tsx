@@ -6,20 +6,24 @@ import type { Service } from "../../hooks/useApi"
 
 export function ServiceCard({
   service,
+  imageOverride,
   onBook,
   note,
   onEdit,
   onDelete,
 }: {
   service: Service
+  imageOverride?: string
   onBook: (serviceId: string) => void
   note?: string
   onEdit?: () => void
   onDelete?: () => void
 }) {
-  const imageUrl = service.picture_id
-    ? resolveImageUrl(`/api/images/${service.picture_id}`)
-    : undefined
+  const imageUrl =
+    imageOverride ??
+    (service.picture_id
+      ? resolveImageUrl(`/api/images/${service.picture_id}`)
+      : undefined)
 
   const editing = Boolean(onEdit && onDelete)
 

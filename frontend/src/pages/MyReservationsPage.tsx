@@ -5,6 +5,8 @@ import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "../stores/authStore"
 import { useMyReservations, cancelReservation, markNoShow, type Appointment } from "../hooks/useApi"
+import { useI18n } from "../lib/i18n"
+import { formatCancellationReason } from "../lib/cancellation"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
@@ -53,6 +55,7 @@ export function MyReservationsPage() {
 
   const [date, setDate] = useState(() => today(getLocalTimeZone()).toString())
   const { data: reservations, isLoading } = useMyReservations(businessId!, date)
+  const { t } = useI18n()
 
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
   const [reason, setReason] = useState("")
@@ -156,7 +159,7 @@ export function MyReservationsPage() {
                     </div>
                     {r.cancellation_reason && (
                       <div className="text-xs text-muted-foreground mt-1">
-                        Reason: {r.cancellation_reason}
+                        Reason: {formatCancellationReason(r.cancellation_reason, t)}
                       </div>
                     )}
                   </div>

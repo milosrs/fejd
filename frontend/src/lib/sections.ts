@@ -17,6 +17,7 @@ export interface HeroContent {
 export interface AboutContent {
   heading?: string
   body?: string
+  address?: string
 }
 
 export interface GalleryContent {

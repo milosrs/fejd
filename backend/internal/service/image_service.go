@@ -311,6 +311,29 @@ func (s *ImageService) OwnsAvatarLink(ctx context.Context, userID string, links 
 	return uuid.Nil, false
 }
 
+// BusinessUserAvatarURL returns the URL path of a business user's avatar,
+// falling back to their account profile picture when they have no salon avatar.
+func (s *ImageService) BusinessUserAvatarURL(ctx context.Context, businessUserID uuid.UUID) string {
+	links, err := s.links.ListByEntity(ctx, "business_user", businessUserID)
+	if err == nil {
+		for _, l := range links {
+			if l.Purpose == "avatar" {
+				return "/api/images/" + l.ImageID.String()
+			}
+		}
+	}
+
+	bu, err := s.businessUsers.GetByID(ctx, businessUserID)
+	if err != nil {
+		return ""
+	}
+	u, err := s.users.GetByID(ctx, bu.UserID)
+	if err != nil || u.AvatarID == nil {
+		return ""
+	}
+	return "/api/images/" + u.AvatarID.String()
+}
+
 // UploadUserAvatar stores a profile picture for a user and points
 // users.avatar_id at it, replacing any previous avatar. The image carries no
 // business_id (a profile picture belongs to the user, not a salon) and no

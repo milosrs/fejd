@@ -36,6 +36,5 @@ export const Edit: Story = {
     initial: existing,
     onClose: () => {},
     onSubmit: () => {},
-    onUploadImage: () => {},
   },
 }
