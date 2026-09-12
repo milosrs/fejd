@@ -87,42 +87,42 @@ export function BarberForm({
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">
-            {initial ? "Barber avatar" : "Add barber"}
+            {initial ? t("barberForm.avatarTitle") : t("barberForm.addTitle")}
           </h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Close
+            {t("common.close")}
           </Button>
         </div>
 
         {initial ? (
           <div className="space-y-4">
-            <Field label="Name">
+            <Field label={t("common.name")}>
               <Input value={initial.display_name || initial.user_id} disabled />
             </Field>
             {onUploadAvatar && (
-              <Field label="Avatar">
+              <Field label={t("barberForm.fields.avatar")}>
                 <ImageUploadButton
                   onPicked={onUploadAvatar}
-                  label="Upload avatar"
+                  label={t("barberForm.uploadAvatar")}
                   uploading={uploading}
                 />
               </Field>
             )}
             <div className="flex justify-end">
-              <Button onClick={onClose}>Done</Button>
+              <Button onClick={onClose}>{t("common.done")}</Button>
             </div>
           </div>
         ) : (
           <>
             <div className="space-y-4">
-              <Field label="Name" error={showNameError ? t("barberForm.nameRequired") : undefined}>
+              <Field label={t("common.name")} error={showNameError ? t("barberForm.nameRequired") : undefined}>
                 <Input
                   value={name}
                   onChange={(e) => setName(e.target.value)}
                   onBlur={() => setTouched((prev) => ({ ...prev, name: true }))}
                 />
               </Field>
-              <Field label="Email" error={showEmailError ? emailError : undefined}>
+              <Field label={t("common.email")} error={showEmailError ? emailError : undefined}>
                 <Input
                   type="email"
                   value={email}
@@ -130,9 +130,9 @@ export function BarberForm({
                   onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
                 />
               </Field>
-              <Field label="Services">
+              <Field label={t("barberForm.fields.services")}>
                 {services.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No services yet.</p>
+                  <p className="text-sm text-muted-foreground">{t("barberForm.noServices")}</p>
                 ) : (
                   <div className="max-h-40 space-y-2 overflow-y-auto rounded-xl border border-border p-3">
                     {services.map((s) => (
@@ -151,10 +151,10 @@ export function BarberForm({
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={onClose}>
-                Cancel
+                {t("common.cancel")}
               </Button>
               <Button isDisabled={saving} onClick={handleSubmit}>
-                {saving ? "Inviting…" : "Invite"}
+                {saving ? t("barberForm.inviting") : t("barbers.invite")}
               </Button>
             </div>
           </>

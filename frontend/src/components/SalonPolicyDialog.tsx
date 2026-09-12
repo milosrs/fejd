@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react"
 import { useQueryClient } from "@tanstack/react-query"
 import { useSalonPolicy, updateSalonPolicy } from "../hooks/useApi"
+import { useI18n } from "../lib/i18n"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
-
-const DAYS = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"]
 
 interface HourRow {
   day_of_week: number
@@ -14,7 +13,7 @@ interface HourRow {
 }
 
 const defaultHours = (): HourRow[] =>
-  DAYS.map((_, i) => ({ day_of_week: i, start_time: "09:00", end_time: "17:00" }))
+  Array.from({ length: 7 }, (_, i) => ({ day_of_week: i, start_time: "09:00", end_time: "17:00" }))
 
 // getLocalTimeZone returns the browser's IANA timezone (e.g. "Europe/Stockholm").
 function getLocalTimeZone(): string {
@@ -47,7 +46,18 @@ export function SalonPolicyDialog({
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
+  const { t } = useI18n()
   const { data: policy } = useSalonPolicy(businessId)
+
+  const days = [
+    t("days.sunday"),
+    t("days.monday"),
+    t("days.tuesday"),
+    t("days.wednesday"),
+    t("days.thursday"),
+    t("days.friday"),
+    t("days.saturday"),
+  ]
 
   const [leadHours, setLeadHours] = useState("")
   const [noShowHours, setNoShowHours] = useState("")
@@ -85,15 +95,15 @@ export function SalonPolicyDialog({
     const noShow = parseInt(noShowHours, 10)
     const interval = parseInt(slotInterval, 10)
     if (Number.isNaN(lead) || lead < 0) {
-      setError("Cancellation notice must be zero or greater.")
+      setError(t("policy.cancellationInvalid"))
       return
     }
     if (Number.isNaN(noShow) || noShow < 0) {
-      setError("No-show grace must be zero or greater.")
+      setError(t("policy.noShowInvalid"))
       return
     }
     if (Number.isNaN(interval) || interval <= 0) {
-      setError("Slot interval must be greater than zero.")
+      setError(t("policy.intervalInvalid"))
       return
     }
     setSaving(true)
@@ -110,7 +120,7 @@ export function SalonPolicyDialog({
       await queryClient.invalidateQueries({ queryKey: ["salon-policy", businessId] })
       onClose()
     } catch {
-      setError("Failed to save policy.")
+      setError(t("policy.failed"))
     } finally {
       setSaving(false)
     }
@@ -125,14 +135,14 @@ export function SalonPolicyDialog({
         className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl border border-border bg-background p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold text-foreground">Salon policy</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t("policy.title")}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Booking rules, time slots and default working hours.
+          {t("policy.help")}
         </p>
 
         <div className="mt-4 space-y-4">
           <div className="space-y-1">
-            <Label htmlFor="cancellation-lead-hours">Cancellation notice (hours before)</Label>
+            <Label htmlFor="cancellation-lead-hours">{t("policy.cancellationNotice")}</Label>
             <Input
               id="cancellation-lead-hours"
               type="number"
@@ -142,7 +152,7 @@ export function SalonPolicyDialog({
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="no-show-after-hours">No-show grace (hours after)</Label>
+            <Label htmlFor="no-show-after-hours">{t("policy.noShowGrace")}</Label>
             <Input
               id="no-show-after-hours"
               type="number"
@@ -152,7 +162,7 @@ export function SalonPolicyDialog({
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="slot-interval">Time slot interval (minutes)</Label>
+            <Label htmlFor="slot-interval">{t("policy.slotInterval")}</Label>
             <Input
               id="slot-interval"
               type="number"
@@ -164,9 +174,9 @@ export function SalonPolicyDialog({
           </div>
 
           <div className="space-y-2">
-            <Label>Working hours</Label>
+            <Label>{t("policy.workingHours")}</Label>
             <div className="space-y-2 rounded-xl border border-border p-3">
-              {DAYS.map((day, i) => (
+              {days.map((day, i) => (
                 <div key={day} className="flex items-center gap-2">
                   <span className="w-24 text-sm text-muted-foreground">{day}</span>
                   <Input
@@ -175,7 +185,7 @@ export function SalonPolicyDialog({
                     value={hours[i]?.start_time || ""}
                     onChange={(e) => updateRow(i, "start_time", e.target.value)}
                   />
-                  <span className="text-muted-foreground">to</span>
+                  <span className="text-muted-foreground">{t("admin.schedule.to")}</span>
                   <Input
                     type="time"
                     className="w-28"
@@ -191,10 +201,10 @@ export function SalonPolicyDialog({
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} isDisabled={saving}>
-            {saving ? "Saving…" : "Save policy"}
+            {saving ? t("common.saving") : t("policy.savePolicy")}
           </Button>
         </div>
       </div>

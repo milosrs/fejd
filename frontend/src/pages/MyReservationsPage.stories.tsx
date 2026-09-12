@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite"
 import { MyReservationsPage } from "./MyReservationsPage"
 import {
   StaffFrame,
-  mockReservations,
+  mockMonthReservations,
   staffOwnerMe,
   staffEmployeeMe,
 } from "../stories/staff"
@@ -20,7 +20,7 @@ type Story = StoryObj<typeof MyReservationsPage>
 
 export const OwnerWithReservations: Story = {
   render: () => (
-    <StaffFrame path="my-reservations" me={staffOwnerMe} reservations={mockReservations}>
+    <StaffFrame path="my-reservations" me={staffOwnerMe} reservations={mockMonthReservations}>
       <MyReservationsPage />
     </StaffFrame>
   ),
@@ -28,7 +28,7 @@ export const OwnerWithReservations: Story = {
 
 export const EmployeeWithReservations: Story = {
   render: () => (
-    <StaffFrame path="my-reservations" me={staffEmployeeMe} reservations={mockReservations}>
+    <StaffFrame path="my-reservations" me={staffEmployeeMe} reservations={mockMonthReservations}>
       <MyReservationsPage />
     </StaffFrame>
   ),

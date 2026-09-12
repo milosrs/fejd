@@ -8,11 +8,36 @@ interface I18nContextValue {
   locale: string
   setLocale: (locale: string) => void
   ready: boolean
-  t: (key: string) => string
+  t: (key: string, params?: Record<string, string | number>) => string
   pickLocalized: <T>(localized: Record<string, T> | undefined) => T | undefined
 }
 
 const I18nContext = createContext<I18nContextValue | null>(null)
+
+function interpolate(
+  value: string,
+  params?: Record<string, string | number>,
+): string {
+  if (!params) return value
+  let out = value
+  for (const [k, v] of Object.entries(params)) {
+    out = out.split(`{${k}}`).join(String(v))
+  }
+  return out
+}
+
+const fallbackI18n: I18nContextValue = {
+  locale: DEFAULT_LOCALE,
+  setLocale: () => {},
+  ready: true,
+  t: (key, params) => interpolate(key, params),
+  pickLocalized: (localized) => {
+    if (!localized) return undefined
+    if (DEFAULT_LOCALE in localized) return localized[DEFAULT_LOCALE]
+    const first = Object.keys(localized)[0]
+    return first ? localized[first] : undefined
+  },
+}
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [locale, setLocale] = useState(DEFAULT_LOCALE)
@@ -33,7 +58,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       locale,
       setLocale,
       ready: translations != null,
-      t: (key) => translations?.[key] ?? key,
+      t: (key, params) => interpolate(translations?.[key] ?? key, params),
       pickLocalized: (localized) => {
         if (!localized) return undefined
         if (locale in localized) return localized[locale]
@@ -50,8 +75,5 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
 export function useI18n() {
   const ctx = useContext(I18nContext)
-  if (!ctx) {
-    throw new Error("useI18n must be used within an I18nProvider")
-  }
-  return ctx
+  return ctx ?? fallbackI18n
 }

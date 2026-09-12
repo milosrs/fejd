@@ -3,16 +3,18 @@ import { Menu, MenuItem, MenuTrigger, Popover } from "react-aria-components"
 
 import { Button } from "#components/ui/button"
 import { useTheme } from "#components/theme-provider"
+import { useI18n } from "../lib/i18n"
 
 const menuItemClassName =
     "flex w-full cursor-default items-center gap-2 rounded-lg px-2 py-1.5 text-sm outline-none select-none data-focused:bg-accent data-focused:text-accent-foreground"
 
 export function ModeToggle() {
     const { setTheme } = useTheme()
+    const { t } = useI18n()
 
     return (
         <MenuTrigger>
-            <Button variant="outline" size="icon" aria-label="Toggle theme">
+            <Button variant="outline" size="icon" aria-label={t("theme.toggle")}>
                 <Sun className="size-5 scale-100 rotate-0 transition-all dark:scale-0 dark:-rotate-90" />
                 <Moon className="absolute size-5 scale-0 rotate-90 transition-all dark:scale-100 dark:rotate-0" />
             </Button>
@@ -22,13 +24,13 @@ export function ModeToggle() {
                     onAction={(key) => setTheme(key as "light" | "dark" | "system")}
                 >
                     <MenuItem id="light" className={menuItemClassName}>
-                        Light
+                        {t("theme.light")}
                     </MenuItem>
                     <MenuItem id="dark" className={menuItemClassName}>
-                        Dark
+                        {t("theme.dark")}
                     </MenuItem>
                     <MenuItem id="system" className={menuItemClassName}>
-                        System
+                        {t("theme.system")}
                     </MenuItem>
                 </Menu>
             </Popover>

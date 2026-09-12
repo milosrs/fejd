@@ -2,6 +2,7 @@ import { Clock, Pencil, Trash2 } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../ui/card"
 import { Button } from "../ui/button"
 import { resolveImageUrl } from "../../lib/images"
+import { useI18n } from "../../lib/i18n"
 import type { Service } from "../../hooks/useApi"
 
 export function ServiceCard({
@@ -19,6 +20,7 @@ export function ServiceCard({
   onEdit?: () => void
   onDelete?: () => void
 }) {
+  const { t } = useI18n()
   const imageUrl =
     imageOverride ??
     (service.picture_id
@@ -38,7 +40,7 @@ export function ServiceCard({
           <CardDescription className="line-clamp-2">{service.description}</CardDescription>
         )}
       </CardHeader>
-      <CardContent className="flex items-center justify-between">
+      <CardContent className="mt-auto flex items-center justify-between py-2">
         <span className="flex items-center gap-1 text-muted-foreground">
           <Clock className="size-3" />
           {service.duration_minutes} min
@@ -51,15 +53,15 @@ export function ServiceCard({
         {editing ? (
           <div className="flex gap-2">
             <Button variant="outline" className="flex-1" onClick={onEdit}>
-              <Pencil className="size-3" /> Edit
+              <Pencil className="size-3" /> {t("common.edit")}
             </Button>
             <Button variant="destructive" className="flex-1" onClick={onDelete}>
-              <Trash2 className="size-3" /> Delete
+              <Trash2 className="size-3" /> {t("common.delete")}
             </Button>
           </div>
         ) : (
           <Button className="w-full" onClick={() => onBook(service.id)}>
-            Book now
+            {t("services.bookNow")}
           </Button>
         )}
         {note && (

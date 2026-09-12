@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { renameBusiness } from "../hooks/useApi"
 import { salonPath } from "../lib/salonDomain"
+import { useI18n } from "../lib/i18n"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
@@ -20,6 +21,7 @@ export function RenameSalonDialog({
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const { t } = useI18n()
   const [name, setName] = useState(currentName)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -27,7 +29,7 @@ export function RenameSalonDialog({
   const handleSave = async () => {
     const trimmed = name.trim()
     if (!trimmed) {
-      setError("Name is required.")
+      setError(t("rename.nameRequired"))
       return
     }
     setSaving(true)
@@ -42,7 +44,7 @@ export function RenameSalonDialog({
         navigate(salonPath(business.slug), { replace: true })
       }
     } catch {
-      setError("Failed to rename salon.")
+      setError(t("rename.failed"))
     } finally {
       setSaving(false)
     }
@@ -57,28 +59,28 @@ export function RenameSalonDialog({
         className="w-full max-w-sm rounded-2xl border border-border bg-background p-6"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-lg font-semibold text-foreground">Rename salon</h3>
+        <h3 className="text-lg font-semibold text-foreground">{t("rename.title")}</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Update the name shown to your customers.
+          {t("rename.help")}
         </p>
 
         <div className="mt-4 space-y-1">
-          <Label htmlFor="salon-name">Salon name</Label>
+          <Label htmlFor="salon-name">{t("createSalon.nameLabel")}</Label>
           <Input
             id="salon-name"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Salon name"
+            placeholder={t("rename.namePlaceholder")}
           />
         </div>
 
         {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
         <div className="mt-6 flex justify-end gap-2">
           <Button variant="outline" onClick={onClose}>
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button onClick={handleSave} isDisabled={saving || !name.trim()}>
-            {saving ? "Saving…" : "Save name"}
+            {saving ? t("common.saving") : t("rename.saveName")}
           </Button>
         </div>
       </div>

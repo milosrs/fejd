@@ -2,6 +2,7 @@ import { useEffect, useState } from "react"
 import { ChevronLeft, ChevronRight, X } from "lucide-react"
 import type { GalleryContent } from "../../lib/sections"
 import { resolveImageUrl } from "../../lib/images"
+import { useI18n } from "../../lib/i18n"
 
 export function GallerySection({
   content,
@@ -10,6 +11,7 @@ export function GallerySection({
   content: GalleryContent
   contained?: boolean
 }) {
+  const { t } = useI18n()
   const images = (content.image_urls ?? [])
     .map(resolveImageUrl)
     .filter((url): url is string => Boolean(url))
@@ -72,7 +74,7 @@ export function GallerySection({
         >
           <button
             type="button"
-            aria-label="Close"
+            aria-label={t("common.close")}
             onClick={() => setActiveIndex(null)}
             className="absolute right-4 top-[calc(1rem+env(safe-area-inset-top))] z-10 flex h-10 w-10 items-center justify-center rounded-full bg-black/60 text-white hover:bg-black/80"
           >
@@ -82,7 +84,7 @@ export function GallerySection({
           {images.length > 1 && (
             <button
               type="button"
-              aria-label="Previous image"
+              aria-label={t("gallery.prev")}
               onClick={(e) => {
                 e.stopPropagation()
                 step(-1)
@@ -103,7 +105,7 @@ export function GallerySection({
           {images.length > 1 && (
             <button
               type="button"
-              aria-label="Next image"
+              aria-label={t("gallery.next")}
               onClick={(e) => {
                 e.stopPropagation()
                 step(1)

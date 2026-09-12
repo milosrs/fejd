@@ -39,12 +39,12 @@ export function MyAppointmentsList({
     setMessage("")
     try {
       await cancelAppointment(cancelTarget.id, reason.trim())
-      setMessage("Appointment cancelled.")
+      setMessage(t("appointments.cancelled"))
       setCancelTarget(null)
       setReason("")
       await refresh()
     } catch {
-      setMessage("Failed to cancel appointment.")
+      setMessage(t("appointments.cancelFailed"))
     } finally {
       setCancelling(false)
     }
@@ -55,9 +55,9 @@ export function MyAppointmentsList({
   return (
     <>
       {isLoading ? (
-        <p className="text-muted-foreground">Loading...</p>
+        <p className="text-muted-foreground">{t("common.loading")}</p>
       ) : list.length === 0 ? (
-        <p className="text-muted-foreground">No appointments yet.</p>
+        <p className="text-muted-foreground">{t("appointments.empty")}</p>
       ) : (
         <div className="space-y-4">
           {list.map((apt: Appointment) => (
@@ -69,12 +69,14 @@ export function MyAppointmentsList({
               </CardHeader>
               <CardContent className="space-y-2">
                 <p className="text-sm text-muted-foreground">
-                  Duration: {Math.round((new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime()) / 60000)} min
-                  {" · "}Status: <span className={`font-medium ${apt.status === "confirmed" ? "text-green-600" : apt.status === "cancelled" ? "text-red-600" : "text-foreground"}`}>{apt.status}</span>
+                  {t("appointments.durationStatus", {
+                    duration: Math.round((new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime()) / 60000),
+                    status: t(`status.${apt.status}`),
+                  })}
                 </p>
                 {apt.cancellation_reason && (
                   <p className="text-xs text-muted-foreground">
-                    Reason: {formatCancellationReason(apt.cancellation_reason, t)}
+                    {t("appointments.reason", { reason: formatCancellationReason(apt.cancellation_reason, t) })}
                   </p>
                 )}
                 {(apt.status === "confirmed" || apt.status === "pending") && (
@@ -87,12 +89,12 @@ export function MyAppointmentsList({
                         setReason("")
                       }}
                     >
-                      Cancel
+                      {t("reservations.cancel")}
                     </Button>
                   ) : (
                     <p className="text-xs text-muted-foreground">
-                      Cancellation deadline has passed
-                      {apt.cancellation_lead_hours ? ` (${apt.cancellation_lead_hours}h notice required)` : ""}.
+                      {t("appointments.deadlinePassed")}
+                      {apt.cancellation_lead_hours ? ` (${t("appointments.noticeRequired", { hours: apt.cancellation_lead_hours })})` : ""}.
                     </p>
                   )
                 )}
@@ -116,24 +118,24 @@ export function MyAppointmentsList({
             className="w-full max-w-sm rounded-2xl border border-border bg-background p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-foreground">Cancel appointment</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t("appointments.cancelTitle")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
               {format(new Date(cancelTarget.start_time), "EEEE, MMMM d 'at' h:mm a")}
             </p>
             <div className="mt-4 space-y-1">
-              <Label>Reason (optional)</Label>
+              <Label>{t("appointments.reasonLabel")}</Label>
               <Textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Why are you cancelling?"
+                placeholder={t("appointments.reasonPlaceholder")}
               />
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setCancelTarget(null)}>
-                Back
+                {t("common.back")}
               </Button>
               <Button variant="destructive" onClick={handleCancel} isDisabled={cancelling}>
-                {cancelling ? "Cancelling…" : "Cancel appointment"}
+                {cancelling ? t("appointments.cancelling") : t("appointments.cancelTitle")}
               </Button>
             </div>
           </div>

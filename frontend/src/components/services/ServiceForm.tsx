@@ -7,6 +7,7 @@ import { Button } from "../ui/button"
 import { ImageUploadButton } from "../ui/image-upload-button"
 import { ServiceCard } from "./ServiceCard"
 import { resolveImageUrl } from "../../lib/images"
+import { useI18n } from "../../lib/i18n"
 import type { Employee, Service } from "../../hooks/useApi"
 
 export interface ServiceFormValues {
@@ -54,6 +55,7 @@ export function ServiceForm({
   const [previewUrl, setPreviewUrl] = useState<string>()
   const [employeeIds, setEmployeeIds] = useState<string[]>(assignedEmployeeIds)
   const employeesTouched = useRef(false)
+  const { t } = useI18n()
 
   useEffect(() => {
     if (!employeesTouched.current) {
@@ -98,7 +100,7 @@ export function ServiceForm({
     id: initial?.id ?? "",
     business_id: "",
     created_at: "",
-    name: name.trim() || "Service name",
+    name: name.trim() || t("services.previewName"),
     description: description.trim() || undefined,
     duration_minutes: parseInt(duration) || 0,
     price: price ? parseFloat(price) : undefined,
@@ -117,32 +119,32 @@ export function ServiceForm({
       >
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold text-foreground">
-            {initial ? "Edit service" : "Add service"}
+            {initial ? t("services.editTitle") : t("services.addTitle")}
           </h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Close
+            {t("common.close")}
           </Button>
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div className="space-y-4">
-            <Field label="Name">
+            <Field label={t("common.name")}>
               <Input value={name} onChange={(e) => setName(e.target.value)} />
             </Field>
-            <Field label="Description">
+            <Field label={t("services.fields.description")}>
               <Textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
               />
             </Field>
-            <Field label="Duration (minutes)">
+            <Field label={t("services.fields.duration")}>
               <Input
                 type="number"
                 value={duration}
                 onChange={(e) => setDuration(e.target.value)}
               />
             </Field>
-            <Field label="Price ($)">
+            <Field label={t("services.fields.price")}>
               <Input
                 type="number"
                 step="0.01"
@@ -151,10 +153,10 @@ export function ServiceForm({
               />
             </Field>
 
-            <Field label="Barbers">
+            <Field label={t("services.fields.barbers")}>
               {staff.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
-                  No barbers yet. Invite barbers from the Barbers page.
+                  {t("services.noBarbers")}
                 </p>
               ) : (
                 <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
@@ -162,7 +164,7 @@ export function ServiceForm({
                     const avatar = resolveImageUrl(employee.avatar)
                     const name =
                       employee.display_name?.trim() ||
-                      (employee.role === "admin" ? "You" : "Barber")
+                      (employee.role === "admin" ? t("services.you") : t("services.barber"))
                     return (
                       <label
                         key={employee.id}
@@ -195,7 +197,7 @@ export function ServiceForm({
               )}
             </Field>
 
-            <Field label="Picture">
+            <Field label={t("services.fields.picture")}>
               <div className="space-y-2">
                 {(previewUrl || existingImage) && (
                   <img
@@ -205,7 +207,7 @@ export function ServiceForm({
                   />
                 )}
                 <ImageUploadButton
-                  label={previewUrl || existingImage ? "Replace image" : "Add image"}
+                  label={previewUrl || existingImage ? t("services.replaceImage") : t("services.addImage")}
                   onPicked={setImageFile}
                 />
               </div>
@@ -214,7 +216,7 @@ export function ServiceForm({
 
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">
-              Live preview
+              {t("services.livePreview")}
             </p>
             <ServiceCard
               service={previewService}
@@ -232,10 +234,10 @@ export function ServiceForm({
           )}
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button isDisabled={saving || !name.trim()} onClick={handleSubmit}>
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("common.saving") : t("common.save")}
             </Button>
           </div>
         </div>

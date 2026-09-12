@@ -8,6 +8,7 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
+import { useI18n } from "../lib/i18n"
 
 function toRFC3339(date: string, time: string): string {
   return new Date(`${date}T${time}:00`).toISOString()
@@ -19,6 +20,7 @@ export function MySchedulePage() {
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
   const queryClient = useQueryClient()
+  const { t } = useI18n()
 
   const { data: blocks, isLoading } = useMyUnavailability(businessId!)
 
@@ -33,8 +35,8 @@ export function MySchedulePage() {
   if (!authenticated) {
     return (
       <div className="min-h-app bg-background flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Please log in to manage your schedule.</p>
-        <Button onClick={login}>Login</Button>
+        <p className="text-muted-foreground">{t("schedule.loginPrompt")}</p>
+        <Button onClick={login}>{t("common.logIn")}</Button>
       </div>
     )
   }
@@ -45,7 +47,7 @@ export function MySchedulePage() {
   const handleReserve = async () => {
     if (!date || !startTime || !endTime) return
     if (endTime <= startTime) {
-      setMessage("End time must be after start time.")
+      setMessage(t("schedule.endAfterStart"))
       setIsError(true)
       return
     }
@@ -58,12 +60,12 @@ export function MySchedulePage() {
         reason: reason || undefined,
       })
       setReason("")
-      setMessage("Time slot reserved.")
+      setMessage(t("schedule.reserved"))
       setIsError(false)
       await refresh()
     } catch (err) {
       const e = err as { body?: { error?: string } }
-      setMessage(e?.body?.error ?? "Failed to reserve. The slot may already be blocked.")
+      setMessage(e?.body?.error ?? t("schedule.reserveFailed"))
       setIsError(true)
     } finally {
       setSaving(false)
@@ -73,11 +75,11 @@ export function MySchedulePage() {
   const handleRemove = async (id: string) => {
     try {
       await deleteOwnSlot(businessId!, id)
-      setMessage("Blocked slot removed.")
+      setMessage(t("schedule.removed"))
       setIsError(false)
       await refresh()
     } catch {
-      setMessage("Failed to remove blocked slot.")
+      setMessage(t("schedule.removeFailed"))
       setIsError(true)
     }
   }
@@ -88,9 +90,9 @@ export function MySchedulePage() {
     <div className="min-h-app bg-background">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex gap-4 items-center">
-          <h1 className="text-xl font-semibold text-foreground">My Schedule</h1>
+          <h1 className="text-xl font-semibold text-foreground">{t("schedule.title")}</h1>
           <Button variant="outline" size="sm" onClick={() => navigate("/my/appointments")}>
-            My appointments
+            {t("nav.myAppointments")}
           </Button>
         </div>
       </header>
@@ -98,33 +100,32 @@ export function MySchedulePage() {
       <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Reserve a time slot</CardTitle>
+            <CardTitle>{t("schedule.reserveTitle")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Reserved slots are hidden from customers, so they cannot book during
-              this time.
+              {t("schedule.reserveHint")}
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1">
-                <Label>Date</Label>
+                <Label>{t("schedule.date")}</Label>
                 <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label>Start time</Label>
+                <Label>{t("schedule.startTime")}</Label>
                 <Input type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
               </div>
               <div className="space-y-1">
-                <Label>End time</Label>
+                <Label>{t("schedule.endTime")}</Label>
                 <Input type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
               </div>
             </div>
             <div className="space-y-1">
-              <Label>Reason (optional)</Label>
+              <Label>{t("schedule.reasonOptional")}</Label>
               <Input
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="e.g. urgent errand"
+                placeholder={t("schedule.reasonPlaceholder")}
               />
             </div>
             {message && (
@@ -133,20 +134,20 @@ export function MySchedulePage() {
               </p>
             )}
             <Button onClick={handleReserve} isDisabled={saving} className="w-full">
-              {saving ? "Reserving..." : "Reserve slot"}
+              {saving ? t("schedule.reserving") : t("schedule.reserveSlot")}
             </Button>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader>
-            <CardTitle>Reserved time slots</CardTitle>
+            <CardTitle>{t("schedule.reservedSlots")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {isLoading ? (
-              <p className="text-muted-foreground">Loading…</p>
+              <p className="text-muted-foreground">{t("common.loading")}</p>
             ) : upcoming.length === 0 ? (
-              <p className="text-muted-foreground">No reserved time slots.</p>
+              <p className="text-muted-foreground">{t("schedule.noReserved")}</p>
             ) : (
               upcoming.map((b) => (
                 <div key={b.id} className="flex items-center justify-between p-3 bg-muted rounded-md">
@@ -160,12 +161,12 @@ export function MySchedulePage() {
                     {b.reason && <span className="text-muted-foreground ml-2">({b.reason})</span>}
                     {b.status === "pending" && (
                       <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/15 px-2 py-0.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
-                        awaiting approval
+                        {t("schedule.awaitingApproval")}
                       </span>
                     )}
                   </div>
                   <Button variant="destructive" size="sm" onClick={() => handleRemove(b.id)}>
-                    Remove
+                    {t("common.remove")}
                   </Button>
                 </div>
               ))

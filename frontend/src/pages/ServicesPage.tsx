@@ -98,7 +98,7 @@ export function ServicesPage() {
       setForm(null)
     } catch (err) {
       const e = err as unknown as { body?: { error?: string } }
-      setFormError(e?.body?.error ?? "Failed to save service.")
+      setFormError(e?.body?.error ?? t("services.saveError"))
     }
   }
 
@@ -116,7 +116,7 @@ export function ServicesPage() {
       },
       onError: (err) => {
         const e = err as unknown as { body?: { error?: string } }
-        setDeleteError(e?.body?.error ?? "Failed to delete service.")
+        setDeleteError(e?.body?.error ?? t("services.deleteError"))
       },
     })
   }
@@ -124,10 +124,10 @@ export function ServicesPage() {
   return (
     <section className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-xl font-semibold text-foreground">Services</h2>
+        <h2 className="text-xl font-semibold text-foreground">{t("services.title")}</h2>
         {editingOn && (
           <Button size="sm" onClick={() => openForm({ mode: "create" })}>
-            <Plus className="size-3" /> Add service
+            <Plus className="size-3" /> {t("services.add")}
           </Button>
         )}
       </div>
@@ -140,11 +140,11 @@ export function ServicesPage() {
         </div>
       ) : isError ? (
         <p className="py-12 text-center text-muted-foreground">
-          Couldn't load services. Please try again.
+          {t("services.loadError")}
         </p>
       ) : services.length === 0 ? (
         <p className="py-12 text-center text-muted-foreground">
-          No services available at this time.
+          {t("services.empty")}
         </p>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3">
@@ -181,11 +181,13 @@ export function ServicesPage() {
 
       <ConfirmDialog
         open={deleting != null}
-        title="Delete service"
+        title={t("services.deleteTitle")}
         description={
           deleteError ||
-          (deleting ? `Delete "${deleting.name}"? This can't be undone.` : undefined)
+          (deleting ? t("services.deleteConfirm", { name: deleting.name }) : undefined)
         }
+        confirmLabel={t("common.delete")}
+        cancelLabel={t("common.cancel")}
         onConfirm={handleDelete}
         onCancel={() => {
           setDeleting(null)

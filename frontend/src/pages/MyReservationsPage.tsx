@@ -1,16 +1,17 @@
 import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { format } from "date-fns"
-import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
+import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
 import {
-  useMyReservations,
+  useMyReservationsMonth,
   useMyAppointments,
   useBusinessAppointments,
   useBusinessUnavailability,
   useAdminEmployees,
+  useCustomers,
   cancelReservation,
   markNoShow,
   acceptAppointment,
@@ -25,10 +26,12 @@ import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
-import { Calendar } from "../components/ui/calendar"
 import { ConfirmDialog } from "../components/ui/confirm-dialog"
 import { AddAppointmentDialog } from "../components/AddAppointmentDialog"
 import { MyAppointmentsList } from "../components/MyAppointmentsList"
+import { CalendarGrid } from "../components/reservations/CalendarGrid"
+import { ScheduledPanel } from "../components/reservations/ScheduledPanel"
+import { toneFor, type ReservationTag, type ScheduleEvent } from "../components/reservations/types"
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
@@ -39,13 +42,14 @@ const STATUS_STYLES: Record<string, string> = {
 }
 
 function StatusBadge({ status }: { status: string }) {
+  const { t } = useI18n()
   return (
     <span
       className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
         STATUS_STYLES[status] ?? "bg-muted text-muted-foreground"
       }`}
     >
-      {status.replace("_", " ")}
+      {t(`status.${status}`)}
     </span>
   )
 }
@@ -68,14 +72,18 @@ export function MyReservationsPage() {
   const login = useAuthStore((s) => s.login)
   const queryClient = useQueryClient()
 
-  const [date, setDate] = useState(() => today(getLocalTimeZone()).toString())
-  const { data: reservations, isLoading } = useMyReservations(businessId!, date)
+  const todayDate = today(getLocalTimeZone())
+  const [month, setMonth] = useState(() => new CalendarDate(todayDate.year, todayDate.month, 1))
+  const [selected, setSelected] = useState<CalendarDate>(() => todayDate)
+
+  const { byDay, isLoading: reservationsLoading } = useMyReservationsMonth(businessId!, month)
   const { data: ownAppointments, isLoading: ownLoading } = useMyAppointments()
   const { data: me } = useMe()
   const isOwner = me?.businesses.some((b) => b.id === businessId && b.role === "admin")
   const { data: businessAppointments } = useBusinessAppointments(isOwner ? businessId! : "")
   const { data: businessUnavailability } = useBusinessUnavailability(isOwner ? businessId! : "")
   const { data: employees } = useAdminEmployees(isOwner ? businessId! : "")
+  const { data: customers } = useCustomers(businessId!)
   const { t } = useI18n()
 
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
@@ -95,14 +103,14 @@ export function MyReservationsPage() {
   if (!authenticated) {
     return (
       <div className="min-h-app bg-background flex flex-col items-center justify-center gap-4">
-        <p className="text-muted-foreground">Please log in to manage your reservations.</p>
-        <Button onClick={login}>Login</Button>
+        <p className="text-muted-foreground">{t("reservations.loginPrompt")}</p>
+        <Button onClick={login}>{t("common.logIn")}</Button>
       </div>
     )
   }
 
   const refresh = () =>
-    queryClient.invalidateQueries({ queryKey: ["my-reservations", businessId, date] })
+    queryClient.invalidateQueries({ queryKey: ["my-reservations", businessId] })
 
   const handleCancel = async () => {
     if (!cancelTarget || !reason.trim()) return
@@ -110,12 +118,12 @@ export function MyReservationsPage() {
     setMessage("")
     try {
       await cancelReservation(businessId!, cancelTarget.id, reason.trim())
-      setMessage("Reservation cancelled.")
+      setMessage(t("reservations.cancelled"))
       setCancelTarget(null)
       setReason("")
       await refresh()
     } catch {
-      setMessage("Failed to cancel reservation.")
+      setMessage(t("reservations.cancelFailed"))
     } finally {
       setCancelling(false)
     }
@@ -126,11 +134,11 @@ export function MyReservationsPage() {
     setMessage("")
     try {
       await markNoShow(businessId!, noShowTarget.id)
-      setMessage("Appointment marked as no-show.")
+      setMessage(t("reservations.noShowMarked"))
       setNoShowTarget(null)
       await refresh()
     } catch {
-      setMessage("Failed to mark no-show.")
+      setMessage(t("reservations.noShowFailed"))
     }
   }
 
@@ -138,11 +146,11 @@ export function MyReservationsPage() {
     setMessage("")
     try {
       await acceptAppointment(businessId!, r.id)
-      setMessage("Appointment accepted.")
+      setMessage(t("reservations.accepted"))
       await refresh()
       await queryClient.invalidateQueries({ queryKey: ["business-appointments", businessId] })
     } catch {
-      setMessage("Failed to accept appointment.")
+      setMessage(t("reservations.acceptFailed"))
     }
   }
 
@@ -150,10 +158,10 @@ export function MyReservationsPage() {
     setMessage("")
     try {
       await acceptUnavailability(businessId!, id)
-      setMessage("Reserved time accepted.")
+      setMessage(t("reservations.timeAccepted"))
       await queryClient.invalidateQueries({ queryKey: ["business-unavailability", businessId] })
     } catch {
-      setMessage("Failed to accept reserved time.")
+      setMessage(t("reservations.timeAcceptFailed"))
     }
   }
 
@@ -170,134 +178,155 @@ export function MyReservationsPage() {
         await rejectUnavailability(businessId!, rejectTarget.id, rejectReason.trim())
         await queryClient.invalidateQueries({ queryKey: ["business-unavailability", businessId] })
       }
-      setMessage("Rejected.")
+      setMessage(t("reservations.rejected"))
       setRejectTarget(null)
       setRejectReason("")
     } catch {
-      setMessage("Failed to reject.")
+      setMessage(t("reservations.rejectFailed"))
     } finally {
       setRejecting(false)
     }
   }
 
   const employeeName = (businessUserId: string) =>
-    (employees ?? []).find((e) => e.id === businessUserId)?.display_name ?? "Employee"
+    (employees ?? []).find((e) => e.id === businessUserId)?.display_name ?? t("reservations.employee")
+
+  const customerName = (userId?: string) =>
+    (customers ?? []).find((c) => c.user_id === userId)?.display_name?.trim() || t("reservations.customer")
 
   const pendingAppointments = (businessAppointments ?? []).filter((a) => a.status === "pending")
   const pendingUnavailability = (businessUnavailability ?? []).filter((u) => u.status === "pending")
 
+  const goToDate = (d: CalendarDate) => {
+    setSelected(d)
+    if (d.year !== month.year || d.month !== month.month) {
+      setMonth(new CalendarDate(d.year, d.month, 1))
+    }
+  }
+
+  const selectedKey = selected.toString()
+  const reservations = byDay[selectedKey] ?? []
+
+  const eventsByDay: Record<string, ReservationTag[]> = {}
+  for (const [key, list] of Object.entries(byDay)) {
+    eventsByDay[key] = list
+      .filter((r) => r.status !== "cancelled")
+      .map((r) => ({
+        id: r.id,
+        label: r.service_name || t("reservations.service"),
+        tone: toneFor(r.service_name || r.id),
+      }))
+  }
+
+  const reservationsById = new Map(reservations.map((r) => [r.id, r]))
+  const events: ScheduleEvent[] = reservations.map((r) => {
+    const subtitle =
+      r.status === "cancelled" && r.cancellation_reason
+        ? `${customerName(r.customer_user_id)} · ${formatCancellationReason(r.cancellation_reason, t)}`
+        : customerName(r.customer_user_id)
+    return {
+      id: r.id,
+      title: r.service_name || t("reservations.service"),
+      subtitle,
+      start: new Date(r.start_time),
+      end: new Date(r.end_time),
+      tone: toneFor(r.service_name || r.id),
+    }
+  })
+
+  const renderActions = (event: ScheduleEvent) => {
+    const r = reservationsById.get(event.id)
+    if (!r) return null
+    return (
+      <>
+        <StatusBadge status={r.status} />
+        {r.status === "pending" && (
+          <>
+            <Button size="sm" onClick={() => handleAccept(r)}>
+              {t("reservations.accept")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                setRejectTarget({
+                  kind: "appointment",
+                  id: r.id,
+                  label: `${r.service_name || t("reservations.service")} at ${format(new Date(r.start_time), "h:mm a")}`,
+                })
+              }
+            >
+              {t("reservations.reject")}
+            </Button>
+          </>
+        )}
+        {!isPast(r) && (
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => {
+              setCancelTarget(r)
+              setReason("")
+            }}
+          >
+            {t("reservations.cancel")}
+          </Button>
+        )}
+        {canMarkNoShow(r) && (
+          <Button variant="outline" size="sm" onClick={() => setNoShowTarget(r)}>
+            {t("reservations.noShow")}
+          </Button>
+        )}
+      </>
+    )
+  }
+
   return (
     <div className="min-h-app bg-background">
       <header className="border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 py-4 flex gap-4 items-center">
-          <h1 className="text-xl font-semibold text-foreground">My Reservations</h1>
-          <Button onClick={() => setAddOpen(true)}>Add appointment</Button>
+        <div className="max-w-6xl mx-auto px-4 py-4 flex gap-4 items-center">
+          <h1 className="text-xl font-semibold text-foreground">{t("reservations.title")}</h1>
+          <Button onClick={() => setAddOpen(true)}>{t("reservations.addAppointment")}</Button>
           <Button
             variant="outline"
             size="sm"
             onClick={() => navigate(`/admin/business/${businessId}/my-schedule`)}
           >
-            Reserve time
+            {t("reservations.reserveTime")}
           </Button>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8 space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Pick a date</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Calendar
-              value={parseDate(date)}
-              onChange={(d) => d && setDate(d.toString())}
-              minValue={today(getLocalTimeZone())}
-              className="mx-auto"
-            />
-          </CardContent>
-        </Card>
+      <main className="max-w-6xl mx-auto px-4 py-8 space-y-6">
+        {message && (
+          <p className={`text-sm ${message.startsWith("Failed") ? "text-red-500" : "text-green-600"}`}>
+            {message}
+          </p>
+        )}
+
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+          <CalendarGrid
+            month={month}
+            onMonthChange={setMonth}
+            selected={selected}
+            onSelect={goToDate}
+            today={todayDate}
+            eventsByDay={eventsByDay}
+          />
+          <ScheduledPanel
+            date={selected}
+            onPrevDay={() => goToDate(selected.subtract({ days: 1 }))}
+            onNextDay={() => goToDate(selected.add({ days: 1 }))}
+            onOpenCalendar={() => goToDate(todayDate)}
+            events={events}
+            isLoading={reservationsLoading}
+            renderActions={renderActions}
+          />
+        </div>
 
         <Card>
           <CardHeader>
-            <CardTitle>Customer reservations for {format(new Date(`${date}T00:00:00`), "EEEE, MMMM d")}</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {isLoading ? (
-              <p className="text-muted-foreground">Loading…</p>
-            ) : (reservations ?? []).length === 0 ? (
-              <p className="text-muted-foreground">No reservations on this day.</p>
-            ) : (
-              (reservations ?? []).map((r) => (
-                <div key={r.id} className="flex items-center justify-between p-3 bg-muted rounded-md gap-3">
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="font-medium">{r.service_name || "Service"}</span>
-                      <StatusBadge status={r.status} />
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {format(new Date(r.start_time), "h:mm a")} – {format(new Date(r.end_time), "h:mm a")}
-                    </div>
-                    {r.cancellation_reason && (
-                      <div className="text-xs text-muted-foreground mt-1">
-                        Reason: {formatCancellationReason(r.cancellation_reason, t)}
-                      </div>
-                    )}
-                  </div>
-                  {(r.status === "pending" || r.status === "confirmed") && (
-                    <div className="flex items-center gap-2 shrink-0">
-                      {r.status === "pending" && (
-                        <>
-                          <Button size="sm" onClick={() => handleAccept(r)}>
-                            Accept
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() =>
-                              setRejectTarget({
-                                kind: "appointment",
-                                id: r.id,
-                                label: `${r.service_name || "Service"} at ${format(new Date(r.start_time), "h:mm a")}`,
-                              })
-                            }
-                          >
-                            Reject
-                          </Button>
-                        </>
-                      )}
-                      {!isPast(r) && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => {
-                            setCancelTarget(r)
-                            setReason("")
-                          }}
-                        >
-                          Cancel
-                        </Button>
-                      )}
-                      {canMarkNoShow(r) && (
-                        <Button variant="outline" size="sm" onClick={() => setNoShowTarget(r)}>
-                          No-show
-                        </Button>
-                      )}
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-            {message && (
-              <p className={`text-sm ${message.startsWith("Failed") ? "text-red-500" : "text-green-600"}`}>
-                {message}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader>
-            <CardTitle>My appointments</CardTitle>
+            <CardTitle>{t("reservations.myAppointments")}</CardTitle>
           </CardHeader>
           <CardContent>
             <MyAppointmentsList appointments={ownAppointments} isLoading={ownLoading} />
@@ -307,27 +336,27 @@ export function MyReservationsPage() {
         {isOwner && (
           <Card>
             <CardHeader>
-              <CardTitle>Pending approvals</CardTitle>
+              <CardTitle>{t("reservations.pendingApprovals")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {pendingAppointments.length === 0 && pendingUnavailability.length === 0 ? (
-                <p className="text-muted-foreground">Nothing to approve.</p>
+                <p className="text-muted-foreground">{t("reservations.nothingToApprove")}</p>
               ) : (
                 <>
                   {pendingAppointments.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Customer appointments</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t("reservations.customerAppointments")}</p>
                       {pendingAppointments.map((a) => (
                         <div key={a.id} className="flex items-center justify-between p-3 bg-muted rounded-md gap-3">
                           <div className="min-w-0">
-                            <div className="font-medium">{a.service_name || "Service"}</div>
+                            <div className="font-medium">{a.service_name || t("reservations.service")}</div>
                             <div className="text-sm text-muted-foreground">
                               {employeeName(a.business_user_id)} · {format(new Date(a.start_time), "EEE, MMM d · h:mm a")}
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <Button size="sm" onClick={() => handleAccept(a)}>
-                              Accept
+                              {t("reservations.accept")}
                             </Button>
                             <Button
                               variant="outline"
@@ -336,11 +365,11 @@ export function MyReservationsPage() {
                                 setRejectTarget({
                                   kind: "appointment",
                                   id: a.id,
-                                  label: `${a.service_name || "Service"} · ${employeeName(a.business_user_id)}`,
+                                  label: `${a.service_name || t("reservations.service")} · ${employeeName(a.business_user_id)}`,
                                 })
                               }
                             >
-                              Reject
+                              {t("reservations.reject")}
                             </Button>
                           </div>
                         </div>
@@ -349,7 +378,7 @@ export function MyReservationsPage() {
                   )}
                   {pendingUnavailability.length > 0 && (
                     <div className="space-y-2">
-                      <p className="text-sm font-medium text-muted-foreground">Reserved time</p>
+                      <p className="text-sm font-medium text-muted-foreground">{t("reservations.reservedTime")}</p>
                       {pendingUnavailability.map((u) => (
                         <div key={u.id} className="flex items-center justify-between p-3 bg-muted rounded-md gap-3">
                           <div className="min-w-0">
@@ -361,7 +390,7 @@ export function MyReservationsPage() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <Button size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
-                              Accept
+                              {t("reservations.accept")}
                             </Button>
                             <Button
                               variant="outline"
@@ -374,7 +403,7 @@ export function MyReservationsPage() {
                                 })
                               }
                             >
-                              Reject
+                              {t("reservations.reject")}
                             </Button>
                           </div>
                         </div>
@@ -397,28 +426,28 @@ export function MyReservationsPage() {
             className="w-full max-w-sm rounded-2xl border border-border bg-background p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-foreground">Cancel reservation</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t("reservations.cancelReservation")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">
-              {cancelTarget.service_name || "Service"} at {format(new Date(cancelTarget.start_time), "h:mm a")}
+              {cancelTarget.service_name || t("reservations.service")} at {format(new Date(cancelTarget.start_time), "h:mm a")}
             </p>
             <div className="mt-4 space-y-1">
-              <Label>Reason (required)</Label>
+              <Label>{t("reservations.reasonRequired")}</Label>
               <Textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Why are you cancelling?"
+                placeholder={t("reservations.cancelPlaceholder")}
               />
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setCancelTarget(null)}>
-                Back
+                {t("common.back")}
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleCancel}
                 isDisabled={cancelling || !reason.trim()}
               >
-                {cancelling ? "Cancelling…" : "Cancel reservation"}
+                {cancelling ? t("reservations.cancelling") : t("reservations.cancelReservation")}
               </Button>
             </div>
           </div>
@@ -434,26 +463,26 @@ export function MyReservationsPage() {
             className="w-full max-w-sm rounded-2xl border border-border bg-background p-6"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="text-lg font-semibold text-foreground">Reject</h3>
+            <h3 className="text-lg font-semibold text-foreground">{t("reservations.reject")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">{rejectTarget.label}</p>
             <div className="mt-4 space-y-1">
-              <Label>Reason (required)</Label>
+              <Label>{t("reservations.reasonRequired")}</Label>
               <Textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="Why are you rejecting this?"
+                placeholder={t("reservations.rejectPlaceholder")}
               />
             </div>
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setRejectTarget(null)}>
-                Back
+                {t("common.back")}
               </Button>
               <Button
                 variant="destructive"
                 onClick={handleReject}
                 isDisabled={rejecting || !rejectReason.trim()}
               >
-                {rejecting ? "Rejecting…" : "Reject"}
+                {rejecting ? t("reservations.rejecting") : t("reservations.reject")}
               </Button>
             </div>
           </div>
@@ -462,14 +491,14 @@ export function MyReservationsPage() {
 
       <ConfirmDialog
         open={noShowTarget != null}
-        title="Mark as no-show?"
+        title={t("reservations.noShowTitle")}
         description={
           noShowTarget
-            ? `${noShowTarget.service_name || "Service"} at ${format(new Date(noShowTarget.start_time), "h:mm a")}`
+            ? `${noShowTarget.service_name || t("reservations.service")} at ${format(new Date(noShowTarget.start_time), "h:mm a")}`
             : undefined
         }
-        confirmLabel="Mark no-show"
-        cancelLabel="Back"
+        confirmLabel={t("reservations.markNoShow")}
+        cancelLabel={t("common.back")}
         onConfirm={handleMarkNoShow}
         onCancel={() => setNoShowTarget(null)}
       />

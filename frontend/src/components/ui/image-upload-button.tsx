@@ -2,10 +2,11 @@ import { useState } from "react"
 import { Capacitor } from "@capacitor/core"
 import { Button } from "./button"
 import { pickImage } from "../../lib/imagePicker"
+import { useI18n } from "../../lib/i18n"
 
 export function ImageUploadButton({
   onPicked,
-  label = "Upload image",
+  label,
   uploading,
 }: {
   onPicked: (file: File) => void
@@ -14,6 +15,8 @@ export function ImageUploadButton({
 }) {
   const native = Capacitor.isNativePlatform()
   const [picking, setPicking] = useState(false)
+  const { t } = useI18n()
+  const resolvedLabel = label ?? t("upload.uploadImage")
 
   const handlePick = async (source: "library" | "camera") => {
     setPicking(true)
@@ -33,7 +36,7 @@ export function ImageUploadButton({
         isDisabled={uploading || picking}
         onClick={() => handlePick("library")}
       >
-        {uploading || picking ? "Working…" : label}
+        {uploading || picking ? t("upload.working") : resolvedLabel}
       </Button>
       {native && (
         <Button
@@ -42,7 +45,7 @@ export function ImageUploadButton({
           isDisabled={uploading || picking}
           onClick={() => handlePick("camera")}
         >
-          Camera
+          {t("upload.camera")}
         </Button>
       )}
     </div>

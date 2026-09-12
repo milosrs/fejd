@@ -15,7 +15,7 @@ function SalonShell() {
   const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
   const isOwner = useIsOwner()
   const { data: sections } = useSections(slug)
-  const { pickLocalized } = useI18n()
+  const { pickLocalized, t } = useI18n()
   const [policyOpen, setPolicyOpen] = useState(false)
   const [renameOpen, setRenameOpen] = useState(false)
   const salonHeaderRef = useHeaderHeightMeasure("--salon-header-height")
@@ -27,16 +27,16 @@ function SalonShell() {
   if (!salon) {
     return (
       <div className="min-h-app flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Salon not found</p>
+        <p className="text-muted-foreground">{t("salon.notFound")}</p>
       </div>
     )
   }
 
   const nav = [
-    { to: salonPath(slug), label: "Home", end: true },
-    { to: salonPath(slug, "/services"), label: "Services", end: false },
-    { to: salonPath(slug, "/barbers"), label: "Barbers", end: false },
-    { to: salonPath(slug, "/book"), label: "Book", end: false },
+    { to: salonPath(slug), label: t("nav.home"), end: true },
+    { to: salonPath(slug, "/services"), label: t("nav.services"), end: false },
+    { to: salonPath(slug, "/barbers"), label: t("nav.barbers"), end: false },
+    { to: salonPath(slug, "/book"), label: t("nav.book"), end: false },
   ]
 
   const heroContent = pickLocalized<HeroContent>(
@@ -78,21 +78,21 @@ function SalonShell() {
                 size="sm"
                 onClick={() => setPolicyOpen(true)}
               >
-                Salon policy
+                {t("salon.policy")}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setRenameOpen(true)}
               >
-                Rename
+                {t("salon.rename")}
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setEditing(!editing)}
               >
-                {editing ? "Done" : "Edit"}
+                {editing ? t("common.done") : t("common.edit")}
               </Button>
             </div>
           )}

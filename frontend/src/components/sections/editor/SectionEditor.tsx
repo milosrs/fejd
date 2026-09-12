@@ -2,7 +2,7 @@ import { useMemo, useState } from "react"
 import { SectionForm } from "./SectionForm"
 import { SectionRenderer } from "../SectionRenderer"
 import { Button } from "../../ui/button"
-import { DEFAULT_LOCALE } from "../../../lib/i18n"
+import { DEFAULT_LOCALE, useI18n } from "../../../lib/i18n"
 import {
   getLocalizedContent,
   isSectionType,
@@ -29,6 +29,7 @@ export function SectionEditor({
   uploading?: boolean
 }) {
   const type = isSectionType(section.type) ? section.type : "hero"
+  const { t } = useI18n()
 
   const [content, setContent] = useState<SectionContent>(() =>
     getLocalizedContent(section.content, DEFAULT_LOCALE),
@@ -52,9 +53,9 @@ export function SectionEditor({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="text-lg font-semibold text-foreground">Edit {type} section</h3>
+          <h3 className="text-lg font-semibold text-foreground">{t("sections.editor.title", { type })}</h3>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Close
+            {t("common.close")}
           </Button>
         </div>
 
@@ -70,7 +71,7 @@ export function SectionEditor({
           </div>
           <div className="rounded-xl border border-dashed border-border p-4">
             <p className="mb-3 text-xs uppercase tracking-wide text-muted-foreground">
-              Live preview
+              {t("sections.editor.livePreview")}
             </p>
             <SectionRenderer section={previewSection} contained />
           </div>
@@ -79,14 +80,14 @@ export function SectionEditor({
         <div className="mt-6 flex items-center justify-between">
           {onDelete ? (
             <Button variant="destructive" size="sm" onClick={onDelete}>
-              Delete
+              {t("common.delete")}
             </Button>
           ) : (
             <span />
           )}
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               isDisabled={saving}
@@ -94,7 +95,7 @@ export function SectionEditor({
                 onSave(setLocalizedContent(section.content, DEFAULT_LOCALE, content))
               }
             >
-              {saving ? "Saving…" : "Save"}
+              {saving ? t("common.saving") : t("common.save")}
             </Button>
           </div>
         </div>

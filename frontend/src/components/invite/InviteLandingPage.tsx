@@ -2,6 +2,7 @@ import { useEffect } from "react"
 import { useParams } from "react-router-dom"
 import { useAuthStore } from "../../stores/authStore"
 import { useInvitation } from "../../hooks/useInvitations"
+import { useI18n } from "../../lib/i18n"
 import { Button } from "../../components/ui/button"
 
 export function InviteLandingPage() {
@@ -11,6 +12,7 @@ export function InviteLandingPage() {
   const login = useAuthStore((s) => s.login)
   const register = useAuthStore((s) => s.register)
   const { data: invitation, isLoading, isError } = useInvitation(token || null)
+  const { t } = useI18n()
 
   useEffect(() => {
     if (token) setToken(token)
@@ -22,39 +24,39 @@ export function InviteLandingPage() {
   return (
     <div className="min-h-app flex flex-col items-center justify-center gap-4 bg-background p-8">
       {isLoading ? (
-        <p className="text-muted-foreground">Loading invitation…</p>
+        <p className="text-muted-foreground">{t("invite.landing.loading")}</p>
       ) : isError ? (
         <>
-          <h1 className="text-xl font-semibold text-foreground">Invite unavailable</h1>
+          <h1 className="text-xl font-semibold text-foreground">{t("invite.landing.unavailable")}</h1>
           <p className="text-muted-foreground text-center max-w-sm">
-            This invite link is invalid, has already been used, or has expired.
+            {t("invite.landing.invalid")}
           </p>
         </>
       ) : authenticated ? (
         <>
           <h1 className="text-xl font-semibold text-foreground text-center">
-            Joining {invitation?.salon_name}…
+            {t("invite.landing.joining", { salon: invitation?.salon_name ?? "" })}
           </h1>
-          <p className="text-muted-foreground">You'll be redirected shortly.</p>
+          <p className="text-muted-foreground">{t("invite.landing.redirect")}</p>
         </>
       ) : (
         <>
           <h1 className="text-xl font-semibold text-foreground text-center">
-            You've been invited to {invitation?.salon_name}
+            {t("invite.landing.invitedTo", { salon: invitation?.salon_name ?? "" })}
           </h1>
           <p className="text-muted-foreground text-center max-w-sm">
-            Register or log in to join this salon.
+            {t("invite.landing.joinPrompt")}
           </p>
           <div className="flex gap-3">
-            <Button onClick={register}>Register</Button>
+            <Button onClick={register}>{t("common.register")}</Button>
             <Button variant="outline" onClick={login}>
-              Log in
+              {t("common.logIn")}
             </Button>
           </div>
 
           {(playStore || appStore) && (
             <div className="mt-4 flex flex-col items-center gap-2">
-              <p className="text-xs text-muted-foreground">Don't have the app?</p>
+              <p className="text-xs text-muted-foreground">{t("invite.landing.noApp")}</p>
               <div className="flex gap-3">
                 {playStore && (
                   <a href={playStore} className="text-sm underline text-foreground">

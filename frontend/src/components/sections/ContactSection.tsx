@@ -2,10 +2,12 @@ import { Mail, MapPin, Phone, Star } from "lucide-react"
 import type { ContactContent } from "../../lib/sections"
 import { instagramHandle, instagramUrl } from "../../lib/instagram"
 import { openExternalUrl } from "../../lib/externalUrl"
+import { useI18n } from "../../lib/i18n"
 import { InstagramIcon } from "../icons/InstagramIcon"
 import { MapEmbed } from "./MapEmbed"
 
 export function ContactSection({ content }: { content: ContactContent }) {
+  const { t } = useI18n()
   const igUrl = content.instagram_url ? instagramUrl(content.instagram_url) : ""
   const igHandle = content.instagram_url ? instagramHandle(content.instagram_url) : ""
 
@@ -76,7 +78,7 @@ export function ContactSection({ content }: { content: ContactContent }) {
               className="inline-flex items-center gap-1.5 rounded-2xl border border-border bg-background px-3 py-1.5 text-sm font-medium text-foreground transition-colors hover:bg-muted"
             >
               <Star className="size-4" />
-              Leave a rating
+              {t("sections.contact.leaveRating")}
             </a>
           )}
         </div>

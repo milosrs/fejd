@@ -1,9 +1,10 @@
 import { useLayoutEffect, useMemo } from "react"
 import { MemoryRouter, Route, Routes } from "react-router-dom"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { today, getLocalTimeZone } from "@internationalized/date"
 import { ThemeProvider } from "../components/theme-provider"
+import { I18nProvider } from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
+import { mockI18nEn } from "./mockI18n"
 import type { Me } from "../hooks/useMe"
 import type { EmployeeUnavailability, Appointment, Service, Customer } from "../hooks/useApi"
 
@@ -17,6 +18,40 @@ function futureISO(days: number, hour: number, minute = 0): string {
 
 function inHours(hours: number): string {
   return new Date(Date.now() + hours * 3600 * 1000).toISOString()
+}
+
+function monthDayISO(day: number, hour: number, minute = 0): string {
+  const now = new Date()
+  const d = new Date(now.getFullYear(), now.getMonth(), day, hour, minute, 0, 0)
+  return d.toISOString()
+}
+
+function mkReservation(
+  id: string,
+  day: number,
+  startHour: number,
+  startMinute: number,
+  durationMin: number,
+  serviceName: string,
+  status: string,
+  customerId = "customer-1",
+): Appointment {
+  const start = monthDayISO(day, startHour, startMinute)
+  const end = new Date(new Date(start).getTime() + durationMin * 60000).toISOString()
+  return {
+    id,
+    business_id: staffBusinessId,
+    business_user_id: "55555555-5555-4555-8555-555555555555",
+    customer_user_id: customerId,
+    service_id: "22222222-2222-4222-8222-222222222222",
+    service_name: serviceName,
+    start_time: start,
+    end_time: end,
+    status,
+    created_by: customerId,
+    created_at: monthDayISO(day, startHour - 1),
+    no_show_after_hours: 2,
+  }
 }
 
 export const mockUnavailability: EmployeeUnavailability[] = [
@@ -95,6 +130,23 @@ export const mockReservations: Appointment[] = [
     created_at: inHours(-4),
     no_show_after_hours: 2,
   },
+]
+
+export const mockMonthReservations: Appointment[] = [
+  mkReservation("m01", 1, 9, 0, 30, "Haircut", "confirmed"),
+  mkReservation("m02", 1, 10, 0, 20, "Beard Trim", "pending", "customer-2"),
+  mkReservation("m03", 3, 11, 0, 30, "Haircut", "confirmed", "customer-3"),
+  mkReservation("m04", 5, 13, 0, 60, "Color", "confirmed", "customer-2"),
+  mkReservation("m05", 8, 10, 0, 45, "Styling", "pending"),
+  mkReservation("m06", 8, 14, 0, 30, "Haircut", "confirmed", "customer-3"),
+  mkReservation("m07", 12, 9, 30, 20, "Beard Trim", "cancelled", "customer-2"),
+  mkReservation("m08", 15, 16, 0, 30, "Haircut", "confirmed"),
+  mkReservation("m09", 18, 11, 0, 60, "Color", "pending", "customer-3"),
+  mkReservation("m10", 22, 10, 0, 30, "Haircut", "confirmed", "customer-2"),
+  mkReservation("m11", 26, 15, 0, 45, "Styling", "confirmed"),
+  mkReservation("m12", 28, 9, 0, 20, "Beard Trim", "confirmed", "customer-3"),
+  mkReservation("m13", new Date().getDate(), 9, 0, 30, "Haircut", "confirmed"),
+  mkReservation("m14", new Date().getDate(), 10, 30, 20, "Beard Trim", "pending", "customer-2"),
 ]
 
 export const staffOwnerMe: Me = {
@@ -217,22 +269,33 @@ export function StaffProviders({
   customers = mockCustomers,
   children,
 }: StaffProvidersProps) {
-  const todayKey = today(getLocalTimeZone()).toString()
+  const reservationBuckets = useMemo(() => {
+    const map: Record<string, Appointment[]> = {}
+    for (const r of reservations) {
+      const d = new Date(r.start_time)
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+      ;(map[key] ??= []).push(r)
+    }
+    return map
+  }, [reservations])
 
   const queryClient = useMemo(() => {
     const qc = new QueryClient({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     })
     qc.setQueryData(["my-unavailability", businessId], unavailability)
-    qc.setQueryData(["my-reservations", businessId, todayKey], reservations)
+    for (const [key, list] of Object.entries(reservationBuckets)) {
+      qc.setQueryData(["my-reservations", businessId, key], list)
+    }
     qc.setQueryData(["my-services", businessId], services)
     qc.setQueryData(["customers", businessId], customers)
     qc.setQueryData(["my-appointments"], [])
+    qc.setQueryData(["i18n", "en"], mockI18nEn)
     if (me) {
       qc.setQueryData(["me"], me)
     }
     return qc
-  }, [businessId, me, unavailability, reservations, services, customers, todayKey])
+  }, [businessId, me, unavailability, reservationBuckets, services, customers])
 
   useLayoutEffect(() => {
     useAuthStore.setState({
@@ -252,7 +315,9 @@ export function StaffProviders({
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="storybook-theme">
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+      <QueryClientProvider client={queryClient}>
+        <I18nProvider>{children}</I18nProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   )
 }
@@ -286,6 +351,7 @@ export function CustomerAppointmentsFrame({
       defaultOptions: { queries: { retry: false, staleTime: Infinity } },
     })
     qc.setQueryData(["my-appointments"], appointments)
+    qc.setQueryData(["i18n", "en"], mockI18nEn)
     return qc
   }, [appointments])
 
@@ -308,11 +374,13 @@ export function CustomerAppointmentsFrame({
   return (
     <ThemeProvider defaultTheme="dark" storageKey="storybook-theme">
       <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={["/my/appointments"]}>
-          <Routes>
-            <Route path="/my/appointments" element={children} />
-          </Routes>
-        </MemoryRouter>
+        <I18nProvider>
+          <MemoryRouter initialEntries={["/my/appointments"]}>
+            <Routes>
+              <Route path="/my/appointments" element={children} />
+            </Routes>
+          </MemoryRouter>
+        </I18nProvider>
       </QueryClientProvider>
     </ThemeProvider>
   )

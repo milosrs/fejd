@@ -2,6 +2,7 @@ import { useNavigate } from "react-router-dom"
 import { useSalon } from "../hooks/useSalon"
 import { resolveImageUrl } from "../lib/images"
 import { openSalon } from "../lib/salonDomain"
+import { useI18n } from "../lib/i18n"
 
 interface SalonCardProps {
   business: { id: string; name: string; slug: string }
@@ -10,6 +11,7 @@ interface SalonCardProps {
 
 export function SalonCard({ business, isOwner }: SalonCardProps) {
   const navigate = useNavigate()
+  const { t } = useI18n()
   const { data: salon } = useSalon(business.slug)
 
   const logoUrl = resolveImageUrl(salon?.images.logo)
@@ -48,7 +50,7 @@ export function SalonCard({ business, isOwner }: SalonCardProps) {
 
       {isOwner && (
         <span className="absolute right-3 top-3 z-10 rounded-full bg-green-600 px-2.5 py-1 text-xs font-medium text-white">
-          owner
+          {t("salon.owner")}
         </span>
       )}
     </button>

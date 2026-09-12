@@ -119,7 +119,7 @@ export function BookingPage() {
               </p>
               <p className="text-sm text-muted-foreground">{t("booking.success.body")}</p>
               <Button onClick={() => navigate(salonPath(slug))} className="mt-2">
-                Done
+                {t("common.done")}
               </Button>
             </CardContent>
           </Card>
@@ -137,7 +137,7 @@ export function BookingPage() {
   if (servicesLoading) {
     return (
       <div className="min-h-salon bg-background flex items-center justify-center">
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">{t("common.loading")}</p>
       </div>
     )
   }
@@ -155,9 +155,9 @@ export function BookingPage() {
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate(salonPath(slug, "/services"))}>
-            <ArrowLeft className="size-4" /> Back
+            <ArrowLeft className="size-4" /> {t("common.back")}
           </Button>
-          <h1 className="text-lg font-semibold text-foreground">Booking</h1>
+          <h1 className="text-lg font-semibold text-foreground">{t("booking.title")}</h1>
         </div>
       </header>
 
@@ -186,14 +186,14 @@ export function BookingPage() {
                   <span className="font-medium text-foreground">{service.name}</span>
                 </div>
                 <div className="flex justify-between gap-4">
-                  <span className="text-muted-foreground">Duration</span>
+                  <span className="text-muted-foreground">{t("booking.duration")}</span>
                   <span className="font-medium text-foreground">
-                    {service.duration_minutes} min
+                    {service.duration_minutes} {t("booking.minutes")}
                   </span>
                 </div>
                 {service.price != null && service.price > 0 && (
                   <div className="flex justify-between gap-4">
-                    <span className="text-muted-foreground">Price</span>
+                    <span className="text-muted-foreground">{t("booking.confirm.price")}</span>
                     <span className="font-medium text-foreground">
                       ${service.price.toFixed(2)}
                     </span>
@@ -225,7 +225,7 @@ export function BookingPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                   {barbersLoading ? (
-                    <p className="text-muted-foreground">Loading…</p>
+                    <p className="text-muted-foreground">{t("common.loading")}</p>
                   ) : (barbers ?? []).length === 0 ? (
                     <p className="text-muted-foreground">{t("booking.empty.barbers")}</p>
                   ) : (
@@ -263,9 +263,9 @@ export function BookingPage() {
                   {error && <p className="text-sm text-destructive">{error}</p>}
                   <Button onClick={handleBook} isDisabled={booking || !ready} className="w-full">
                     {!authenticated
-                      ? "Login to book"
+                      ? t("booking.loginToBook")
                       : booking
-                        ? "Booking…"
+                        ? t("booking.booking")
                         : t("booking.confirm.button")}
                   </Button>
                 </CardContent>

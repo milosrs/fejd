@@ -27,7 +27,7 @@ export function HomePage() {
       <p className="text-muted-foreground text-center max-w-sm">
         {isOwner
           ? t("home.owner.label")
-          : "Book haircut appointments. Open a salon by its link, or manage your appointments below."}
+          : t("home.intro")}
       </p>
 
       {!authenticated ? (

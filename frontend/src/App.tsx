@@ -19,7 +19,7 @@ import { MyReservationsPage } from "./pages/MyReservationsPage"
 import { SalonLayout } from "./components/SalonLayout"
 import { Toaster } from "./components/ui/toaster"
 import { Button } from "./components/ui/button"
-import { I18nProvider } from "./lib/i18n"
+import { I18nProvider, useI18n } from "./lib/i18n"
 import { ThemeProvider } from "#components/theme-provider"
 import { ModeToggle } from "#components/mode-toggle"
 import { OnboardingGate } from "#components/OnboardingGate"
@@ -83,6 +83,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient()
   const { data: me } = useMe()
   const topHeaderRef = useHeaderHeightMeasure("--top-header-height")
+  const { t } = useI18n()
 
   const businesses = me?.businesses ?? []
   const primaryBusiness =
@@ -153,7 +154,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
             {authenticated && (
               <>
                 <span className="truncate text-sm text-foreground">
-                  Welcome {userInfo?.name}
+                  {t("app.welcome", { name: userInfo?.name ?? "" })}
                 </span>
                 {isSalonView && (
                   <button
@@ -161,7 +162,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
                     onClick={() => openAppHome(navigate)}
                     className="ml-2 shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
                   >
-                    All salons
+                    {t("app.allSalons")}
                   </button>
                 )}
                 <nav className="flex items-center gap-1">
@@ -169,7 +170,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
                     to="/my/appointments"
                     className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                   >
-                    My appointments
+                    {t("nav.myAppointments")}
                   </Link>
                   {hasSalon && primaryBusiness && (
                     <>
@@ -177,13 +178,13 @@ function AppInit({ children }: { children: React.ReactNode }) {
                         to={`/admin/business/${primaryBusiness.id}/my-reservations`}
                         className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       >
-                        My reservations
+                        {t("nav.myReservations")}
                       </Link>
                       <Link
                         to={`/admin/business/${primaryBusiness.id}/my-schedule`}
                         className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       >
-                        Reserve my time
+                        {t("nav.reserveMyTime")}
                       </Link>
                     </>
                   )}
@@ -198,13 +199,13 @@ function AppInit({ children }: { children: React.ReactNode }) {
                   onClick={logout}
                   className="text-sm text-muted-foreground underline hover:text-foreground"
                 >
-                  Logout
+                  {t("app.logout")}
                 </button>
                 <ModeToggle />
                 <button
                   type="button"
                   onClick={handlePickAvatar}
-                  aria-label="Upload profile picture"
+                  aria-label={t("app.uploadAvatar")}
                   className="shrink-0 overflow-hidden rounded-full ring-2 ring-border hover:opacity-80 focus:outline-none focus-visible:ring-primary"
                 >
                   <ProfileAvatar src={avatarUrl} name={userInfo?.name} />
@@ -213,9 +214,9 @@ function AppInit({ children }: { children: React.ReactNode }) {
             ) : (
               <>
                 <Button variant="outline" onClick={login}>
-                  Log in
+                  {t("common.logIn")}
                 </Button>
-                <Button onClick={register}>Register</Button>
+                <Button onClick={register}>{t("common.register")}</Button>
               </>
             )}
           </div>
@@ -230,6 +231,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const initialized = useAuthStore((s) => s.initialized)
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
+  const { t } = useI18n()
 
   useEffect(() => {
     if (initialized && !authenticated) {
@@ -238,7 +240,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }, [initialized, authenticated, login])
 
   if (!initialized) {
-    return <Loader label="Loading..." />
+    return <Loader label={t("common.loading")} />
   }
 
   if (!authenticated) {

@@ -6,38 +6,11 @@ import { SalonProvider } from "../context/SalonContext"
 import { I18nProvider } from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
 import { useBookingStore } from "../stores/bookingStore"
+import { mockI18nEn } from "./mockI18n"
 import type { Salon } from "../hooks/useSalon"
 import type { Me } from "../hooks/useMe"
 import type { Service, Employee } from "../hooks/useApi"
 import type { Section } from "../lib/sections"
-
-const mockI18nEn = {
-  "landing.empty.title": "This page isn't set up yet",
-  "landing.empty.body": "The salon hasn't published any content yet. Check back soon.",
-  "services.book.requiresAuth": "To book, you have to register.",
-  "booking.step.service": "Choose a service",
-  "booking.step.barber": "Choose your barber",
-  "booking.step.date": "Pick a date",
-  "booking.step.time": "Pick a time",
-  "booking.confirm.title": "Confirm your booking",
-  "booking.confirm.service": "Service",
-  "booking.confirm.barber": "Barber",
-  "booking.confirm.date": "Date",
-  "booking.confirm.time": "Time",
-  "booking.confirm.price": "Price",
-  "booking.confirm.button": "Confirm booking",
-  "booking.empty.barbers": "No barbers offer this service yet.",
-  "booking.empty.slots": "No availability on this day.",
-  "booking.success.title": "Appointment booked!",
-  "booking.success.body": "See you soon.",
-  "booking.error.taken": "That time was just taken. Please pick another.",
-  "booking.error.alreadyBooked": "You already have a booking with this salon today.",
-  "booking.error.noService": "This barber doesn't offer this service. Please pick another.",
-  "booking.error.generic": "Booking failed. Please try again.",
-  "barberForm.nameRequired": "Name is required.",
-  "barberForm.emailRequired": "Email is required.",
-  "barberForm.emailInvalid": "Enter a valid email address.",
-}
 
 export const mockSalon: Salon = {
   business: {

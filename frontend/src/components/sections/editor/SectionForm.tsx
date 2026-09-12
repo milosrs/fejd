@@ -4,6 +4,7 @@ import { Label } from "../../ui/label"
 import { ImageUploadButton } from "../../ui/image-upload-button"
 import { PlacesAutocompleteInput } from "../../ui/places-autocomplete-input"
 import { resolveImageUrl } from "../../../lib/images"
+import { useI18n } from "../../../lib/i18n"
 import type {
   AboutContent,
   ContactContent,
@@ -39,21 +40,22 @@ export function HeroSectionForm({
   onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
   uploading?: boolean
 }) {
+  const { t } = useI18n()
   return (
     <div className="space-y-4">
-      <Field label="Headline">
+      <Field label={t("sections.form.headline")}>
         <Input
           value={value.headline ?? ""}
           onChange={(e) => onChange({ ...value, headline: e.target.value })}
         />
       </Field>
-      <Field label="Subheadline">
+      <Field label={t("sections.form.subheadline")}>
         <Textarea
           value={value.subheadline ?? ""}
           onChange={(e) => onChange({ ...value, subheadline: e.target.value })}
         />
       </Field>
-      <Field label="CTA text">
+      <Field label={t("sections.form.ctaText")}>
         <Input
           value={value.cta_text ?? ""}
           onChange={(e) => onChange({ ...value, cta_text: e.target.value })}
@@ -61,16 +63,16 @@ export function HeroSectionForm({
       </Field>
       {onUploadImage && (
         <>
-          <Field label="Logo">
+          <Field label={t("sections.form.logo")}>
             <ImageUploadButton
-              label="Upload logo"
+              label={t("sections.form.uploadLogo")}
               onPicked={(file) => onUploadImage(file, "logo")}
               uploading={uploading}
             />
           </Field>
-          <Field label="Background">
+          <Field label={t("sections.form.background")}>
             <ImageUploadButton
-              label="Upload background"
+              label={t("sections.form.uploadBackground")}
               onPicked={(file) => onUploadImage(file, "background")}
               uploading={uploading}
             />
@@ -88,15 +90,16 @@ export function AboutSectionForm({
   value: AboutContent
   onChange: (value: AboutContent) => void
 }) {
+  const { t } = useI18n()
   return (
     <div className="space-y-4">
-      <Field label="Heading">
+      <Field label={t("sections.form.heading")}>
         <Input
           value={value.heading ?? ""}
           onChange={(e) => onChange({ ...value, heading: e.target.value })}
         />
       </Field>
-      <Field label="Body">
+      <Field label={t("sections.form.body")}>
         <Textarea
           value={value.body ?? ""}
           onChange={(e) => onChange({ ...value, body: e.target.value })}
@@ -117,6 +120,7 @@ export function GallerySectionForm({
   onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
   uploading?: boolean
 }) {
+  const { t } = useI18n()
   const images = value.image_urls ?? []
 
   const addImage = async (file: File) => {
@@ -131,13 +135,13 @@ export function GallerySectionForm({
 
   return (
     <div className="space-y-4">
-      <Field label="Heading">
+      <Field label={t("sections.form.heading")}>
         <Input
           value={value.heading ?? ""}
           onChange={(e) => onChange({ ...value, heading: e.target.value })}
         />
       </Field>
-      <Field label="Images">
+      <Field label={t("sections.form.images")}>
         <div className="space-y-3">
           {images.length > 0 && (
             <div className="flex flex-wrap gap-2">
@@ -150,7 +154,7 @@ export function GallerySectionForm({
                   />
                   <button
                     type="button"
-                    aria-label="Remove image"
+                    aria-label={t("sections.form.removeImage")}
                     onClick={() => removeImage(index)}
                     className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-destructive-foreground text-xs leading-none hover:bg-destructive/90"
                   >
@@ -162,7 +166,7 @@ export function GallerySectionForm({
           )}
           {onUploadImage && (
             <ImageUploadButton
-              label="Add image"
+              label={t("sections.form.addImage")}
               onPicked={addImage}
               uploading={uploading}
             />
@@ -180,41 +184,42 @@ export function ContactSectionForm({
   value: ContactContent
   onChange: (value: ContactContent) => void
 }) {
+  const { t } = useI18n()
   return (
     <div className="space-y-4">
-      <Field label="Heading">
+      <Field label={t("sections.form.heading")}>
         <Input
           value={value.heading ?? ""}
           onChange={(e) => onChange({ ...value, heading: e.target.value })}
         />
       </Field>
-      <Field label="Phone">
+      <Field label={t("sections.form.phone")}>
         <Input
           value={value.phone ?? ""}
           onChange={(e) => onChange({ ...value, phone: e.target.value })}
         />
       </Field>
-      <Field label="Email">
+      <Field label={t("sections.form.email")}>
         <Input
           value={value.email ?? ""}
           onChange={(e) => onChange({ ...value, email: e.target.value })}
         />
       </Field>
-      <Field label="Address">
+      <Field label={t("sections.form.address")}>
         <PlacesAutocompleteInput
           value={value.address ?? ""}
           onChange={(address) => onChange({ ...value, address })}
-          placeholder="Street, city, country"
+          placeholder={t("sections.form.addressPlaceholder")}
         />
       </Field>
-      <Field label="Google review URL">
+      <Field label={t("sections.form.googleReviewUrl")}>
         <Input
           value={value.rating_url ?? ""}
           onChange={(e) => onChange({ ...value, rating_url: e.target.value })}
           placeholder="https://..."
         />
       </Field>
-      <Field label="Instagram URL">
+      <Field label={t("sections.form.instagramUrl")}>
         <Input
           value={value.instagram_url ?? ""}
           onChange={(e) => onChange({ ...value, instagram_url: e.target.value })}

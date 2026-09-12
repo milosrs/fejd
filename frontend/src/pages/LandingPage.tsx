@@ -14,11 +14,12 @@ import { Button } from "../components/ui/button"
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react"
 
 function AddSectionPicker({ onPick }: { onPick: (type: string) => void }) {
+  const { t } = useI18n()
   return (
     <div className="flex flex-wrap justify-center gap-2 rounded-xl border border-dashed border-border p-4">
       {KNOWN_SECTION_TYPES.map((type) => (
         <Button key={type} variant="outline" size="sm" onClick={() => onPick(type)}>
-          <Plus className="size-3" /> {type}
+          <Plus className="size-3" /> {t(`sections.${type}`)}
         </Button>
       ))}
     </div>
@@ -171,7 +172,7 @@ export function LandingPage() {
               className="mt-2"
               onClick={() => setShowAddPicker((v) => !v)}
             >
-              <Plus className="size-3" /> Add section
+              <Plus className="size-3" /> {t("landing.addSection")}
             </Button>
           )}
           {editingOn && showAddPicker && <AddSectionPicker onPick={addSection} />}
@@ -226,7 +227,7 @@ export function LandingPage() {
                 size="sm"
                 onClick={() => setShowAddPicker((v) => !v)}
               >
-                <Plus className="size-3" /> Add section
+                <Plus className="size-3" /> {t("landing.addSection")}
               </Button>
               {showAddPicker && <AddSectionPicker onPick={addSection} />}
             </div>

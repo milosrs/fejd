@@ -1,5 +1,8 @@
-import { useQuery } from "@tanstack/react-query"
+import { useMemo } from "react"
+import { useQuery, useQueries } from "@tanstack/react-query"
+import { CalendarDate } from "@internationalized/date"
 import { GET, POST, PUT, DELETE } from "../lib/api"
+import { getMonthDays } from "../lib/calendar"
 import type { components } from "../lib/api-types"
 
 const URL_BUSINESS_SERVICES = "/api/business/{slug}/services" as const
@@ -483,6 +486,41 @@ export function useMyReservations(businessId: string, date: string) {
     },
     enabled: !!(businessId && date),
   })
+}
+
+// useMyReservationsMonth fetches the caller's own reservations for every day of
+// a month and buckets them by YYYY-MM-DD so a month grid can render per-day
+// previews and a selected day can be expanded into a full agenda.
+export function useMyReservationsMonth(businessId: string, month: CalendarDate) {
+  const days = useMemo(
+    () => getMonthDays(month.year, month.month),
+    [month.year, month.month],
+  )
+
+  const results = useQueries({
+    queries: days.map((day) => ({
+      queryKey: ["my-reservations", businessId, day.toString()],
+      queryFn: async () => {
+        const { data } = await GET(URL_MY_RESERVATIONS, {
+          params: {
+            path: { businessID: businessId },
+            query: { date: day.toString() },
+          },
+        })
+        return data ?? []
+      },
+      enabled: !!businessId,
+    })),
+  })
+
+  const byDay: Record<string, Appointment[]> = {}
+  for (let i = 0; i < days.length; i++) {
+    byDay[days[i].toString()] = results[i]?.data ?? []
+  }
+
+  const isLoading = results.some((r) => r.isLoading)
+
+  return { byDay, isLoading }
 }
 
 export async function cancelReservation(businessId: string, appointmentId: string, reason: string) {
