@@ -269,6 +269,12 @@ export const mockI18nEn: Record<string, string> = {
   "reservations.rejecting": "Rejecting…",
   "reservations.noShowTitle": "Mark as no-show?",
   "reservations.markNoShow": "Mark no-show",
+  "reservations.myCalendar": "My calendar",
+  "reservations.selectEmployee": "Select employee",
+  "reservations.reserved": "Reserved",
+  "reservations.reservedRequest": "Request",
+  "reservations.reservedApproved": "Approved",
+  "reservations.reservedDenied": "Denied",
 
   "addAppointment.title": "Add appointment",
   "addAppointment.choose": "Choose a service and a time.",

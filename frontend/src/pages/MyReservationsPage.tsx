@@ -27,6 +27,13 @@ import { formatCancellationReason } from "../lib/cancellation"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../components/ui/select"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { ConfirmDialog } from "../components/ui/confirm-dialog"
 import { AddAppointmentDialog } from "../components/AddAppointmentDialog"
@@ -41,6 +48,18 @@ const STATUS_STYLES: Record<string, string> = {
   completed: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
   cancelled: "bg-red-500/15 text-red-600 dark:text-red-400",
   no_show: "bg-muted text-muted-foreground",
+}
+
+const RESERVED_STATUS_STYLES: Record<string, string> = {
+  pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
+  confirmed: "bg-green-500/15 text-green-600 dark:text-green-400",
+  rejected: "bg-red-500/15 text-red-600 dark:text-red-400",
+}
+
+function reservedStatusLabel(status: string, t: (key: string) => string): string {
+  if (status === "pending") return t("reservations.reservedRequest")
+  if (status === "confirmed") return t("reservations.reservedApproved")
+  return t("reservations.reservedDenied")
 }
 
 function StatusBadge({ status }: { status: string }) {
@@ -77,13 +96,14 @@ export function MyReservationsPage() {
   const todayDate = today(getLocalTimeZone())
   const [month, setMonth] = useState(() => new CalendarDate(todayDate.year, todayDate.month, 1))
   const [selected, setSelected] = useState<CalendarDate>(() => todayDate)
+  const [employeeView, setEmployeeView] = useState("self")
 
   const { byDay, isLoading: reservationsLoading } = useMyReservationsMonth(businessId!, month)
   const { data: myUnavailability } = useMyUnavailability(businessId!)
   const { data: ownAppointments, isLoading: ownLoading } = useMyAppointments()
   const { data: me } = useMe()
   const isOwner = me?.businesses.some((b) => b.id === businessId && b.role === "admin")
-  const { data: businessAppointments } = useBusinessAppointments(isOwner ? businessId! : "")
+  const { data: businessAppointments, isLoading: businessAppointmentsLoading } = useBusinessAppointments(isOwner ? businessId! : "")
   const { data: businessUnavailability } = useBusinessUnavailability(isOwner ? businessId! : "")
   const { data: employees } = useAdminEmployees(isOwner ? businessId! : "")
   const { data: customers } = useCustomers(businessId!)
@@ -207,56 +227,85 @@ export function MyReservationsPage() {
     }
   }
 
+  const viewingEmployee = isOwner && employeeView !== "self" && !!employeeView
+  const employeesList = (employees ?? []).filter((e) => e.role !== "admin")
+
   const selectedKey = selected.toString()
-  const reservations = byDay[selectedKey] ?? []
 
   const localKey = (iso: string): string => {
     const d = new Date(iso)
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
   }
 
+  // Reservations (appointments) scoped to the current view: the caller's own,
+  // or — for the owner — the selected employee's.
+  const scopeAppointmentsByDay: Record<string, Appointment[]> = viewingEmployee
+    ? (() => {
+        const map: Record<string, Appointment[]> = {}
+        for (const a of businessAppointments ?? []) {
+          if (a.business_user_id !== employeeView) continue
+          const key = localKey(a.start_time)
+          ;(map[key] ??= []).push(a)
+        }
+        return map
+      })()
+    : byDay
+
+  const scopeUnavailability = viewingEmployee
+    ? (businessUnavailability ?? []).filter((u) => u.business_user_id === employeeView)
+    : (myUnavailability ?? [])
+
   const unavailabilityByDay: Record<string, EmployeeUnavailability[]> = {}
-  for (const u of myUnavailability ?? []) {
-    if (u.status === "rejected") continue
+  for (const u of scopeUnavailability) {
     const key = localKey(u.start_time)
     ;(unavailabilityByDay[key] ??= []).push(u)
   }
 
   const eventsByDay: Record<string, ReservationTag[]> = {}
-  for (const key of new Set([...Object.keys(byDay), ...Object.keys(unavailabilityByDay)])) {
+  for (const key of new Set([...Object.keys(scopeAppointmentsByDay), ...Object.keys(unavailabilityByDay)])) {
     const tags: ReservationTag[] = []
-    for (const r of byDay[key] ?? []) {
+    for (const r of scopeAppointmentsByDay[key] ?? []) {
       tags.push({
         id: r.id,
-        label: r.service_name || "Service",
+        label: r.service_name || t("reservations.service"),
         tone: toneFor(r.service_name || r.id),
         muted: r.status === "cancelled",
       })
     }
     for (const u of unavailabilityByDay[key] ?? []) {
-      tags.push({ id: u.id, label: "Reserved", tone: "slate" })
+      tags.push({
+        id: u.id,
+        label: t("reservations.reserved"),
+        tone: "slate",
+        muted: u.status === "rejected",
+      })
     }
     eventsByDay[key] = tags
   }
 
-  const reservationsById = new Map(reservations.map((r) => [r.id, r]))
+  const selectedReservations = scopeAppointmentsByDay[selectedKey] ?? []
+  const selectedUnavailability = unavailabilityByDay[selectedKey] ?? []
+
+  const reservationsById = new Map(selectedReservations.map((r) => [r.id, r]))
+  const unavailabilityById = new Map(selectedUnavailability.map((u) => [u.id, u]))
+
   const events: ScheduleEvent[] = [
-    ...(unavailabilityByDay[selectedKey] ?? []).map((u) => ({
+    ...selectedUnavailability.map((u) => ({
       id: u.id,
-      title: "Reserved",
+      title: t("reservations.reserved"),
       subtitle: u.reason,
       start: new Date(u.start_time),
       end: new Date(u.end_time),
       tone: "slate" as const,
     })),
-    ...reservations.map((r) => {
+    ...selectedReservations.map((r) => {
       const subtitle =
         r.status === "cancelled" && r.cancellation_reason
           ? `${customerName(r.customer_user_id)} · ${formatCancellationReason(r.cancellation_reason, t)}`
           : customerName(r.customer_user_id)
       return {
         id: r.id,
-        title: r.service_name || "Service",
+        title: r.service_name || t("reservations.service"),
         subtitle,
         start: new Date(r.start_time),
         end: new Date(r.end_time),
@@ -267,49 +316,87 @@ export function MyReservationsPage() {
 
   const renderActions = (event: ScheduleEvent) => {
     const r = reservationsById.get(event.id)
-    if (!r) return null
-    return (
-      <>
-        <StatusBadge status={r.status} />
-        {r.status === "pending" && (
-          <>
-            <Button size="sm" onClick={() => handleAccept(r)}>
-              {t("reservations.accept")}
-            </Button>
+    if (r) {
+      return (
+        <>
+          <StatusBadge status={r.status} />
+          {r.status === "pending" && (
+            <>
+              <Button size="sm" onClick={() => handleAccept(r)}>
+                {t("reservations.accept")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setRejectTarget({
+                    kind: "appointment",
+                    id: r.id,
+                    label: `${r.service_name || t("reservations.service")} at ${format(new Date(r.start_time), "h:mm a")}`,
+                  })
+                }
+              >
+                {t("reservations.reject")}
+              </Button>
+            </>
+          )}
+          {!isPast(r) && (
             <Button
-              variant="outline"
+              variant="destructive"
               size="sm"
-              onClick={() =>
-                setRejectTarget({
-                  kind: "appointment",
-                  id: r.id,
-                  label: `${r.service_name || t("reservations.service")} at ${format(new Date(r.start_time), "h:mm a")}`,
-                })
-              }
+              onClick={() => {
+                setCancelTarget(r)
+                setReason("")
+              }}
             >
-              {t("reservations.reject")}
+              {t("reservations.cancel")}
             </Button>
-          </>
-        )}
-        {!isPast(r) && (
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => {
-              setCancelTarget(r)
-              setReason("")
-            }}
+          )}
+          {canMarkNoShow(r) && (
+            <Button variant="outline" size="sm" onClick={() => setNoShowTarget(r)}>
+              {t("reservations.noShow")}
+            </Button>
+          )}
+        </>
+      )
+    }
+
+    const u = unavailabilityById.get(event.id)
+    if (u) {
+      return (
+        <>
+          <span
+            className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+              RESERVED_STATUS_STYLES[u.status] ?? "bg-muted text-muted-foreground"
+            }`}
           >
-            {t("reservations.cancel")}
-          </Button>
-        )}
-        {canMarkNoShow(r) && (
-          <Button variant="outline" size="sm" onClick={() => setNoShowTarget(r)}>
-            {t("reservations.noShow")}
-          </Button>
-        )}
-      </>
-    )
+            {reservedStatusLabel(u.status, t)}
+          </span>
+          {viewingEmployee && u.status === "pending" && (
+            <>
+              <Button size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
+                {t("reservations.accept")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setRejectTarget({
+                    kind: "unavailability",
+                    id: u.id,
+                    label: `${t("reservations.reserved")} · ${format(new Date(u.start_time), "EEE, MMM d · h:mm a")}`,
+                  })
+                }
+              >
+                {t("reservations.reject")}
+              </Button>
+            </>
+          )}
+        </>
+      )
+    }
+
+    return null
   }
 
   return (
@@ -335,6 +422,31 @@ export function MyReservationsPage() {
           </p>
         )}
 
+        {isOwner && (
+          <div className="flex items-center gap-2">
+            <Select
+              aria-label={t("reservations.selectEmployee")}
+              selectedKey={employeeView}
+              onSelectionChange={(key) => setEmployeeView(String(key))}
+              className="min-w-52"
+            >
+              <SelectTrigger>
+                <SelectValue>
+                  {(state) => state.selectedText || t("reservations.myCalendar")}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem id="self">{t("reservations.myCalendar")}</SelectItem>
+                {employeesList.map((e) => (
+                  <SelectItem key={e.id} id={e.id}>
+                    {e.display_name || t("reservations.employee")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
           <CalendarGrid
             month={month}
@@ -350,7 +462,7 @@ export function MyReservationsPage() {
             onNextDay={() => goToDate(selected.add({ days: 1 }))}
             onOpenCalendar={() => goToDate(todayDate)}
             events={events}
-            isLoading={reservationsLoading}
+            isLoading={viewingEmployee ? businessAppointmentsLoading : reservationsLoading}
             renderActions={renderActions}
           />
         </div>

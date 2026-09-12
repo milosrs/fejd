@@ -6,9 +6,12 @@ import { I18nProvider } from "../lib/i18n"
 import { useAuthStore } from "../stores/authStore"
 import { mockI18nEn } from "./mockI18n"
 import type { Me } from "../hooks/useMe"
-import type { EmployeeUnavailability, Appointment, Service, Customer } from "../hooks/useApi"
+import type { EmployeeUnavailability, Appointment, Service, Customer, Employee } from "../hooks/useApi"
 
 export const staffBusinessId = "11111111-1111-4111-8111-111111111111"
+export const ownerBusinessUserId = "11111111-1111-4111-8111-111111111111"
+export const employeeOneId = "55555555-5555-4555-8555-555555555555"
+export const employeeTwoId = "66666666-6666-4666-8666-666666666666"
 
 function futureISO(days: number, hour: number, minute = 0): string {
   const now = new Date()
@@ -35,13 +38,14 @@ function mkReservation(
   serviceName: string,
   status: string,
   customerId = "customer-1",
+  businessUserId = employeeOneId,
 ): Appointment {
   const start = monthDayISO(day, startHour, startMinute)
   const end = new Date(new Date(start).getTime() + durationMin * 60000).toISOString()
   return {
     id,
     business_id: staffBusinessId,
-    business_user_id: "55555555-5555-4555-8555-555555555555",
+    business_user_id: businessUserId,
     customer_user_id: customerId,
     service_id: "22222222-2222-4222-8222-222222222222",
     service_name: serviceName,
@@ -175,6 +179,52 @@ export const mockMonthUnavailability: EmployeeUnavailability[] = [
   },
 ]
 
+export const mockEmployees: Employee[] = [
+  {
+    id: ownerBusinessUserId,
+    business_id: staffBusinessId,
+    user_id: "user-owner",
+    role: "admin",
+    display_name: "Fejd Owner",
+    active: true,
+  },
+  {
+    id: employeeOneId,
+    business_id: staffBusinessId,
+    user_id: "user-1",
+    role: "employee",
+    display_name: "Alex W",
+    active: true,
+  },
+  {
+    id: employeeTwoId,
+    business_id: staffBusinessId,
+    user_id: "user-2",
+    role: "employee",
+    display_name: "Ivan M",
+    active: true,
+  },
+]
+
+export const mockBusinessAppointments: Appointment[] = [
+  ...mockMonthReservations,
+  mkReservation("e2-01", 4, 10, 0, 30, "Haircut", "confirmed", "customer-1", employeeTwoId),
+  mkReservation("e2-02", 6, 12, 0, 20, "Beard Trim", "pending", "customer-2", employeeTwoId),
+  mkReservation("e2-03", 16, 14, 0, 30, "Haircut", "confirmed", "customer-3", employeeTwoId),
+]
+
+export const mockBusinessUnavailability: EmployeeUnavailability[] = [
+  ...mockMonthUnavailability,
+  {
+    id: "vvvvvvvv-vvvv-4vvv-8vvv-vvvvvvvvvvv1",
+    business_user_id: employeeTwoId,
+    start_time: monthDayISO(7, 13, 0),
+    end_time: monthDayISO(7, 14, 0),
+    reason: "Doctor visit",
+    status: "pending",
+  },
+]
+
 export const staffOwnerMe: Me = {
   approval_status: "approved",
   has_salon: true,
@@ -282,6 +332,9 @@ interface StaffProvidersProps {
   reservations?: Appointment[]
   services?: Service[]
   customers?: Customer[]
+  employees?: Employee[]
+  businessAppointments?: Appointment[]
+  businessUnavailability?: EmployeeUnavailability[]
   children: React.ReactNode
 }
 
@@ -293,6 +346,9 @@ export function StaffProviders({
   reservations = [],
   services = mockMyServices,
   customers = mockCustomers,
+  employees = mockEmployees,
+  businessAppointments = [],
+  businessUnavailability = [],
   children,
 }: StaffProvidersProps) {
   const reservationBuckets = useMemo(() => {
@@ -316,12 +372,15 @@ export function StaffProviders({
     qc.setQueryData(["my-services", businessId], services)
     qc.setQueryData(["customers", businessId], customers)
     qc.setQueryData(["my-appointments"], [])
+    qc.setQueryData(["admin-employees", businessId], employees)
+    qc.setQueryData(["business-appointments", businessId], businessAppointments)
+    qc.setQueryData(["business-unavailability", businessId], businessUnavailability)
     qc.setQueryData(["i18n", "en"], mockI18nEn)
     if (me) {
       qc.setQueryData(["me"], me)
     }
     return qc
-  }, [businessId, me, unavailability, reservationBuckets, services, customers])
+  }, [businessId, me, unavailability, reservationBuckets, services, customers, employees, businessAppointments, businessUnavailability])
 
   useLayoutEffect(() => {
     useAuthStore.setState({

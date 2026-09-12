@@ -4,6 +4,8 @@ import {
   StaffFrame,
   mockMonthReservations,
   mockMonthUnavailability,
+  mockBusinessAppointments,
+  mockBusinessUnavailability,
   staffOwnerMe,
   staffEmployeeMe,
 } from "../stories/staff"
@@ -26,6 +28,8 @@ export const OwnerWithReservations: Story = {
       me={staffOwnerMe}
       reservations={mockMonthReservations}
       unavailability={mockMonthUnavailability}
+      businessAppointments={mockBusinessAppointments}
+      businessUnavailability={mockBusinessUnavailability}
     >
       <MyReservationsPage />
     </StaffFrame>
