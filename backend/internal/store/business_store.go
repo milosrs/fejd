@@ -54,6 +54,33 @@ func (s *BusinessStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Busi
 	return &b, nil
 }
 
+func (s *BusinessStore) List(ctx context.Context) ([]models.Business, error) {
+	sql, args, err := psql.
+		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_hours", "slot_interval_minutes").
+		From("businesses").
+		OrderBy("created_at").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list businesses: %w", err)
+	}
+	defer rows.Close()
+
+	var businesses []models.Business
+	for rows.Next() {
+		var b models.Business
+		if err := rows.Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterHours, &b.SlotIntervalMinutes); err != nil {
+			return nil, fmt.Errorf("failed to scan business: %w", err)
+		}
+		businesses = append(businesses, b)
+	}
+	return businesses, nil
+}
+
 func (s *BusinessStore) ListMembershipsByUser(ctx context.Context, userID string) ([]models.BusinessMembership, error) {
 	sql, args, err := psql.
 		Select("b.id", "b.name", "b.slug", "bu.role").

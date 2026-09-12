@@ -52,7 +52,7 @@ export function AdminSchedulePage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+      <div className="min-h-app bg-background flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Please log in to access admin.</p>
         <Button onClick={login}>Login</Button>
       </div>
@@ -104,7 +104,7 @@ export function AdminSchedulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-app bg-background">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex gap-4 items-center">
           <h1 className="text-xl font-semibold text-foreground">Schedule Management</h1>

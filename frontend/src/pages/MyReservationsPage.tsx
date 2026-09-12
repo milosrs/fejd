@@ -4,7 +4,7 @@ import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "../stores/authStore"
-import { useMyReservations, cancelReservation, markNoShow, type Appointment } from "../hooks/useApi"
+import { useMyReservations, useMyAppointments, cancelReservation, markNoShow, type Appointment } from "../hooks/useApi"
 import { useI18n } from "../lib/i18n"
 import { formatCancellationReason } from "../lib/cancellation"
 import { Button } from "../components/ui/button"
@@ -14,6 +14,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Calendar } from "../components/ui/calendar"
 import { ConfirmDialog } from "../components/ui/confirm-dialog"
 import { AddAppointmentDialog } from "../components/AddAppointmentDialog"
+import { MyAppointmentsList } from "../components/MyAppointmentsList"
 
 const STATUS_STYLES: Record<string, string> = {
   pending: "bg-yellow-500/15 text-yellow-600 dark:text-yellow-400",
@@ -55,6 +56,7 @@ export function MyReservationsPage() {
 
   const [date, setDate] = useState(() => today(getLocalTimeZone()).toString())
   const { data: reservations, isLoading } = useMyReservations(businessId!, date)
+  const { data: ownAppointments, isLoading: ownLoading } = useMyAppointments()
   const { t } = useI18n()
 
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
@@ -66,7 +68,7 @@ export function MyReservationsPage() {
 
   if (!authenticated) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
+      <div className="min-h-app bg-background flex flex-col items-center justify-center gap-4">
         <p className="text-muted-foreground">Please log in to manage your reservations.</p>
         <Button onClick={login}>Login</Button>
       </div>
@@ -107,7 +109,7 @@ export function MyReservationsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-app bg-background">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex gap-4 items-center">
           <h1 className="text-xl font-semibold text-foreground">My Reservations</h1>
@@ -139,7 +141,7 @@ export function MyReservationsPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Reservations for {format(new Date(`${date}T00:00:00`), "EEEE, MMMM d")}</CardTitle>
+            <CardTitle>Customer reservations for {format(new Date(`${date}T00:00:00`), "EEEE, MMMM d")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
             {isLoading ? (
@@ -192,6 +194,15 @@ export function MyReservationsPage() {
                 {message}
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>My appointments</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MyAppointmentsList appointments={ownAppointments} isLoading={ownLoading} />
           </CardContent>
         </Card>
       </main>

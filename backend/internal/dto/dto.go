@@ -36,6 +36,13 @@ type MeBusiness struct {
 	Role string    `json:"role" validate:"required"`
 }
 
+// DirectoryBusiness is a public salon directory entry.
+type DirectoryBusiness struct {
+	ID   uuid.UUID `json:"id" validate:"required"`
+	Name string    `json:"name" validate:"required"`
+	Slug string    `json:"slug" validate:"required"`
+}
+
 type BusinessUser struct {
 	ID          uuid.UUID `json:"id" validate:"required"`
 	BusinessID  uuid.UUID `json:"business_id" validate:"required"`

@@ -50,6 +50,27 @@ func NewBusinessHandler(
 	}
 }
 
+// ListBusinesses godoc
+// @Summary      List salons
+// @Description  Returns all salons for the public directory.
+// @Tags         public
+// @Produce      json
+// @Success      200 {array} dto.DirectoryBusiness
+// @Failure      500 {object} ErrorResponse
+// @Router       /api/businesses [get]
+func (h *BusinessHandler) ListBusinesses(w http.ResponseWriter, r *http.Request) {
+	businesses, err := h.businessStore.List(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list businesses")
+		return
+	}
+	if businesses == nil {
+		businesses = []models.Business{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.DirectoryBusinessesFromModels(businesses))
+}
+
 // GetBusiness godoc
 // @Summary      Get business details
 // @Description  Returns a business with its services and employees by slug.

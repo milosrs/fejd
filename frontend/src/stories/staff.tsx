@@ -225,6 +225,7 @@ export function StaffProviders({
     qc.setQueryData(["my-reservations", businessId, todayKey], reservations)
     qc.setQueryData(["my-services", businessId], services)
     qc.setQueryData(["customers", businessId], customers)
+    qc.setQueryData(["my-appointments"], [])
     if (me) {
       qc.setQueryData(["me"], me)
     }

@@ -2694,6 +2694,54 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/businesses": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List salons
+         * @description Returns all salons for the public directory.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.DirectoryBusiness"][];
+                    };
+                };
+                /** @description Internal Server Error */
+                500: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/i18n/{locale}": {
         parameters: {
             query?: never;
@@ -3319,6 +3367,11 @@ export interface components {
         "dto.Customer": {
             display_name?: string;
             user_id: string;
+        };
+        "dto.DirectoryBusiness": {
+            id: string;
+            name: string;
+            slug: string;
         };
         "dto.EmployeeUnavailability": {
             business_user_id: string;

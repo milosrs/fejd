@@ -8,6 +8,7 @@ import { useHeaderHeightMeasure } from "../hooks/useHeaderHeightMeasure"
 import { useSections } from "../hooks/useSections"
 import { useI18n } from "../lib/i18n"
 import type { HeroContent } from "../lib/sections"
+import { Loader } from "./Loader"
 
 function SalonShell() {
   const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
@@ -18,16 +19,12 @@ function SalonShell() {
   const salonHeaderRef = useHeaderHeightMeasure("--salon-header-height")
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    )
+    return <Loader />
   }
 
   if (!salon) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-app flex items-center justify-center bg-background">
         <p className="text-muted-foreground">Salon not found</p>
       </div>
     )
@@ -48,7 +45,7 @@ function SalonShell() {
   const title = heroContent?.headline || salon.business.name
 
   return (
-    <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
+    <div className="min-h-app bg-background pb-[env(safe-area-inset-bottom)]">
       <header ref={salonHeaderRef} className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex flex-wrap items-center justify-between gap-2">
           <Link to={salonPath(slug)} className="text-lg font-semibold text-foreground">

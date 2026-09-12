@@ -8,7 +8,7 @@ export function DatePickerPage() {
   const todayDate = today(getLocalTimeZone())
 
   return (
-    <div className="min-h-screen flex flex-col items-center bg-background p-8">
+    <div className="min-h-app flex flex-col items-center bg-background p-8">
       <h1 className="text-2xl font-bold mb-8">Select a Date</h1>
       <Calendar
         value={selectedDate}

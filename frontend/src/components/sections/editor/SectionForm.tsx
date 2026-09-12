@@ -214,6 +214,13 @@ export function ContactSectionForm({
           placeholder="https://..."
         />
       </Field>
+      <Field label="Instagram URL">
+        <Input
+          value={value.instagram_url ?? ""}
+          onChange={(e) => onChange({ ...value, instagram_url: e.target.value })}
+          placeholder="https://www.instagram.com/..."
+        />
+      </Field>
     </div>
   )
 }

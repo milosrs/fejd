@@ -38,6 +38,22 @@ func MeBusinessesFromModels(ms []models.BusinessMembership) []MeBusiness {
 	return out
 }
 
+func DirectoryBusinessFromModel(m models.Business) DirectoryBusiness {
+	return DirectoryBusiness{
+		ID:   m.ID,
+		Name: m.Name,
+		Slug: m.Slug,
+	}
+}
+
+func DirectoryBusinessesFromModels(ms []models.Business) []DirectoryBusiness {
+	out := make([]DirectoryBusiness, len(ms))
+	for i, m := range ms {
+		out[i] = DirectoryBusinessFromModel(m)
+	}
+	return out
+}
+
 func BusinessUserFromModel(m models.BusinessUser) BusinessUser {
 	return BusinessUser{
 		ID:          m.ID,

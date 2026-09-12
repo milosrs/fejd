@@ -13,6 +13,8 @@ const AUTH_URL = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-conne
 const TOKEN_URL = `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/token`
 
 const K_REFRESH = "fejd.refresh_token"
+const K_CODE_VERIFIER = "fejd.code_verifier"
+const K_RETURN_TO = "fejd.return_to"
 
 // --- PKCE / crypto helpers -------------------------------------------------
 
@@ -41,6 +43,28 @@ function decodeJwt(token: string): Record<string, any> {
   const base64 = payload.replace(/-/g, "+").replace(/_/g, "/")
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")
   return JSON.parse(atob(padded))
+}
+
+// rememberReturnTo records the current in-app route so the user can be sent
+// back to it after authentication, even if the app was cold-started by the
+// redirect (which loses the in-memory router state).
+function rememberReturnTo() {
+  try {
+    const { pathname, search, hash } = window.location
+    localStorage.setItem(K_RETURN_TO, pathname + search + hash)
+  } catch {
+    // localStorage may be unavailable; return-to is best-effort.
+  }
+}
+
+export function consumeReturnTo(): string | undefined {
+  try {
+    const path = localStorage.getItem(K_RETURN_TO)
+    if (path) localStorage.removeItem(K_RETURN_TO)
+    return path || undefined
+  } catch {
+    return undefined
+  }
 }
 
 // --- state -----------------------------------------------------------------
@@ -133,15 +157,22 @@ async function handleRedirect(url: string): Promise<boolean> {
   if (error) throw new Error(`authorization failed: ${error}`)
 
   const code = u.searchParams.get("code")
-  if (!code || !codeVerifier) return false
+  if (!code) return false
+
+  // The verifier may live in secure storage if the app was cold-started while
+  // the browser was open (the in-memory variable is lost on process death).
+  const verifier =
+    codeVerifier ?? (await SecureStorage.getItem(K_CODE_VERIFIER).catch(() => null))
+  if (!verifier) return false
+  codeVerifier = null
+  await SecureStorage.removeItem(K_CODE_VERIFIER).catch(() => {})
 
   const tokens = await exchangeToken({
     grant_type: "authorization_code",
     code,
     redirect_uri: REDIRECT_URI,
-    code_verifier: codeVerifier,
+    code_verifier: verifier,
   })
-  codeVerifier = null
   applyTokens(tokens)
   notify()
   return true
@@ -180,6 +211,12 @@ export const nativeAdapter: AuthAdapter = {
     codeVerifier = randomString(64)
     const challenge = await generateChallenge(codeVerifier)
 
+    // Persist the verifier and remember the current route so a cold-started
+    // app (killed while the system browser was open) can still complete the
+    // exchange and return the user to where they were.
+    await SecureStorage.setItem(K_CODE_VERIFIER, codeVerifier).catch(() => {})
+    rememberReturnTo()
+
     const params = new URLSearchParams({
       client_id: CLIENT_ID,
       redirect_uri: REDIRECT_URI,
@@ -194,6 +231,11 @@ export const nativeAdapter: AuthAdapter = {
   },
 
   async register() {
+    codeVerifier = randomString(64)
+    const challenge = await generateChallenge(codeVerifier)
+    await SecureStorage.setItem(K_CODE_VERIFIER, codeVerifier).catch(() => {})
+    rememberReturnTo()
+
     const registrationUrl =
       `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/registrations?` +
       new URLSearchParams({
@@ -201,6 +243,8 @@ export const nativeAdapter: AuthAdapter = {
         redirect_uri: REDIRECT_URI,
         response_type: "code",
         scope: "openid profile email",
+        code_challenge: challenge,
+        code_challenge_method: "S256",
       }).toString()
 
     await Browser.open({ url: registrationUrl, windowName: "_self" })

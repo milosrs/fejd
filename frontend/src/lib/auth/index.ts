@@ -6,3 +6,5 @@ import { nativeAdapter } from "./native"
 // Platform-agnostic auth: keycloak-js on web, Capacitor Browser + PKCE on
 // native (Android/iOS).
 export const auth: AuthAdapter = Capacitor.isNativePlatform() ? nativeAdapter : webAdapter
+
+export { consumeReturnTo } from "./native"

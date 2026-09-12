@@ -30,6 +30,7 @@ export interface ContactContent {
   email?: string
   address?: string
   rating_url?: string
+  instagram_url?: string
 }
 
 export type SectionContent =

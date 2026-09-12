@@ -48,6 +48,8 @@ func newRouter(
 
 	r.Route("/api", func(r chi.Router) {
 		// Public.
+		r.Get("/businesses", businessHandler.ListBusinesses)
+
 		r.Route("/business/{slug}", func(r chi.Router) {
 			r.Get("/", businessHandler.GetBusiness)
 			r.Get("/services", businessHandler.GetServices)

@@ -32,12 +32,24 @@ const URL_INVITATION = "/api/invitations/{token}" as const
 const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
 const URL_ME_AVATAR = "/api/me/avatar" as const
+const URL_BUSINESSES = "/api/businesses" as const
 
 type Schemas = components["schemas"]
 
 export type Service = Schemas["dto.Service"]
 export type Employee = Schemas["dto.BusinessUser"]
 export type TimeSlot = Schemas["dto.TimeSlot"]
+export type DirectoryBusiness = Schemas["dto.DirectoryBusiness"]
+
+export function useBusinesses() {
+  return useQuery({
+    queryKey: ["businesses"],
+    queryFn: async () => {
+      const { data } = await GET(URL_BUSINESSES)
+      return data
+    },
+  })
+}
 
 export function useServices(slug: string) {
   return useQuery({

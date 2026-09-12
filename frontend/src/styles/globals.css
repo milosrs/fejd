@@ -49,6 +49,53 @@
     --font-sans: 'Inter Variable', sans-serif;
 }
 
+@theme {
+    --animate-breathing: breathing var(--breathing-speed, 2.1s) cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    --animate-fade-in: fade-in 0.4s ease-out both;
+    --animate-fade-out: fade-out 0.35s ease-in both;
+
+    @keyframes breathing {
+        0%,
+        100% {
+            transform: scale(1);
+            opacity: 0.9;
+        }
+
+        50% {
+            transform: scale(var(--breathing-scale, 1.2));
+            opacity: 1;
+        }
+    }
+
+    @keyframes fade-in {
+        from {
+            opacity: 0;
+        }
+
+        to {
+            opacity: 1;
+        }
+    }
+
+    @keyframes fade-out {
+        from {
+            opacity: 1;
+        }
+
+        to {
+            opacity: 0;
+        }
+    }
+}
+
+@utility min-h-app {
+    min-height: calc(100dvh - var(--top-header-height, 0px));
+}
+
+@utility min-h-salon {
+    min-height: calc(100dvh - var(--top-header-height, 0px) - var(--salon-header-height, 0px));
+}
+
 :root {
     --radius: 0.625rem;
     --background: oklch(0.145 0 0);

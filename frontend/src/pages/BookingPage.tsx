@@ -106,7 +106,7 @@ export function BookingPage() {
 
   if (bookedTime) {
     return (
-      <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
+      <div className="min-h-salon bg-background pb-[env(safe-area-inset-bottom)]">
         <main className="max-w-4xl mx-auto px-4 py-8">
           <Card>
             <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
@@ -136,7 +136,7 @@ export function BookingPage() {
 
   if (servicesLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-salon bg-background flex items-center justify-center">
         <p className="text-muted-foreground">Loading…</p>
       </div>
     )
@@ -151,7 +151,7 @@ export function BookingPage() {
     : undefined
 
   return (
-    <div className="min-h-screen bg-background pb-[env(safe-area-inset-bottom)]">
+    <div className="min-h-salon bg-background pb-[env(safe-area-inset-bottom)]">
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-4">
           <Button variant="ghost" onClick={() => navigate(salonPath(slug, "/services"))}>

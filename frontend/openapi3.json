@@ -2997,6 +2997,40 @@
                 }
             }
         },
+        "/api/businesses": {
+            "get": {
+                "description": "Returns all salons for the public directory.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "List salons",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/dto.DirectoryBusiness"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/i18n/{locale}": {
             "get": {
                 "description": "Returns the app's UI labels as a flat key/value object for the given locale.",
@@ -3723,6 +3757,25 @@
                         "type": "string"
                     },
                     "user_id": {
+                        "type": "string"
+                    }
+                }
+            },
+            "dto.DirectoryBusiness": {
+                "type": "object",
+                "required": [
+                    "id",
+                    "name",
+                    "slug"
+                ],
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "slug": {
                         "type": "string"
                     }
                 }

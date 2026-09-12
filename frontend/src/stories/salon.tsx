@@ -165,6 +165,7 @@ export const mockSections: Section[] = [
         phone: "+46 8 123 45 67",
         email: "hello@fejd.example",
         address: "Main Street 1, Stockholm",
+        instagram_url: "https://www.instagram.com/fejdbarbershop",
       },
     },
     position: 3,

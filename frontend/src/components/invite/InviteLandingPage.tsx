@@ -20,7 +20,7 @@ export function InviteLandingPage() {
   const appStore = import.meta.env.VITE_APP_STORE_URL
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-background p-8">
+    <div className="min-h-app flex flex-col items-center justify-center gap-4 bg-background p-8">
       {isLoading ? (
         <p className="text-muted-foreground">Loading invitation…</p>
       ) : isError ? (

@@ -18,15 +18,18 @@ import { MySchedulePage } from "./pages/MySchedulePage"
 import { MyReservationsPage } from "./pages/MyReservationsPage"
 import { SalonLayout } from "./components/SalonLayout"
 import { Toaster } from "./components/ui/toaster"
+import { Button } from "./components/ui/button"
 import { I18nProvider } from "./lib/i18n"
 import { ThemeProvider } from "#components/theme-provider"
 import { ModeToggle } from "#components/mode-toggle"
 import { OnboardingGate } from "#components/OnboardingGate"
+import { Loader } from "#components/Loader"
 import { InviteLandingPage } from "./components/invite/InviteLandingPage"
 import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
 import { subdomainSlug, openAppHome } from "./lib/salonDomain"
 import { resolveImageUrl } from "./lib/images"
 import { pickImage } from "./lib/imagePicker"
+import { consumeReturnTo } from "./lib/auth"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -54,9 +57,8 @@ function ProfileAvatar({ src, name }: { src?: string; name?: string }) {
             alt={name}
             onLoad={() => setLoaded(true)}
             onError={() => setFailed(true)}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity ${
-              loaded ? "opacity-100" : "opacity-0"
-            }`}
+            className={`absolute inset-0 h-full w-full object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"
+              }`}
           />
           {!loaded && (
             <span className="absolute inset-0 animate-pulse rounded-full bg-muted" />
@@ -74,6 +76,8 @@ function AppInit({ children }: { children: React.ReactNode }) {
   const authenticated = useAuthStore((s) => s.authenticated)
   const userInfo = useAuthStore((s) => s.userInfo)
   const logout = useAuthStore((s) => s.logout)
+  const login = useAuthStore((s) => s.login)
+  const register = useAuthStore((s) => s.register)
   const navigate = useNavigate()
   const location = useLocation()
   const queryClient = useQueryClient()
@@ -96,12 +100,27 @@ function AppInit({ children }: { children: React.ReactNode }) {
     init()
   }, [init])
 
-  if (!initialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    )
+  const [appReady, setAppReady] = useState(false)
+
+  useEffect(() => {
+    if (!initialized) return
+    const t = setTimeout(() => setAppReady(true), 350)
+    return () => clearTimeout(t)
+  }, [initialized])
+
+  // After authentication completes, send the user back to the route they were
+  // on before logging in (relevant for the native app, which can be cold-started
+  // by the redirect and lose its in-memory route).
+  useEffect(() => {
+    if (!initialized || !authenticated) return
+    const returnTo = consumeReturnTo()
+    if (!returnTo || returnTo === "/") return
+    const current = location.pathname + location.search
+    if (returnTo !== current) navigate(returnTo)
+  }, [initialized, authenticated, navigate, location.pathname, location.search])
+
+  if (!appReady) {
+    return <Loader className={initialized ? "animate-fade-out" : undefined} />
   }
 
   const isSalonView = (() => {
@@ -117,71 +136,93 @@ function AppInit({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <>
+    <div className="animate-fade-in">
       <InviteAcceptHandler />
-      {authenticated && (
-        <header ref={topHeaderRef} className="border-b">
-          <div className="flex items-center justify-between gap-4 px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
-            <div className="flex min-w-0 items-center gap-3">
-              <button
-                type="button"
-                onClick={handlePickAvatar}
-                aria-label="Upload profile picture"
-                className="shrink-0 overflow-hidden rounded-full ring-2 ring-border hover:opacity-80 focus:outline-none focus-visible:ring-primary"
-              >
-                <ProfileAvatar src={avatarUrl} name={userInfo?.name} />
-              </button>
-              <span className="truncate text-sm text-foreground">
-                Welcome {userInfo?.name}
-              </span>
-              {isSalonView && (
+      <header ref={topHeaderRef} className="border-b">
+        <div className="flex items-center justify-between gap-4 px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
+          <div className="flex min-w-0 items-center gap-3">
+            <button
+              type="button"
+              onClick={() => openAppHome(navigate)}
+              aria-label="Go to home page"
+              className="shrink-0 cursor-pointer rounded hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            >
+              <img src="/logo-white.jpg" alt="fejd" className="h-7 w-auto dark:hidden" />
+              <img src="/logo_dark.jpg" alt="fejd" className="hidden h-7 w-auto dark:block" />
+            </button>
+            {authenticated && (
+              <>
+                <span className="truncate text-sm text-foreground">
+                  Welcome {userInfo?.name}
+                </span>
+                {isSalonView && (
+                  <button
+                    type="button"
+                    onClick={() => openAppHome(navigate)}
+                    className="ml-2 shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    All salons
+                  </button>
+                )}
+                <nav className="flex items-center gap-1">
+                  <Link
+                    to="/my/appointments"
+                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                  >
+                    My appointments
+                  </Link>
+                  {hasSalon && primaryBusiness && (
+                    <>
+                      <Link
+                        to={`/admin/business/${primaryBusiness.id}/my-reservations`}
+                        className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        My reservations
+                      </Link>
+                      <Link
+                        to={`/admin/business/${primaryBusiness.id}/my-schedule`}
+                        className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                      >
+                        Reserve my time
+                      </Link>
+                    </>
+                  )}
+                </nav>
+              </>
+            )}
+          </div>
+          <div className="flex shrink-0 items-center gap-4">
+            {authenticated ? (
+              <>
+                <button
+                  onClick={logout}
+                  className="text-sm text-muted-foreground underline hover:text-foreground"
+                >
+                  Logout
+                </button>
+                <ModeToggle />
                 <button
                   type="button"
-                  onClick={() => openAppHome(navigate)}
-                  className="ml-2 shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                  onClick={handlePickAvatar}
+                  aria-label="Upload profile picture"
+                  className="shrink-0 overflow-hidden rounded-full ring-2 ring-border hover:opacity-80 focus:outline-none focus-visible:ring-primary"
                 >
-                  All salons
+                  <ProfileAvatar src={avatarUrl} name={userInfo?.name} />
                 </button>
-              )}
-              <nav className="flex items-center gap-1">
-                <Link
-                  to="/my/appointments"
-                  className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                >
-                  My appointments
-                </Link>
-                {hasSalon && primaryBusiness && (
-                  <>
-                    <Link
-                      to={`/admin/business/${primaryBusiness.id}/my-reservations`}
-                      className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      My reservations
-                    </Link>
-                    <Link
-                      to={`/admin/business/${primaryBusiness.id}/my-schedule`}
-                      className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                    >
-                      Reserve my time
-                    </Link>
-                  </>
-                )}
-              </nav>
-            </div>
-            <div className="flex shrink-0 items-center gap-4">
-              <button
-                onClick={logout}
-                className="text-sm text-muted-foreground underline hover:text-foreground"
-              >
-                Logout
-              </button>
-              <ModeToggle />
-            </div>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" onClick={login}>
+                  Log in
+                </Button>
+                <Button onClick={register}>Register</Button>
+              </>
+            )}
           </div>
-        </header>
-      )}
+        </div>
+      </header>
       {children}
-    </>
+    </div>
   )
 }
 
@@ -197,11 +238,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   }, [initialized, authenticated, login])
 
   if (!initialized) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">Loading...</p>
-      </div>
-    )
+    return <Loader label="Loading..." />
   }
 
   if (!authenticated) {

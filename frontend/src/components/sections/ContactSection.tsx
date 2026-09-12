@@ -1,14 +1,21 @@
 import { Mail, MapPin, Phone, Star } from "lucide-react"
 import type { ContactContent } from "../../lib/sections"
+import { instagramHandle, instagramUrl } from "../../lib/instagram"
+import { openExternalUrl } from "../../lib/externalUrl"
+import { InstagramIcon } from "../icons/InstagramIcon"
 import { MapEmbed } from "./MapEmbed"
 
 export function ContactSection({ content }: { content: ContactContent }) {
+  const igUrl = content.instagram_url ? instagramUrl(content.instagram_url) : ""
+  const igHandle = content.instagram_url ? instagramHandle(content.instagram_url) : ""
+
   const hasContent = Boolean(
     content.heading ||
       content.phone ||
       content.email ||
       content.address ||
-      content.rating_url,
+      content.rating_url ||
+      igUrl,
   )
   if (!hasContent) return null
 
@@ -41,6 +48,22 @@ export function ContactSection({ content }: { content: ContactContent }) {
                   rel="noreferrer"
                 >
                   {content.address}
+                </a>
+              </li>
+            )}
+            {igUrl && (
+              <li className="flex items-center gap-2">
+                <InstagramIcon className="size-4" />
+                <a
+                  href={igUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(event) => {
+                    event.preventDefault()
+                    void openExternalUrl(igUrl)
+                  }}
+                >
+                  {igHandle}
                 </a>
               </li>
             )}
