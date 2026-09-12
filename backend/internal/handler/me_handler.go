@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -142,7 +143,7 @@ func (h *MeHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	slug, err := h.availableSlug(r, name)
+	slug, err := availableSlug(r.Context(), h.businessStore, h.pool, name)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to generate slug")
 		return
@@ -176,7 +177,9 @@ func (h *MeHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, dto.BusinessFromModel(*business))
 }
 
-func (h *MeHandler) availableSlug(r *http.Request, name string) (string, error) {
+// availableSlug derives a unique, valid slug from a business name, appending a
+// numeric suffix on collision. Shared by business creation and rename.
+func availableSlug(ctx context.Context, businessStore *store.BusinessStore, pool *pgxpool.Pool, name string) (string, error) {
 	base := sanitizeSlug(slugify(name))
 	slug := base
 	for i := 2; ; i++ {
@@ -184,7 +187,7 @@ func (h *MeHandler) availableSlug(r *http.Request, name string) (string, error) 
 			slug = fmt.Sprintf("%s-%d", base, i)
 			continue
 		}
-		exists, err := h.businessStore.SlugExists(r.Context(), h.pool, slug)
+		exists, err := businessStore.SlugExists(ctx, pool, slug)
 		if err != nil {
 			return "", err
 		}
@@ -232,6 +235,30 @@ func isReservedSubdomain(s string) bool {
 	return ok
 }
 
+// slugTransliterations maps accented Latin characters to their ASCII
+// equivalents so slugified names stay readable (e.g. "Dragičević" →
+// "dragicevic") instead of dropping the accented characters.
+var slugTransliterations = map[rune]string{
+	'à': "a", 'á': "a", 'â': "a", 'ã': "a", 'ä': "a", 'å': "a", 'ā': "a", 'ă': "a", 'ą': "a",
+	'æ': "ae",
+	'ç': "c", 'ć': "c", 'č': "c",
+	'ď': "d", 'đ': "d",
+	'è': "e", 'é': "e", 'ê': "e", 'ë': "e", 'ē': "e", 'ĕ': "e", 'ė': "e", 'ę': "e", 'ě': "e",
+	'ğ': "g",
+	'ì': "i", 'í': "i", 'î': "i", 'ï': "i", 'ĩ': "i", 'ī': "i", 'ĭ': "i", 'į': "i", 'ı': "i",
+	'ĺ': "l", 'ľ': "l", 'ł': "l",
+	'ñ': "n", 'ń': "n", 'ň': "n", 'ņ': "n",
+	'ò': "o", 'ó': "o", 'ô': "o", 'õ': "o", 'ö': "o", 'ø': "o", 'ō': "o", 'ő': "o",
+	'œ': "oe",
+	'ŕ': "r", 'ř': "r",
+	'ś': "s", 'š': "s", 'ş': "s", 'ș': "s",
+	'ť': "t", 'ţ': "t", 'ț': "t",
+	'ù': "u", 'ú': "u", 'û': "u", 'ü': "u", 'ũ': "u", 'ū': "u", 'ŭ': "u", 'ů': "u", 'ű': "u", 'ų': "u",
+	'ý': "y", 'ÿ': "y",
+	'ź': "z", 'ż': "z", 'ž': "z",
+	'ß': "ss",
+}
+
 func slugify(name string) string {
 	s := strings.ToLower(strings.TrimSpace(name))
 	var b strings.Builder
@@ -240,7 +267,14 @@ func slugify(name string) string {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
 			b.WriteRune(r)
 			lastDash = false
-		} else if !lastDash {
+			continue
+		}
+		if mapped, ok := slugTransliterations[r]; ok {
+			b.WriteString(mapped)
+			lastDash = false
+			continue
+		}
+		if !lastDash {
 			b.WriteByte('-')
 			lastDash = true
 		}

@@ -106,7 +106,7 @@ func (h *AppointmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		CustomerUserID: customerUserID,
 		StartTime:      startTime,
 		EndTime:        startTime.Add(time.Duration(svc.DurationMinutes) * time.Minute),
-		Status:         models.AppointmentStatusConfirmed,
+		Status:         models.AppointmentStatusPending,
 		CreatedBy:      userID,
 	}
 

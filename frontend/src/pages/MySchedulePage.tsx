@@ -158,6 +158,11 @@ export function MySchedulePage() {
                       {format(new Date(b.start_time), "h:mm a")} – {format(new Date(b.end_time), "h:mm a")}
                     </span>
                     {b.reason && <span className="text-muted-foreground ml-2">({b.reason})</span>}
+                    {b.status === "pending" && (
+                      <span className="ml-2 inline-flex items-center rounded-full bg-yellow-500/15 px-2 py-0.5 text-xs font-medium text-yellow-600 dark:text-yellow-400">
+                        awaiting approval
+                      </span>
+                    )}
                   </div>
                   <Button variant="destructive" size="sm" onClick={() => handleRemove(b.id)}>
                     Remove

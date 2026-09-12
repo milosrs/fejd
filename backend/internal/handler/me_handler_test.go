@@ -200,7 +200,9 @@ func TestSlugify(t *testing.T) {
 		{"My Salon", "my-salon"},
 		{"  My  Salon  ", "my-salon"},
 		{"Hello World!", "hello-world"},
-		{"Café", "caf"},
+		{"Café", "cafe"},
+		{"Dragičević", "dragicevic"},
+		{"Miloš", "milos"},
 		{"", "salon"},
 		{"!!!", "salon"},
 	}

@@ -26,12 +26,14 @@ export const mockUnavailability: EmployeeUnavailability[] = [
     start_time: futureISO(1, 12),
     end_time: futureISO(1, 13),
     reason: "Dentist appointment",
+    status: "confirmed",
   },
   {
     id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaa2",
     business_user_id: "55555555-5555-4555-8555-555555555555",
     start_time: futureISO(3, 15),
     end_time: futureISO(3, 16, 30),
+    status: "pending",
   },
 ]
 

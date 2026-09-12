@@ -3,6 +3,7 @@ import { useState } from "react"
 import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonContext"
 import { Button } from "./ui/button"
 import { SalonPolicyDialog } from "./SalonPolicyDialog"
+import { RenameSalonDialog } from "./RenameSalonDialog"
 import { salonPath } from "../lib/salonDomain"
 import { useHeaderHeightMeasure } from "../hooks/useHeaderHeightMeasure"
 import { useSections } from "../hooks/useSections"
@@ -16,6 +17,7 @@ function SalonShell() {
   const { data: sections } = useSections(slug)
   const { pickLocalized } = useI18n()
   const [policyOpen, setPolicyOpen] = useState(false)
+  const [renameOpen, setRenameOpen] = useState(false)
   const salonHeaderRef = useHeaderHeightMeasure("--salon-header-height")
 
   if (isLoading) {
@@ -81,6 +83,13 @@ function SalonShell() {
               <Button
                 variant="outline"
                 size="sm"
+                onClick={() => setRenameOpen(true)}
+              >
+                Rename
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setEditing(!editing)}
               >
                 {editing ? "Done" : "Edit"}
@@ -99,6 +108,15 @@ function SalonShell() {
           businessId={salon.business.id}
           slug={slug}
           onClose={() => setPolicyOpen(false)}
+        />
+      )}
+
+      {renameOpen && (
+        <RenameSalonDialog
+          businessId={salon.business.id}
+          slug={slug}
+          currentName={salon.business.name}
+          onClose={() => setRenameOpen(false)}
         />
       )}
     </div>

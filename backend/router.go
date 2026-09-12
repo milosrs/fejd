@@ -107,6 +107,8 @@ func newRouter(
 				r.Use(requireOwner)
 				r.Use(customMiddleware.RequireBusinessAdmin(buStore))
 
+				r.Put("/name", adminHandler.RenameBusiness)
+
 				r.Post("/employees", adminHandler.CreateEmployee)
 				r.Get("/employees", adminHandler.GetEmployees)
 				r.Delete("/employees/{userID}", adminHandler.RemoveEmployee)
@@ -130,6 +132,9 @@ func newRouter(
 				r.Post("/services/{serviceID}/image", imageHandler.UploadServiceImage)
 				r.Get("/policy", adminHandler.GetSalonPolicy)
 				r.Put("/policy", adminHandler.UpdateSalonPolicy)
+
+				r.Get("/appointments", adminHandler.ListBusinessAppointments)
+				r.Get("/unavailability", adminHandler.ListBusinessUnavailability)
 			})
 
 			r.Post("/admin/business/{businessID}/employees/{userID}/image", imageHandler.UploadEmployeeImage)
@@ -162,6 +167,18 @@ func newRouter(
 
 			r.With(customMiddleware.RequireBusinessMember(buStore)).
 				Get("/admin/business/{businessID}/customers", adminHandler.ListCustomers)
+
+			// Acknowledging customer appointments and employee reserved time:
+			// the appointment's provider or the owner may accept an appointment;
+			// only the owner may accept an employee's reserved time.
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Post("/admin/business/{businessID}/appointments/{appointmentID}/accept", adminHandler.AcceptAppointment)
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Post("/admin/business/{businessID}/appointments/{appointmentID}/reject", adminHandler.RejectAppointment)
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Post("/admin/business/{businessID}/unavailability/{unavailabilityID}/accept", adminHandler.AcceptUnavailability)
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Post("/admin/business/{businessID}/unavailability/{unavailabilityID}/reject", adminHandler.RejectUnavailability)
 		})
 
 		r.With(optionalAuthenticate).Get("/images/{imageID}", imageHandler.GetImage)

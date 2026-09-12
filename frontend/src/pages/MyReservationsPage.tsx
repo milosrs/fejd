@@ -4,7 +4,21 @@ import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "../stores/authStore"
-import { useMyReservations, useMyAppointments, cancelReservation, markNoShow, type Appointment } from "../hooks/useApi"
+import { useMe } from "../hooks/useMe"
+import {
+  useMyReservations,
+  useMyAppointments,
+  useBusinessAppointments,
+  useBusinessUnavailability,
+  useAdminEmployees,
+  cancelReservation,
+  markNoShow,
+  acceptAppointment,
+  acceptUnavailability,
+  rejectAppointment,
+  rejectUnavailability,
+  type Appointment,
+} from "../hooks/useApi"
 import { useI18n } from "../lib/i18n"
 import { formatCancellationReason } from "../lib/cancellation"
 import { Button } from "../components/ui/button"
@@ -57,12 +71,24 @@ export function MyReservationsPage() {
   const [date, setDate] = useState(() => today(getLocalTimeZone()).toString())
   const { data: reservations, isLoading } = useMyReservations(businessId!, date)
   const { data: ownAppointments, isLoading: ownLoading } = useMyAppointments()
+  const { data: me } = useMe()
+  const isOwner = me?.businesses.some((b) => b.id === businessId && b.role === "admin")
+  const { data: businessAppointments } = useBusinessAppointments(isOwner ? businessId! : "")
+  const { data: businessUnavailability } = useBusinessUnavailability(isOwner ? businessId! : "")
+  const { data: employees } = useAdminEmployees(isOwner ? businessId! : "")
   const { t } = useI18n()
 
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
   const [reason, setReason] = useState("")
   const [cancelling, setCancelling] = useState(false)
   const [noShowTarget, setNoShowTarget] = useState<Appointment | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<{
+    kind: "appointment" | "unavailability"
+    id: string
+    label: string
+  } | null>(null)
+  const [rejectReason, setRejectReason] = useState("")
+  const [rejecting, setRejecting] = useState(false)
   const [addOpen, setAddOpen] = useState(false)
   const [message, setMessage] = useState("")
 
@@ -107,6 +133,58 @@ export function MyReservationsPage() {
       setMessage("Failed to mark no-show.")
     }
   }
+
+  const handleAccept = async (r: Appointment) => {
+    setMessage("")
+    try {
+      await acceptAppointment(businessId!, r.id)
+      setMessage("Appointment accepted.")
+      await refresh()
+      await queryClient.invalidateQueries({ queryKey: ["business-appointments", businessId] })
+    } catch {
+      setMessage("Failed to accept appointment.")
+    }
+  }
+
+  const handleAcceptUnavailability = async (id: string) => {
+    setMessage("")
+    try {
+      await acceptUnavailability(businessId!, id)
+      setMessage("Reserved time accepted.")
+      await queryClient.invalidateQueries({ queryKey: ["business-unavailability", businessId] })
+    } catch {
+      setMessage("Failed to accept reserved time.")
+    }
+  }
+
+  const handleReject = async () => {
+    if (!rejectTarget || !rejectReason.trim()) return
+    setRejecting(true)
+    setMessage("")
+    try {
+      if (rejectTarget.kind === "appointment") {
+        await rejectAppointment(businessId!, rejectTarget.id, rejectReason.trim())
+        await refresh()
+        await queryClient.invalidateQueries({ queryKey: ["business-appointments", businessId] })
+      } else {
+        await rejectUnavailability(businessId!, rejectTarget.id, rejectReason.trim())
+        await queryClient.invalidateQueries({ queryKey: ["business-unavailability", businessId] })
+      }
+      setMessage("Rejected.")
+      setRejectTarget(null)
+      setRejectReason("")
+    } catch {
+      setMessage("Failed to reject.")
+    } finally {
+      setRejecting(false)
+    }
+  }
+
+  const employeeName = (businessUserId: string) =>
+    (employees ?? []).find((e) => e.id === businessUserId)?.display_name ?? "Employee"
+
+  const pendingAppointments = (businessAppointments ?? []).filter((a) => a.status === "pending")
+  const pendingUnavailability = (businessUnavailability ?? []).filter((u) => u.status === "pending")
 
   return (
     <div className="min-h-app bg-background">
@@ -167,6 +245,26 @@ export function MyReservationsPage() {
                   </div>
                   {(r.status === "pending" || r.status === "confirmed") && (
                     <div className="flex items-center gap-2 shrink-0">
+                      {r.status === "pending" && (
+                        <>
+                          <Button size="sm" onClick={() => handleAccept(r)}>
+                            Accept
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              setRejectTarget({
+                                kind: "appointment",
+                                id: r.id,
+                                label: `${r.service_name || "Service"} at ${format(new Date(r.start_time), "h:mm a")}`,
+                              })
+                            }
+                          >
+                            Reject
+                          </Button>
+                        </>
+                      )}
                       {!isPast(r) && (
                         <Button
                           variant="destructive"
@@ -205,6 +303,89 @@ export function MyReservationsPage() {
             <MyAppointmentsList appointments={ownAppointments} isLoading={ownLoading} />
           </CardContent>
         </Card>
+
+        {isOwner && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Pending approvals</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {pendingAppointments.length === 0 && pendingUnavailability.length === 0 ? (
+                <p className="text-muted-foreground">Nothing to approve.</p>
+              ) : (
+                <>
+                  {pendingAppointments.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Customer appointments</p>
+                      {pendingAppointments.map((a) => (
+                        <div key={a.id} className="flex items-center justify-between p-3 bg-muted rounded-md gap-3">
+                          <div className="min-w-0">
+                            <div className="font-medium">{a.service_name || "Service"}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {employeeName(a.business_user_id)} · {format(new Date(a.start_time), "EEE, MMM d · h:mm a")}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button size="sm" onClick={() => handleAccept(a)}>
+                              Accept
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setRejectTarget({
+                                  kind: "appointment",
+                                  id: a.id,
+                                  label: `${a.service_name || "Service"} · ${employeeName(a.business_user_id)}`,
+                                })
+                              }
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {pendingUnavailability.length > 0 && (
+                    <div className="space-y-2">
+                      <p className="text-sm font-medium text-muted-foreground">Reserved time</p>
+                      {pendingUnavailability.map((u) => (
+                        <div key={u.id} className="flex items-center justify-between p-3 bg-muted rounded-md gap-3">
+                          <div className="min-w-0">
+                            <div className="font-medium">{employeeName(u.business_user_id)}</div>
+                            <div className="text-sm text-muted-foreground">
+                              {format(new Date(u.start_time), "EEE, MMM d · h:mm a")} – {format(new Date(u.end_time), "h:mm a")}
+                              {u.reason ? ` (${u.reason})` : ""}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Button size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
+                              Accept
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() =>
+                                setRejectTarget({
+                                  kind: "unavailability",
+                                  id: u.id,
+                                  label: `${employeeName(u.business_user_id)} · ${format(new Date(u.start_time), "EEE, MMM d · h:mm a")}`,
+                                })
+                              }
+                            >
+                              Reject
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+        )}
       </main>
 
       {cancelTarget && (
@@ -238,6 +419,41 @@ export function MyReservationsPage() {
                 isDisabled={cancelling || !reason.trim()}
               >
                 {cancelling ? "Cancelling…" : "Cancel reservation"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={() => setRejectTarget(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl border border-border bg-background p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-semibold text-foreground">Reject</h3>
+            <p className="mt-2 text-sm text-muted-foreground">{rejectTarget.label}</p>
+            <div className="mt-4 space-y-1">
+              <Label>Reason (required)</Label>
+              <Textarea
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                placeholder="Why are you rejecting this?"
+              />
+            </div>
+            <div className="mt-6 flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setRejectTarget(null)}>
+                Back
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={handleReject}
+                isDisabled={rejecting || !rejectReason.trim()}
+              >
+                {rejecting ? "Rejecting…" : "Reject"}
               </Button>
             </div>
           </div>

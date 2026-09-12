@@ -778,6 +778,13 @@ func (h *AdminHandler) AddMyUnavailability(w http.ResponseWriter, r *http.Reques
 		StartTime: startTime,
 		EndTime:   endTime,
 		Reason:    body.Reason,
+		Status:    models.UnavailabilityStatusPending,
+	}
+
+	// An owner reserving their own time is auto-accepted; an employee's
+	// reservation waits for the owner to acknowledge it.
+	if isAdmin, err := h.buStore.IsAdmin(r.Context(), businessID, userID); err == nil && isAdmin {
+		u.Status = models.UnavailabilityStatusConfirmed
 	}
 
 	if err := h.slotService.AddEmployeeUnavailability(r.Context(), businessID, userID, u); err != nil {
@@ -937,6 +944,295 @@ func (h *AdminHandler) CancelMyReservation(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, MessageResponse{Message: "reservation cancelled"})
 }
 
+// AcceptAppointment godoc
+// @Summary      Accept a customer appointment
+// @Description  Acknowledges a pending appointment. Allowed for the appointment's provider or the business owner.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        appointmentID path string true "Appointment UUID"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/appointments/{appointmentID}/accept [post]
+func (h *AdminHandler) AcceptAppointment(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	appointmentID, err := uuid.Parse(chi.URLParam(r, "appointmentID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid appointment ID")
+		return
+	}
+
+	if err := h.slotService.AcceptAppointment(r.Context(), businessID, userID, appointmentID); err != nil {
+		if errors.Is(err, service.ErrForbidden) {
+			writeError(w, http.StatusForbidden, "not allowed to accept this appointment")
+			return
+		}
+		if errors.Is(err, service.ErrAppointmentNotFound) {
+			writeError(w, http.StatusNotFound, "appointment not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "appointment accepted"})
+}
+
+// AcceptUnavailability godoc
+// @Summary      Accept an employee's reserved time
+// @Description  Acknowledges a pending blocked-time reservation. Only the business owner may accept it.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        unavailabilityID path string true "Unavailability UUID"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/unavailability/{unavailabilityID}/accept [post]
+func (h *AdminHandler) AcceptUnavailability(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	unavailabilityID, err := uuid.Parse(chi.URLParam(r, "unavailabilityID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid unavailability ID")
+		return
+	}
+
+	if err := h.slotService.AcceptUnavailability(r.Context(), businessID, userID, unavailabilityID); err != nil {
+		if errors.Is(err, service.ErrForbidden) {
+			writeError(w, http.StatusForbidden, "only the owner can accept time reservations")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "reservation accepted"})
+}
+
+// RejectAppointment godoc
+// @Summary      Reject a customer appointment
+// @Description  Rejects (cancels) a pending appointment with a stated reason. Allowed for the appointment's provider or the business owner.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        appointmentID path string true "Appointment UUID"
+// @Param        body body RejectRequest true "Rejection reason"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/appointments/{appointmentID}/reject [post]
+func (h *AdminHandler) RejectAppointment(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	appointmentID, err := uuid.Parse(chi.URLParam(r, "appointmentID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid appointment ID")
+		return
+	}
+
+	var body RejectRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	reason := strings.TrimSpace(body.Reason)
+	if reason == "" {
+		writeError(w, http.StatusBadRequest, "reason is required")
+		return
+	}
+
+	if err := h.slotService.RejectAppointment(r.Context(), businessID, userID, appointmentID, reason); err != nil {
+		if errors.Is(err, service.ErrForbidden) {
+			writeError(w, http.StatusForbidden, "not allowed to reject this appointment")
+			return
+		}
+		if errors.Is(err, service.ErrAppointmentNotFound) {
+			writeError(w, http.StatusNotFound, "appointment not found")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "appointment rejected"})
+}
+
+// RejectUnavailability godoc
+// @Summary      Reject an employee's reserved time
+// @Description  Rejects a pending blocked-time reservation with a stated reason. Only the business owner may reject it.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        unavailabilityID path string true "Unavailability UUID"
+// @Param        body body RejectRequest true "Rejection reason"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/unavailability/{unavailabilityID}/reject [post]
+func (h *AdminHandler) RejectUnavailability(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	unavailabilityID, err := uuid.Parse(chi.URLParam(r, "unavailabilityID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid unavailability ID")
+		return
+	}
+
+	var body RejectRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	reason := strings.TrimSpace(body.Reason)
+	if reason == "" {
+		writeError(w, http.StatusBadRequest, "reason is required")
+		return
+	}
+
+	if err := h.slotService.RejectUnavailability(r.Context(), businessID, userID, unavailabilityID, reason); err != nil {
+		if errors.Is(err, service.ErrForbidden) {
+			writeError(w, http.StatusForbidden, "only the owner can reject time reservations")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "reservation rejected"})
+}
+
+// ListBusinessAppointments godoc
+// @Summary      List all salon appointments
+// @Description  Returns every appointment in the salon with service name, for the owner to review and acknowledge pending bookings.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Success      200 {array} dto.Appointment
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/appointments [get]
+func (h *AdminHandler) ListBusinessAppointments(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	appointments, err := h.appointmentStore.ListByBusiness(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if appointments == nil {
+		appointments = []models.Appointment{}
+	}
+
+	serviceNames, err := h.serviceNameMap(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	noShowAfterHours := 0
+	if b, err := h.businessStore.GetByID(r.Context(), businessID); err == nil {
+		noShowAfterHours = b.NoShowAfterHours
+	}
+
+	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, noShowAfterHours))
+}
+
+// ListBusinessUnavailability godoc
+// @Summary      List all reserved time
+// @Description  Returns every blocked-time reservation in the salon, for the owner to review and acknowledge pending employee reservations.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Success      200 {array} dto.EmployeeUnavailability
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/unavailability [get]
+func (h *AdminHandler) ListBusinessUnavailability(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	unavail, err := h.slotService.ListBusinessUnavailability(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if unavail == nil {
+		unavail = []models.EmployeeUnavailability{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.EmployeeUnavailabilitysFromModels(unavail))
+}
+
 func (h *AdminHandler) serviceNameMap(ctx context.Context, businessID uuid.UUID) (map[uuid.UUID]string, error) {
 	services, err := h.serviceStore.ListByBusiness(ctx, businessID)
 	if err != nil {
@@ -1067,6 +1363,78 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		SlotIntervalMinutes:   body.SlotIntervalMinutes,
 		WorkingHours:          dto.BusinessHoursFromModels(hours),
 	})
+}
+
+// RenameBusiness godoc
+// @Summary      Rename a salon
+// @Description  Updates the salon's display name and regenerates its slug from the new name.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body RenameBusinessRequest true "New name"
+// @Success      200 {object} dto.Business
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Failure      409 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/name [put]
+func (h *AdminHandler) RenameBusiness(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	var body RenameBusinessRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	name := strings.TrimSpace(body.Name)
+	if name == "" {
+		writeError(w, http.StatusBadRequest, "name is required")
+		return
+	}
+
+	business, err := h.businessStore.GetByID(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	newSlug := sanitizeSlug(slugify(name))
+	if newSlug != business.Slug {
+		base := newSlug
+		for i := 2; ; i++ {
+			taken, err := h.businessStore.SlugTakenByOther(r.Context(), h.pool, newSlug, businessID)
+			if err != nil {
+				writeError(w, http.StatusInternalServerError, "failed to generate slug")
+				return
+			}
+			if !taken {
+				break
+			}
+			newSlug = fmt.Sprintf("%s-%d", base, i)
+		}
+	}
+
+	if err := h.businessStore.Rename(r.Context(), h.pool, businessID, name, newSlug); err != nil {
+		var pgErr *pgconn.PgError
+		if errors.As(err, &pgErr) && pgErr.Code == "23505" {
+			writeError(w, http.StatusConflict, "a salon with this name already exists")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "failed to rename business")
+		return
+	}
+
+	business.Name = name
+	business.Slug = newSlug
+	writeJSON(w, http.StatusOK, dto.BusinessFromModel(*business))
 }
 
 // parseTimeOnly parses an "HH:MM" or "HH:MM:SS" string into a time value.

@@ -33,6 +33,13 @@ const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
 const URL_ME_AVATAR = "/api/me/avatar" as const
 const URL_BUSINESSES = "/api/businesses" as const
+const URL_ADMIN_BUSINESS_NAME = "/api/admin/business/{businessID}/name" as const
+const URL_ADMIN_APPOINTMENTS = "/api/admin/business/{businessID}/appointments" as const
+const URL_ADMIN_APPOINTMENTS_ACCEPT = "/api/admin/business/{businessID}/appointments/{appointmentID}/accept" as const
+const URL_ADMIN_APPOINTMENTS_REJECT = "/api/admin/business/{businessID}/appointments/{appointmentID}/reject" as const
+const URL_ADMIN_UNAVAILABILITY = "/api/admin/business/{businessID}/unavailability" as const
+const URL_ADMIN_UNAVAILABILITY_ACCEPT = "/api/admin/business/{businessID}/unavailability/{unavailabilityID}/accept" as const
+const URL_ADMIN_UNAVAILABILITY_REJECT = "/api/admin/business/{businessID}/unavailability/{unavailabilityID}/reject" as const
 
 type Schemas = components["schemas"]
 
@@ -150,6 +157,14 @@ export async function updateSalonPolicy(businessId: string, policy: SalonPolicyI
   const { data } = await PUT(URL_SALON_POLICY, {
     params: { path: { businessID: businessId } },
     body: policy,
+  })
+  return data
+}
+
+export async function renameBusiness(businessId: string, name: string) {
+  const { data } = await PUT(URL_ADMIN_BUSINESS_NAME, {
+    params: { path: { businessID: businessId } },
+    body: { name },
   })
   return data
 }
@@ -393,6 +408,62 @@ export async function reserveOwnSlot(
 export async function deleteOwnSlot(businessId: string, unavailabilityId: string) {
   const { data } = await DELETE(URL_MY_UNAVAILABILITY_DELETE, {
     params: { path: { businessID: businessId, unavailabilityID: unavailabilityId } },
+  })
+  return data
+}
+
+export function useBusinessAppointments(businessId: string) {
+  return useQuery({
+    queryKey: ["business-appointments", businessId],
+    queryFn: async () => {
+      const { data } = await GET(URL_ADMIN_APPOINTMENTS, {
+        params: { path: { businessID: businessId } },
+      })
+      return data
+    },
+    enabled: !!businessId,
+  })
+}
+
+export function useBusinessUnavailability(businessId: string) {
+  return useQuery({
+    queryKey: ["business-unavailability", businessId],
+    queryFn: async () => {
+      const { data } = await GET(URL_ADMIN_UNAVAILABILITY, {
+        params: { path: { businessID: businessId } },
+      })
+      return data
+    },
+    enabled: !!businessId,
+  })
+}
+
+export async function acceptAppointment(businessId: string, appointmentId: string) {
+  const { data } = await POST(URL_ADMIN_APPOINTMENTS_ACCEPT, {
+    params: { path: { businessID: businessId, appointmentID: appointmentId } },
+  })
+  return data
+}
+
+export async function rejectAppointment(businessId: string, appointmentId: string, reason: string) {
+  const { data } = await POST(URL_ADMIN_APPOINTMENTS_REJECT, {
+    params: { path: { businessID: businessId, appointmentID: appointmentId } },
+    body: { reason },
+  })
+  return data
+}
+
+export async function acceptUnavailability(businessId: string, unavailabilityId: string) {
+  const { data } = await POST(URL_ADMIN_UNAVAILABILITY_ACCEPT, {
+    params: { path: { businessID: businessId, unavailabilityID: unavailabilityId } },
+  })
+  return data
+}
+
+export async function rejectUnavailability(businessId: string, unavailabilityId: string, reason: string) {
+  const { data } = await POST(URL_ADMIN_UNAVAILABILITY_REJECT, {
+    params: { path: { businessID: businessId, unavailabilityID: unavailabilityId } },
+    body: { reason },
   })
   return data
 }

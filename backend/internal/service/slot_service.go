@@ -435,6 +435,12 @@ func (s *SlotService) ListEmployeeUnavailability(ctx context.Context, businessID
 	return s.unavailability.ListByBusinessUser(ctx, bu.ID)
 }
 
+// ListBusinessUnavailability returns all blocked-time ranges across a business
+// (used by the owner to acknowledge employee reservations).
+func (s *SlotService) ListBusinessUnavailability(ctx context.Context, businessID uuid.UUID) ([]models.EmployeeUnavailability, error) {
+	return s.unavailability.ListByBusiness(ctx, businessID)
+}
+
 // DeleteOwnEmployeeUnavailability removes one of the caller's own blocked-time
 // ranges. Unlike DeleteEmployeeUnavailability (admin, any employee), this is
 // scoped to the caller's own rows.
@@ -669,6 +675,133 @@ func mapAppointmentError(err error) error {
 		}
 	}
 	return err
+}
+
+// ErrForbidden is returned when the caller is not allowed to perform an action.
+var ErrForbidden = errors.New("not allowed to perform this action")
+
+// AcceptAppointment acknowledges a pending customer appointment. The
+// appointment's provider or the business owner may accept it.
+func (s *SlotService) AcceptAppointment(ctx context.Context, businessID uuid.UUID, callerUserID string, appointmentID uuid.UUID) error {
+	caller, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, callerUserID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	appt, err := s.appointments.GetByID(ctx, appointmentID)
+	if err != nil {
+		return ErrAppointmentNotFound
+	}
+	if appt.BusinessID != businessID {
+		return ErrAppointmentNotFound
+	}
+
+	if caller.ID != appt.BusinessUserID && caller.Role != "admin" {
+		return ErrForbidden
+	}
+
+	if err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, appt.BusinessUserID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+		return s.appointments.Acknowledge(ctx, tx, appointmentID, appt.BusinessUserID)
+	}); err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, appt.BusinessUserID)
+	return nil
+}
+
+// AcceptUnavailability acknowledges an employee's pending blocked-time
+// reservation. Only the business owner may accept it.
+func (s *SlotService) AcceptUnavailability(ctx context.Context, businessID uuid.UUID, callerUserID string, unavailabilityID uuid.UUID) error {
+	caller, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, callerUserID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+	if caller.Role != "admin" {
+		return ErrForbidden
+	}
+
+	u, err := s.unavailability.GetByID(ctx, unavailabilityID)
+	if err != nil {
+		return err
+	}
+
+	if err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, u.BusinessUserID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+		return s.unavailability.Acknowledge(ctx, tx, unavailabilityID)
+	}); err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, u.BusinessUserID)
+	return nil
+}
+
+// RejectAppointment cancels a pending customer appointment with a reason. The
+// appointment's provider or the business owner may reject it.
+func (s *SlotService) RejectAppointment(ctx context.Context, businessID uuid.UUID, callerUserID string, appointmentID uuid.UUID, reason string) error {
+	caller, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, callerUserID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+
+	appt, err := s.appointments.GetByID(ctx, appointmentID)
+	if err != nil {
+		return ErrAppointmentNotFound
+	}
+	if appt.BusinessID != businessID {
+		return ErrAppointmentNotFound
+	}
+
+	if caller.ID != appt.BusinessUserID && caller.Role != "admin" {
+		return ErrForbidden
+	}
+
+	if err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, appt.BusinessUserID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+		return s.appointments.Reject(ctx, tx, appointmentID, appt.BusinessUserID, reason)
+	}); err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, appt.BusinessUserID)
+	return nil
+}
+
+// RejectUnavailability rejects an employee's pending blocked-time reservation
+// with a reason. Only the business owner may reject it.
+func (s *SlotService) RejectUnavailability(ctx context.Context, businessID uuid.UUID, callerUserID string, unavailabilityID uuid.UUID, reason string) error {
+	caller, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, callerUserID)
+	if err != nil {
+		return fmt.Errorf("target user not found in business: %w", err)
+	}
+	if caller.Role != "admin" {
+		return ErrForbidden
+	}
+
+	u, err := s.unavailability.GetByID(ctx, unavailabilityID)
+	if err != nil {
+		return err
+	}
+
+	if err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
+		if err := concurrency.XactLock(ctx, tx, u.BusinessUserID); err != nil {
+			return fmt.Errorf("failed to acquire lock: %w", err)
+		}
+		return s.unavailability.Reject(ctx, tx, unavailabilityID, reason)
+	}); err != nil {
+		return err
+	}
+
+	s.publishSlotsChanged(businessID, u.BusinessUserID)
+	return nil
 }
 
 func computeSlots(dayStart, dayEnd time.Time, slotDuration time.Duration, busySlots []models.TimeSlot) []models.TimeSlot {

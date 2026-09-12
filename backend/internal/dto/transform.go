@@ -164,11 +164,13 @@ func TimeSlotFromModel(m models.TimeSlot) TimeSlot {
 
 func EmployeeUnavailabilityFromModel(m models.EmployeeUnavailability) EmployeeUnavailability {
 	return EmployeeUnavailability{
-		ID:             m.ID,
-		BusinessUserID: m.BusinessUserID,
-		StartTime:      m.StartTime,
-		EndTime:        m.EndTime,
-		Reason:         m.Reason,
+		ID:              m.ID,
+		BusinessUserID:  m.BusinessUserID,
+		StartTime:       m.StartTime,
+		EndTime:         m.EndTime,
+		Reason:          m.Reason,
+		Status:          string(m.Status),
+		RejectionReason: m.RejectionReason,
 	}
 }
 

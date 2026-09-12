@@ -116,6 +116,36 @@ func (s *AppointmentStore) ListByCustomer(ctx context.Context, customerUserID st
 	return appointments, nil
 }
 
+// ListByBusiness returns all appointments for a business, ordered by start time.
+func (s *AppointmentStore) ListByBusiness(ctx context.Context, businessID uuid.UUID) ([]models.Appointment, error) {
+	sql, args, err := psql.
+		Select("id", "business_id", "service_id", "business_user_id", "COALESCE(customer_user_id, '')",
+			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
+		From("appointments").
+		Where(sq.Eq{"business_id": businessID}).
+		OrderBy("start_time").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list appointments: %w", err)
+	}
+	defer rows.Close()
+
+	var appointments []models.Appointment
+	for rows.Next() {
+		a, err := scanAppointment(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan appointment: %w", err)
+		}
+		appointments = append(appointments, *a)
+	}
+	return appointments, nil
+}
+
 func (s *AppointmentStore) ListByBusinessUser(ctx context.Context, businessUserID uuid.UUID, from, to time.Time) ([]models.Appointment, error) {
 	sql, args, err := psql.
 		Select("id", "business_id", "service_id", "business_user_id", "COALESCE(customer_user_id, '')",
@@ -217,6 +247,40 @@ func (s *AppointmentStore) MarkNoShow(ctx context.Context, q Querier, id, busine
 		Set("status", string(models.AppointmentStatusNoShow)).
 		Where(sq.Eq{"id": id, "business_user_id": businessUserID}).
 		Where(sq.Eq{"status": []string{string(models.AppointmentStatusPending), string(models.AppointmentStatusConfirmed)}}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}
+
+// Acknowledge transitions an appointment from pending to confirmed, scoped so
+// only the appointment's provider or the business owner can accept it (the
+// caller checks authorization before invoking this).
+func (s *AppointmentStore) Acknowledge(ctx context.Context, q Querier, id, businessUserID uuid.UUID) error {
+	sql, args, err := psql.
+		Update("appointments").
+		Set("status", string(models.AppointmentStatusConfirmed)).
+		Where(sq.Eq{"id": id, "business_user_id": businessUserID, "status": string(models.AppointmentStatusPending)}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}
+
+// Reject cancels a pending appointment with a stated reason, scoped to the
+// appointment's provider (the caller checks authorization first).
+func (s *AppointmentStore) Reject(ctx context.Context, q Querier, id, businessUserID uuid.UUID, reason string) error {
+	sql, args, err := psql.
+		Update("appointments").
+		Set("status", string(models.AppointmentStatusCancelled)).
+		Set("cancellation_reason", reason).
+		Where(sq.Eq{"id": id, "business_user_id": businessUserID, "status": string(models.AppointmentStatusPending)}).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("failed to build query: %w", err)

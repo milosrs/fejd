@@ -194,12 +194,22 @@ type EmployeeService struct {
 	ServiceID      uuid.UUID
 }
 
+type UnavailabilityStatus string
+
+const (
+	UnavailabilityStatusPending   UnavailabilityStatus = "pending"
+	UnavailabilityStatusConfirmed UnavailabilityStatus = "confirmed"
+	UnavailabilityStatusRejected  UnavailabilityStatus = "rejected"
+)
+
 type EmployeeUnavailability struct {
 	ID             uuid.UUID
 	BusinessUserID uuid.UUID
 	StartTime      time.Time
 	EndTime        time.Time
 	Reason         string
+	Status         UnavailabilityStatus
+	RejectionReason string
 }
 
 // Invitation is a shareable link/QR invite that links a user to a business as

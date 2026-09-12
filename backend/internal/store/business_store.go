@@ -144,6 +144,45 @@ func (s *BusinessStore) UpdatePolicy(ctx context.Context, businessID uuid.UUID, 
 	return err
 }
 
+// Rename updates a business's display name and slug.
+func (s *BusinessStore) Rename(ctx context.Context, q Querier, businessID uuid.UUID, name, slug string) error {
+	sql, args, err := psql.
+		Update("businesses").
+		Set("name", name).
+		Set("slug", slug).
+		Set("updated_at", sq.Expr("now()")).
+		Where(sq.Eq{"id": businessID}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}
+
+// SlugTakenByOther reports whether a business other than excludeID already
+// uses the given slug.
+func (s *BusinessStore) SlugTakenByOther(ctx context.Context, q Querier, slug string, excludeID uuid.UUID) (bool, error) {
+	sql, args, err := psql.
+		Select("1").
+		From("businesses").
+		Where(sq.Eq{"slug": slug}).
+		Where(sq.NotEq{"id": excludeID}).
+		Prefix("SELECT EXISTS (").
+		Suffix(")").
+		ToSql()
+	if err != nil {
+		return false, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var exists bool
+	if err := q.QueryRow(ctx, sql, args...).Scan(&exists); err != nil {
+		return false, fmt.Errorf("failed to check slug: %w", err)
+	}
+	return exists, nil
+}
+
 func (s *BusinessStore) SlugExists(ctx context.Context, q Querier, slug string) (bool, error) {
 	sql, args, err := psql.
 		Select("1").
