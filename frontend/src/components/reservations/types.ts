@@ -7,6 +7,7 @@ export type Tone =
   | "teal"
   | "amber"
   | "sky"
+  | "slate"
 
 export const TONES: Tone[] = [
   "orange",
@@ -28,6 +29,7 @@ export const TONE_BAR: Record<Tone, string> = {
   teal: "bg-teal-500",
   amber: "bg-amber-500",
   sky: "bg-sky-500",
+  slate: "bg-slate-500",
 }
 
 export const TONE_DOT: Record<Tone, string> = {
@@ -39,6 +41,7 @@ export const TONE_DOT: Record<Tone, string> = {
   teal: "bg-teal-400",
   amber: "bg-amber-400",
   sky: "bg-sky-400",
+  slate: "bg-slate-400",
 }
 
 export function toneFor(text: string): Tone {
@@ -53,6 +56,7 @@ export interface ReservationTag {
   id: string
   label: string
   tone?: Tone
+  muted?: boolean
 }
 
 export interface ScheduleEvent {

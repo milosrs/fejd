@@ -8,6 +8,7 @@ import { useMe } from "../hooks/useMe"
 import {
   useMyReservationsMonth,
   useMyAppointments,
+  useMyUnavailability,
   useBusinessAppointments,
   useBusinessUnavailability,
   useAdminEmployees,
@@ -19,6 +20,7 @@ import {
   rejectAppointment,
   rejectUnavailability,
   type Appointment,
+  type EmployeeUnavailability,
 } from "../hooks/useApi"
 import { useI18n } from "../lib/i18n"
 import { formatCancellationReason } from "../lib/cancellation"
@@ -77,6 +79,7 @@ export function MyReservationsPage() {
   const [selected, setSelected] = useState<CalendarDate>(() => todayDate)
 
   const { byDay, isLoading: reservationsLoading } = useMyReservationsMonth(businessId!, month)
+  const { data: myUnavailability } = useMyUnavailability(businessId!)
   const { data: ownAppointments, isLoading: ownLoading } = useMyAppointments()
   const { data: me } = useMe()
   const isOwner = me?.businesses.some((b) => b.id === businessId && b.role === "admin")
@@ -207,32 +210,60 @@ export function MyReservationsPage() {
   const selectedKey = selected.toString()
   const reservations = byDay[selectedKey] ?? []
 
+  const localKey = (iso: string): string => {
+    const d = new Date(iso)
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`
+  }
+
+  const unavailabilityByDay: Record<string, EmployeeUnavailability[]> = {}
+  for (const u of myUnavailability ?? []) {
+    if (u.status === "rejected") continue
+    const key = localKey(u.start_time)
+    ;(unavailabilityByDay[key] ??= []).push(u)
+  }
+
   const eventsByDay: Record<string, ReservationTag[]> = {}
-  for (const [key, list] of Object.entries(byDay)) {
-    eventsByDay[key] = list
-      .filter((r) => r.status !== "cancelled")
-      .map((r) => ({
+  for (const key of new Set([...Object.keys(byDay), ...Object.keys(unavailabilityByDay)])) {
+    const tags: ReservationTag[] = []
+    for (const r of byDay[key] ?? []) {
+      tags.push({
         id: r.id,
-        label: r.service_name || t("reservations.service"),
+        label: r.service_name || "Service",
         tone: toneFor(r.service_name || r.id),
-      }))
+        muted: r.status === "cancelled",
+      })
+    }
+    for (const u of unavailabilityByDay[key] ?? []) {
+      tags.push({ id: u.id, label: "Reserved", tone: "slate" })
+    }
+    eventsByDay[key] = tags
   }
 
   const reservationsById = new Map(reservations.map((r) => [r.id, r]))
-  const events: ScheduleEvent[] = reservations.map((r) => {
-    const subtitle =
-      r.status === "cancelled" && r.cancellation_reason
-        ? `${customerName(r.customer_user_id)} · ${formatCancellationReason(r.cancellation_reason, t)}`
-        : customerName(r.customer_user_id)
-    return {
-      id: r.id,
-      title: r.service_name || t("reservations.service"),
-      subtitle,
-      start: new Date(r.start_time),
-      end: new Date(r.end_time),
-      tone: toneFor(r.service_name || r.id),
-    }
-  })
+  const events: ScheduleEvent[] = [
+    ...(unavailabilityByDay[selectedKey] ?? []).map((u) => ({
+      id: u.id,
+      title: "Reserved",
+      subtitle: u.reason,
+      start: new Date(u.start_time),
+      end: new Date(u.end_time),
+      tone: "slate" as const,
+    })),
+    ...reservations.map((r) => {
+      const subtitle =
+        r.status === "cancelled" && r.cancellation_reason
+          ? `${customerName(r.customer_user_id)} · ${formatCancellationReason(r.cancellation_reason, t)}`
+          : customerName(r.customer_user_id)
+      return {
+        id: r.id,
+        title: r.service_name || "Service",
+        subtitle,
+        start: new Date(r.start_time),
+        end: new Date(r.end_time),
+        tone: toneFor(r.service_name || r.id),
+      }
+    }),
+  ]
 
   const renderActions = (event: ScheduleEvent) => {
     const r = reservationsById.get(event.id)

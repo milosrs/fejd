@@ -1,8 +1,10 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { GET } from "./api"
 
 export const DEFAULT_LOCALE = "en"
+export const SUPPORTED_LOCALES = ["en", "rs"]
+const LOCALE_STORAGE_KEY = "fejd-locale"
 
 interface I18nContextValue {
   locale: string
@@ -40,7 +42,24 @@ const fallbackI18n: I18nContextValue = {
 }
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocale] = useState(DEFAULT_LOCALE)
+  const [locale, setLocaleState] = useState(() => {
+    try {
+      const stored = localStorage.getItem(LOCALE_STORAGE_KEY)
+      if (stored && SUPPORTED_LOCALES.includes(stored)) return stored
+    } catch {
+      // localStorage unavailable (private/strict mode) — fall back to default.
+    }
+    return DEFAULT_LOCALE
+  })
+
+  const setLocale = useCallback((next: string) => {
+    try {
+      localStorage.setItem(LOCALE_STORAGE_KEY, next)
+    } catch {
+      // ignore: locale still applies for this session
+    }
+    setLocaleState(next)
+  }, [])
 
   const { data: translations } = useQuery({
     queryKey: ["i18n", locale],
@@ -67,7 +86,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
         return first ? localized[first] : undefined
       },
     }),
-    [locale, translations],
+    [locale, setLocale, translations],
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>

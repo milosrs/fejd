@@ -22,6 +22,7 @@ import { Button } from "./components/ui/button"
 import { I18nProvider, useI18n } from "./lib/i18n"
 import { ThemeProvider } from "#components/theme-provider"
 import { ModeToggle } from "#components/mode-toggle"
+import { LanguageToggle } from "#components/LanguageToggle"
 import { OnboardingGate } from "#components/OnboardingGate"
 import { Loader } from "#components/Loader"
 import { InviteLandingPage } from "./components/invite/InviteLandingPage"
@@ -202,6 +203,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
                   {t("app.logout")}
                 </button>
                 <ModeToggle />
+                <LanguageToggle />
                 <button
                   type="button"
                   onClick={handlePickAvatar}

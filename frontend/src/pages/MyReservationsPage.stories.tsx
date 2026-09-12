@@ -3,6 +3,7 @@ import { MyReservationsPage } from "./MyReservationsPage"
 import {
   StaffFrame,
   mockMonthReservations,
+  mockMonthUnavailability,
   staffOwnerMe,
   staffEmployeeMe,
 } from "../stories/staff"
@@ -20,7 +21,12 @@ type Story = StoryObj<typeof MyReservationsPage>
 
 export const OwnerWithReservations: Story = {
   render: () => (
-    <StaffFrame path="my-reservations" me={staffOwnerMe} reservations={mockMonthReservations}>
+    <StaffFrame
+      path="my-reservations"
+      me={staffOwnerMe}
+      reservations={mockMonthReservations}
+      unavailability={mockMonthUnavailability}
+    >
       <MyReservationsPage />
     </StaffFrame>
   ),
@@ -28,7 +34,12 @@ export const OwnerWithReservations: Story = {
 
 export const EmployeeWithReservations: Story = {
   render: () => (
-    <StaffFrame path="my-reservations" me={staffEmployeeMe} reservations={mockMonthReservations}>
+    <StaffFrame
+      path="my-reservations"
+      me={staffEmployeeMe}
+      reservations={mockMonthReservations}
+      unavailability={mockMonthUnavailability}
+    >
       <MyReservationsPage />
     </StaffFrame>
   ),

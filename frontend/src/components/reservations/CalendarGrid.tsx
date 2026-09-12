@@ -225,7 +225,12 @@ function CalendarTagRow({
   onToday: boolean
 }) {
   return (
-    <span className="flex min-w-0 items-center gap-1">
+    <span
+      className={cn(
+        "flex min-w-0 items-center gap-1",
+        tag.muted && "opacity-60",
+      )}
+    >
       <span
         className={cn(
           "size-1.5 shrink-0 rounded-full",
@@ -235,6 +240,7 @@ function CalendarTagRow({
       <span
         className={cn(
           "truncate text-[11px] leading-tight",
+          tag.muted && "line-through",
           onToday ? "text-blue-100" : "text-muted-foreground",
         )}
       >

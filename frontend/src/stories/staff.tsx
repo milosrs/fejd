@@ -149,6 +149,32 @@ export const mockMonthReservations: Appointment[] = [
   mkReservation("m14", new Date().getDate(), 10, 30, 20, "Beard Trim", "pending", "customer-2"),
 ]
 
+export const mockMonthUnavailability: EmployeeUnavailability[] = [
+  {
+    id: "uuuuuuuu-uuuu-4uuu-8uuu-uuuuuuuuuuu1",
+    business_user_id: "55555555-5555-4555-8555-555555555555",
+    start_time: monthDayISO(2, 12, 0),
+    end_time: monthDayISO(2, 13, 0),
+    reason: "Lunch break",
+    status: "confirmed",
+  },
+  {
+    id: "uuuuuuuu-uuuu-4uuu-8uuu-uuuuuuuuuuu2",
+    business_user_id: "55555555-5555-4555-8555-555555555555",
+    start_time: monthDayISO(10, 15, 0),
+    end_time: monthDayISO(10, 16, 30),
+    status: "pending",
+  },
+  {
+    id: "uuuuuuuu-uuuu-4uuu-8uuu-uuuuuuuuuuu3",
+    business_user_id: "55555555-5555-4555-8555-555555555555",
+    start_time: monthDayISO(new Date().getDate(), 13, 0),
+    end_time: monthDayISO(new Date().getDate(), 14, 0),
+    reason: "Personal appointment",
+    status: "confirmed",
+  },
+]
+
 export const staffOwnerMe: Me = {
   approval_status: "approved",
   has_salon: true,

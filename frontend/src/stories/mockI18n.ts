@@ -325,6 +325,10 @@ export const mockI18nEn: Record<string, string> = {
   "theme.dark": "Dark",
   "theme.system": "System",
 
+  "language.toggle": "Change language",
+  "language.english": "English",
+  "language.serbian": "Serbian",
+
   "upload.working": "Working…",
   "upload.camera": "Camera",
   "upload.uploadImage": "Upload image",
