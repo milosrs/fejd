@@ -170,7 +170,7 @@ export function ScheduledPanel({
 
   return (
     <div className={cn("flex flex-col gap-4", className)}>
-      <header className="flex items-start justify-between gap-3">
+      <header className="flex shrink-0 items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-lg font-semibold text-foreground">{t("scheduled.title")}</h2>
           <p className="text-sm text-muted-foreground">
@@ -207,30 +207,32 @@ export function ScheduledPanel({
         </div>
       </header>
 
-      {isLoading ? (
-        <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
-      ) : hours.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("scheduled.noEvents")}</p>
-      ) : (
-        <div className="space-y-5">
-          {hours.map((hour) => (
-            <div key={hour} className="flex gap-3">
-              <span className="w-11 shrink-0 pt-1 text-right text-xs font-medium tabular-nums text-muted-foreground">
-                {String(hour).padStart(2, "0")}:00
-              </span>
-              <div className="flex min-w-0 flex-1 flex-col gap-3">
-                {groups.get(hour)!.map((event) => (
-                  <EventCard
-                    key={event.id}
-                    event={event}
-                    renderActions={renderActions}
-                  />
-                ))}
+      <div className="lg:min-h-0 lg:flex-1 lg:overflow-y-auto lg:pr-1">
+        {isLoading ? (
+          <p className="text-sm text-muted-foreground">{t("common.loading")}</p>
+        ) : hours.length === 0 ? (
+          <p className="text-sm text-muted-foreground">{t("scheduled.noEvents")}</p>
+        ) : (
+          <div className="space-y-5">
+            {hours.map((hour) => (
+              <div key={hour} className="flex gap-3">
+                <span className="w-11 shrink-0 pt-1 text-right text-xs font-medium tabular-nums text-muted-foreground">
+                  {String(hour).padStart(2, "0")}:00
+                </span>
+                <div className="flex min-w-0 flex-1 flex-col gap-3">
+                  {groups.get(hour)!.map((event) => (
+                    <EventCard
+                      key={event.id}
+                      event={event}
+                      renderActions={renderActions}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   )
 }

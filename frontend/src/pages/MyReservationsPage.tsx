@@ -447,8 +447,9 @@ export function MyReservationsPage() {
           </div>
         )}
 
-        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)]">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-stretch">
           <CalendarGrid
+            className="lg:overflow-y-auto"
             month={month}
             onMonthChange={setMonth}
             selected={selected}
@@ -456,15 +457,18 @@ export function MyReservationsPage() {
             today={todayDate}
             eventsByDay={eventsByDay}
           />
-          <ScheduledPanel
-            date={selected}
-            onPrevDay={() => goToDate(selected.subtract({ days: 1 }))}
-            onNextDay={() => goToDate(selected.add({ days: 1 }))}
-            onOpenCalendar={() => goToDate(todayDate)}
-            events={events}
-            isLoading={viewingEmployee ? businessAppointmentsLoading : reservationsLoading}
-            renderActions={renderActions}
-          />
+          <div className="relative lg:min-h-0">
+            <ScheduledPanel
+              className="lg:absolute lg:inset-0"
+              date={selected}
+              onPrevDay={() => goToDate(selected.subtract({ days: 1 }))}
+              onNextDay={() => goToDate(selected.add({ days: 1 }))}
+              onOpenCalendar={() => goToDate(todayDate)}
+              events={events}
+              isLoading={viewingEmployee ? businessAppointmentsLoading : reservationsLoading}
+              renderActions={renderActions}
+            />
+          </div>
         </div>
 
         <Card>
