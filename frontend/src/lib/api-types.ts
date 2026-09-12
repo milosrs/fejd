@@ -4163,6 +4163,8 @@ export interface components {
             no_show_after_hours: number;
             /** @example 30 */
             slot_interval_minutes: number;
+            /** @example Europe/Stockholm */
+            timezone?: string;
             working_hours: components["schemas"]["handler.BusinessHoursInput"][];
         };
         "handler.UpdateSectionRequest": {

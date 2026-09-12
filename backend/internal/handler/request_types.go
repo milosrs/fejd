@@ -86,6 +86,7 @@ type UpdateSalonPolicyRequest struct {
 	CancellationLeadHours int                  `json:"cancellation_lead_hours" validate:"required" example:"2"`
 	NoShowAfterHours      int                  `json:"no_show_after_hours" validate:"required" example:"2"`
 	SlotIntervalMinutes   int                  `json:"slot_interval_minutes" validate:"required" example:"30"`
+	Timezone              string               `json:"timezone,omitempty" example:"Europe/Stockholm"`
 	WorkingHours          []BusinessHoursInput `json:"working_hours" validate:"required"`
 }
 

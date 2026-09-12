@@ -1324,14 +1324,20 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	loc, err := loadTimezone(body.Timezone)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
 	hours := make([]models.BusinessHours, 0, len(body.WorkingHours))
 	for _, wh := range body.WorkingHours {
-		start, err := parseTimeOnly(wh.StartTime)
+		start, err := parseTimeOnlyInLocation(wh.StartTime, loc)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		end, err := parseTimeOnly(wh.EndTime)
+		end, err := parseTimeOnlyInLocation(wh.EndTime, loc)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, err.Error())
 			return
@@ -1437,11 +1443,28 @@ func (h *AdminHandler) RenameBusiness(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, dto.BusinessFromModel(*business))
 }
 
-// parseTimeOnly parses an "HH:MM" or "HH:MM:SS" string into a time value.
-func parseTimeOnly(s string) (time.Time, error) {
+// loadTimezone resolves an IANA timezone name to a location, defaulting to UTC
+// when the client did not send one.
+func loadTimezone(name string) (*time.Location, error) {
+	if name == "" {
+		return time.UTC, nil
+	}
+	loc, err := time.LoadLocation(name)
+	if err != nil {
+		return nil, fmt.Errorf("invalid timezone: %s", name)
+	}
+	return loc, nil
+}
+
+// parseTimeOnlyInLocation parses an "HH:MM" or "HH:MM:SS" string as a wall-clock
+// time in loc and returns the equivalent UTC time. The time is anchored to the
+// current date in loc so the DST offset is resolved before converting to UTC.
+func parseTimeOnlyInLocation(s string, loc *time.Location) (time.Time, error) {
 	for _, layout := range []string{time.TimeOnly, "15:04"} {
-		if t, err := time.Parse(layout, s); err == nil {
-			return t, nil
+		if t, err := time.ParseInLocation(layout, s, loc); err == nil {
+			now := time.Now().In(loc)
+			local := time.Date(now.Year(), now.Month(), now.Day(), t.Hour(), t.Minute(), t.Second(), 0, loc)
+			return local.UTC(), nil
 		}
 	}
 	return time.Time{}, fmt.Errorf("invalid time: %s", s)

@@ -16,6 +16,27 @@ interface HourRow {
 const defaultHours = (): HourRow[] =>
   DAYS.map((_, i) => ({ day_of_week: i, start_time: "09:00", end_time: "17:00" }))
 
+// getLocalTimeZone returns the browser's IANA timezone (e.g. "Europe/Stockholm").
+function getLocalTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"
+  } catch {
+    return "UTC"
+  }
+}
+
+// utcWallClockToLocal converts a UTC "HH:MM" wall-clock string (as stored by the
+// server) into the browser's local "HH:MM" for display in a time input.
+function utcWallClockToLocal(value: string): string {
+  const match = /^(\d{1,2}):(\d{2})/.exec(value)
+  if (!match) return value
+  const today = new Date()
+  const d = new Date(
+    Date.UTC(today.getFullYear(), today.getMonth(), today.getDate(), Number(match[1]), Number(match[2])),
+  )
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`
+}
+
 export function SalonPolicyDialog({
   businessId,
   slug,
@@ -41,7 +62,13 @@ export function SalonPolicyDialog({
     setNoShowHours(String(policy.no_show_after_hours))
     setSlotInterval(String(policy.slot_interval_minutes))
     if (policy.working_hours?.length) {
-      setHours(policy.working_hours.map((wh) => ({ ...wh })))
+      setHours(
+        policy.working_hours.map((wh) => ({
+          day_of_week: wh.day_of_week,
+          start_time: utcWallClockToLocal(wh.start_time),
+          end_time: utcWallClockToLocal(wh.end_time),
+        })),
+      )
     }
   }, [policy])
 
@@ -76,6 +103,7 @@ export function SalonPolicyDialog({
         cancellation_lead_hours: lead,
         no_show_after_hours: noShow,
         slot_interval_minutes: interval,
+        timezone: getLocalTimeZone(),
         working_hours: hours,
       })
       await queryClient.invalidateQueries({ queryKey: ["salon", slug] })

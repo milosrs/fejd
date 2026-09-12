@@ -5123,6 +5123,10 @@
                         "type": "integer",
                         "example": 30
                     },
+                    "timezone": {
+                        "type": "string",
+                        "example": "Europe/Stockholm"
+                    },
                     "working_hours": {
                         "type": "array",
                         "items": {

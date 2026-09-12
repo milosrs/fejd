@@ -150,6 +150,7 @@ export type SalonPolicyInput = {
   cancellation_lead_hours: number
   no_show_after_hours: number
   slot_interval_minutes: number
+  timezone?: string
   working_hours: components["schemas"]["handler.BusinessHoursInput"][]
 }
 
