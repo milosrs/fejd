@@ -37,7 +37,7 @@ services:
       - seaweedfs-init-buckets
 
   frontend:
-    image: node:22-alpine
+    image: node:26.0.0-alpine3.22
     container_name: fejd-frontend
     working_dir: /app
     environment:
