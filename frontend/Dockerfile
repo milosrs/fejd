@@ -1,8 +1,8 @@
 FROM node:26.0.0-alpine3.22 AS build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN npm install -g pnpm@11.15.1 \
-    && pnpm install --frozen-lockfile --reporter=append-only --network-concurrency=4 --fetch-retries=5 --fetch-timeout=120000
+RUN npm install -g pnpm@11.15.1
+RUN pnpm install --frozen-lockfile --reporter=append-only --network-concurrency=4 --fetch-retries=5 --fetch-timeout=120000
 COPY . .
 ARG VITE_API_URL
 ARG VITE_KEYCLOAK_URL
