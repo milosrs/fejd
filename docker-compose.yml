@@ -55,7 +55,7 @@ services:
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: sh -c "corepack enable && pnpm install && pnpm dev"
+    command: sh -c "npm install -g pnpm@9.15.4 && pnpm install && pnpm dev"
     depends_on:
       - backend
       - keycloak

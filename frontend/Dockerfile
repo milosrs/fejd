@@ -1,7 +1,7 @@
 FROM node:26.0.0-alpine3.22 AS build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm install --frozen-lockfile
+RUN npm install -g pnpm@9.15.4 && pnpm install --frozen-lockfile
 COPY . .
 ARG VITE_API_URL
 ARG VITE_KEYCLOAK_URL

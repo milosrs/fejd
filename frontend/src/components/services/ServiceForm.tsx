@@ -222,7 +222,7 @@ export function ServiceForm({
             <ServiceCard
               service={previewService}
               imageOverride={previewUrl ?? undefined}
-              onBook={() => {}}
+              onBook={() => { }}
             />
           </div>
         </div>

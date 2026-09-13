@@ -30,13 +30,13 @@
 
         openapi-typescript' = pkgs.writeShellApplication {
           name = "openapi-typescript";
-          runtimeInputs = [ pkgs.nodejs ];
+          runtimeInputs = [ pkgs.nodejs_26 ];
           text = ''exec npx --yes openapi-typescript@7 "$@"'';
         };
 
         swagger2openapi' = pkgs.writeShellApplication {
           name = "swagger2openapi";
-          runtimeInputs = [ pkgs.nodejs ];
+          runtimeInputs = [ pkgs.nodejs_26 ];
           text = ''exec npx --yes swagger2openapi@7 "$@"'';
         };
       in
@@ -62,7 +62,7 @@
             nginx
             ngrok
             nix-direnv
-            nodejs
+            nodejs_26
             openssl
             pkg-config
             playwright
