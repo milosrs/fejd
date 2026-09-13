@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 FROM node:26.0.0-alpine3.22 AS build
 WORKDIR /app
-COPY package.json pnpm-lock.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN npm install -g pnpm@11.15.1
 RUN --mount=type=cache,id=fejd-pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --reporter=append-only \
