@@ -1,8 +1,13 @@
+# syntax=docker/dockerfile:1
 FROM node:26.0.0-alpine3.22 AS build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml ./
 RUN npm install -g pnpm@11.15.1
-RUN pnpm install --frozen-lockfile --reporter=append-only --network-concurrency=4 --fetch-retries=5 --fetch-timeout=120000
+RUN --mount=type=cache,id=fejd-pnpm-store,target=/root/.local/share/pnpm/store \
+    pnpm install --frozen-lockfile --reporter=append-only \
+    --network-concurrency=4 --fetch-retries=8 --fetch-retry-factor=2 \
+    --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=120000 \
+    --fetch-timeout=120000
 COPY . .
 ARG VITE_API_URL
 ARG VITE_KEYCLOAK_URL
