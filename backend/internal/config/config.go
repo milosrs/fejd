@@ -30,12 +30,13 @@ type ObjectStoreConfig struct {
 // S3Config holds connection settings for AWS S3 (or an S3-compatible
 // endpoint via Endpoint).
 type S3Config struct {
-	Region    string
-	Endpoint  string
-	AccessKey string
-	SecretKey string
-	Bucket    string
-	UseSSL    bool
+	Region         string
+	Endpoint       string
+	AccessKey      string
+	SecretKey      string
+	Bucket         string
+	UseSSL         bool
+	ForcePathStyle bool
 }
 
 // StorageConfig selects the active image backend and its settings.
@@ -113,12 +114,13 @@ func Load() (*Config, error) {
 				UseSSL:    getEnvBool("MINIO_USE_SSL", false),
 			},
 			S3: S3Config{
-				Region:    getEnv("S3_REGION", ""),
-				Endpoint:  getEnv("S3_ENDPOINT", ""),
-				AccessKey: getEnv("S3_ACCESS_KEY", ""),
-				SecretKey: getEnv("S3_SECRET_KEY", ""),
-				Bucket:    getEnv("S3_BUCKET", ""),
-				UseSSL:    getEnvBool("S3_USE_SSL", true),
+				Region:         getEnv("S3_REGION", ""),
+				Endpoint:       getEnv("S3_ENDPOINT", ""),
+				AccessKey:      getEnv("S3_ACCESS_KEY", ""),
+				SecretKey:      getEnv("S3_SECRET_KEY", ""),
+				Bucket:         getEnv("S3_BUCKET", ""),
+				UseSSL:         getEnvBool("S3_USE_SSL", true),
+				ForcePathStyle: getEnvBool("S3_FORCE_PATH_STYLE", false),
 			},
 			MaxUploadBytes: getEnvInt("IMAGE_MAX_UPLOAD_MB", 10) * 1024 * 1024,
 		},

@@ -11,7 +11,7 @@ type S3ImageStorage struct {
 	*objectStore
 }
 
-func NewS3ImageStorage(region, endpoint, accessKey, secretKey, bucket string, useSSL bool) (*S3ImageStorage, error) {
+func NewS3ImageStorage(region, endpoint, accessKey, secretKey, bucket string, useSSL, forcePathStyle bool) (*S3ImageStorage, error) {
 	if endpoint == "" {
 		endpoint = fmt.Sprintf("s3.%s.amazonaws.com", region)
 	}
@@ -20,6 +20,12 @@ func NewS3ImageStorage(region, endpoint, accessKey, secretKey, bucket string, us
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
 		Region: region,
+		BucketLookup: func() minio.BucketLookupType {
+			if forcePathStyle {
+				return minio.BucketLookupPath
+			}
+			return minio.BucketLookupAuto
+		}(),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create s3 client: %w", err)

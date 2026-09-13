@@ -729,7 +729,7 @@
       "enabled": true,
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
-      "secret": "EYlizeFHVtfRPhomKqasA4mgRYGLfJBL",
+      "secret": "${FEJD_BACKEND_CLIENT_SECRET}",
       "redirectUris": [],
       "webOrigins": [],
       "notBefore": 0,
@@ -773,11 +773,13 @@
       "alwaysDisplayInConsole": false,
       "clientAuthenticatorType": "client-secret",
       "redirectUris": [
-        "https://*.fejd.com/*",
+        "https://*.fejd.fyi/*",
+        "https://fejd.fyi/*",
         "http://localhost:5173/*"
       ],
       "webOrigins": [
-        "https://*.fejd.com",
+        "https://*.fejd.fyi",
+        "https://fejd.fyi",
         "http://localhost:5173"
       ],
       "notBefore": 0,

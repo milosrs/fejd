@@ -1,0 +1,234 @@
+services:
+  caddy:
+    image: caddy:2.11.4-alpine
+    container_name: fejd-caddy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+    depends_on:
+      frontend:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+    networks:
+      - fejd
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ""
+        VITE_KEYCLOAK_URL: https://auth.fejd.fyi
+        VITE_KEYCLOAK_REALM: fejd
+        VITE_KEYCLOAK_CLIENT_ID: fejd-frontend
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
+        VITE_APP_DOMAIN: fejd.fyi
+        VITE_APP_HOST: fejd.fyi
+        VITE_APP_STORE_URL: ${VITE_APP_STORE_URL:-}
+        VITE_PLAY_STORE_URL: ${VITE_PLAY_STORE_URL:-}
+    container_name: fejd-frontend
+    restart: unless-stopped
+    expose:
+      - "80"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1/ >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - fejd
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: fejd-backend
+    restart: unless-stopped
+    environment:
+      PORT: "8080"
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
+      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_REALM: ${KEYCLOAK_REALM:-fejd}
+      KEYCLOAK_CLIENT_ID: fejd-backend
+      KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET in .env.production}
+      KEYCLOAK_AUDIENCES: ${KEYCLOAK_AUDIENCES:-salon-mobile,fejd-frontend}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID:-fejd-admin}
+      KEYCLOAK_ADMIN_CLIENT_SECRET: ${FEJD_ADMIN_CLIENT_SECRET:?Set FEJD_ADMIN_CLIENT_SECRET in .env.production}
+      INVITE_BASE_URL: ${INVITE_BASE_URL:-https://fejd.fyi}
+      INVITE_REDIRECT_URI: ${INVITE_REDIRECT_URI:-https://fejd.fyi}
+      SMTP_HOST: smtp
+      SMTP_PORT: "25"
+      SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM in .env.production}
+      SUPERADMIN_NOTIFY_EMAIL: ${SUPERADMIN_NOTIFY_EMAIL:?Set SUPERADMIN_NOTIFY_EMAIL in .env.production}
+      IMAGE_STORAGE_BACKEND: s3
+      S3_REGION: ${S3_REGION:-us-east-1}
+      S3_ENDPOINT: seaweedfs:8333
+      S3_ACCESS_KEY: ${SEAWEEDFS_S3_ACCESS_KEY:?Set SEAWEEDFS_S3_ACCESS_KEY in .env.production}
+      S3_SECRET_KEY: ${SEAWEEDFS_S3_SECRET_KEY:?Set SEAWEEDFS_S3_SECRET_KEY in .env.production}
+      S3_BUCKET: ${S3_BUCKET:-fejd-images}
+      S3_USE_SSL: "false"
+      S3_FORCE_PATH_STYLE: "true"
+      CORS_ALLOWED_ORIGINS: https://fejd.fyi
+      CORS_ALLOWED_SUFFIX: ${CORS_ALLOWED_SUFFIX:-fejd.fyi}
+      FEJD_DOMAIN: ${FEJD_DOMAIN:-fejd.fyi}
+      RUN_JOBS: ${RUN_JOBS:-true}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_healthy
+      seaweedfs-init-buckets:
+        condition: service_completed_successfully
+      smtp:
+        condition: service_started
+    expose:
+      - "8080"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O - http://127.0.0.1:8080/health >/dev/null"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - fejd
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: fejd-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fejd}
+      POSTGRES_USER: ${POSTGRES_USER:?Set POSTGRES_USER in .env.production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - fejd
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.7.3
+    container_name: fejd-keycloak
+    entrypoint: ["/bin/sh", "/opt/keycloak/startup.production.sh"]
+    restart: unless-stopped
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB:-fejd}
+      KC_DB_SCHEMA: keycloak
+      KC_DB_USERNAME: ${POSTGRES_USER:?Set POSTGRES_USER in .env.production}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USERNAME:?Set KEYCLOAK_ADMIN_USERNAME in .env.production}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env.production}
+      FEJD_ADMIN_CLIENT_SECRET: ${FEJD_ADMIN_CLIENT_SECRET:?Set FEJD_ADMIN_CLIENT_SECRET in .env.production}
+      FEJD_BACKEND_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET in .env.production}
+      SMTP_HOST: smtp
+      SMTP_PORT: "25"
+      SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM in .env.production}
+      KC_HOSTNAME: https://auth.fejd.fyi
+      KC_PROXY_HEADERS: xforwarded
+      KC_HTTP_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_PORT: "9000"
+      KC_HEALTH_ENABLED: "true"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      smtp:
+        condition: service_started
+    expose:
+      - "8080"
+      - "9000"
+    volumes:
+      - ./keycloak/themes:/opt/keycloak/themes:ro
+      - ./keycloak/providers:/opt/keycloak/providers:ro
+      - ./keycloak/import/fejd-realm.json:/opt/keycloak/realm-template.json:ro
+      - ./keycloak/startup.production.sh:/opt/keycloak/startup.production.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3 && grep -q '200' <&3"]
+      interval: 30s
+      timeout: 10s
+      retries: 10
+      start_period: 30s
+    networks:
+      - fejd
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.46@sha256:08d516132314207d10c8e37cbffc1f32b147d870169688734cc61c6231625b62
+    container_name: fejd-seaweedfs
+    restart: unless-stopped
+    entrypoint: ["/bin/sh", "-c"]
+    command: >-
+      mkdir -p /etc/seaweedfs &&
+      printf "%s\n" "{\"identities\":[{\"name\":\"fejd\",\"credentials\":[{\"accessKey\":\"$${SEAWEEDFS_S3_ACCESS_KEY}\",\"secretKey\":\"$${SEAWEEDFS_S3_SECRET_KEY}\"}],\"actions\":[\"Admin\"]}]}" > /etc/seaweedfs/s3.json &&
+      exec weed server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    environment:
+      SEAWEEDFS_S3_ACCESS_KEY: ${SEAWEEDFS_S3_ACCESS_KEY:?Set SEAWEEDFS_S3_ACCESS_KEY in .env.production}
+      SEAWEEDFS_S3_SECRET_KEY: ${SEAWEEDFS_S3_SECRET_KEY:?Set SEAWEEDFS_S3_SECRET_KEY in .env.production}
+    volumes:
+      - seaweedfs_data:/data
+    expose:
+      - "8333"
+      - "8888"
+      - "9333"
+    networks:
+      - fejd
+
+  seaweedfs-init-buckets:
+    image: amazon/aws-cli:2.27.41@sha256:bc6b7bba44ce38f9604ede49c584824af919047ea03fbcc7c7610671fdef95d8
+    container_name: fejd-seaweedfs-init-buckets
+    restart: "no"
+    depends_on:
+      - seaweedfs
+    environment:
+      AWS_ACCESS_KEY_ID: ${SEAWEEDFS_S3_ACCESS_KEY:?Set SEAWEEDFS_S3_ACCESS_KEY in .env.production}
+      AWS_SECRET_ACCESS_KEY: ${SEAWEEDFS_S3_SECRET_KEY:?Set SEAWEEDFS_S3_SECRET_KEY in .env.production}
+      AWS_DEFAULT_REGION: ${S3_REGION:-us-east-1}
+      AWS_EC2_METADATA_DISABLED: "true"
+      S3_BUCKET: ${S3_BUCKET:-fejd-images}
+    entrypoint: ["/bin/sh", "-c"]
+    command: >-
+      until aws s3api head-bucket --bucket "$${S3_BUCKET}" --endpoint-url http://seaweedfs:8333 >/dev/null 2>&1; do
+        aws s3api create-bucket --bucket "$${S3_BUCKET}" --endpoint-url http://seaweedfs:8333 >/dev/null 2>&1 || true;
+        sleep 2;
+      done
+    networks:
+      - fejd
+
+  smtp:
+    build:
+      context: ./deploy/smtp
+      dockerfile: Dockerfile
+    container_name: fejd-smtp
+    restart: unless-stopped
+    environment:
+      RESEND_API_KEY: ${RESEND_API_KEY:?Set RESEND_API_KEY in .env.production}
+    volumes:
+      - smtp_data:/var/mail
+    expose:
+      - "25"
+    networks:
+      - fejd
+
+volumes:
+  postgres_data:
+  seaweedfs_data:
+  smtp_data:
+  caddy_data:
+  caddy_config:
+
+networks:
+  fejd:
+    external: true

@@ -449,7 +449,7 @@ export function MyReservationsPage() {
 
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-stretch">
           <CalendarGrid
-            className="lg:overflow-y-auto"
+            className="lg:overflow-y-auto lg:pr-2"
             month={month}
             onMonthChange={setMonth}
             selected={selected}

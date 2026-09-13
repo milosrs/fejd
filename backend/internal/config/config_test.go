@@ -39,10 +39,12 @@ func TestLoadS3(t *testing.T) {
 	t.Setenv("S3_BUCKET", "bucket")
 	t.Setenv("S3_ACCESS_KEY", "key")
 	t.Setenv("S3_SECRET_KEY", "secret")
+	t.Setenv("S3_FORCE_PATH_STYLE", "true")
 
 	cfg, err := Load()
 	require.NoError(t, err)
 	assert.Equal(t, "eu-west-1", cfg.ImageStorage.S3.Region)
+	assert.True(t, cfg.ImageStorage.S3.ForcePathStyle)
 }
 
 func TestLoadRejectsNonPositiveMaxUpload(t *testing.T) {

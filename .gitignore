@@ -29,6 +29,12 @@ go.work.sum
 
 # env file
 .env
+.env.production
+.secrets/
+*.pem
+*.key
+*.p12
+*.jks
 
 # IDE / editor
 .vscode/
@@ -48,7 +54,6 @@ frontend/.capacitor/
 frontend/android/
 frontend/ios/
 frontend/storybook-static/
-pnpm-lock.yaml
 .pnpm-store/
 
 # Generated swagger docs (intermediate)
@@ -58,9 +63,6 @@ frontend/openapi.json
 # Nix
 result
 result-*
-
-# Keycloak theme build output
-keycloak/themes/
 
 backend/fejd-backend
 # Editor/IDE

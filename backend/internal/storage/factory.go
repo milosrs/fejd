@@ -14,7 +14,7 @@ func NewFromConfig(cfg config.StorageConfig) (ImageStorage, error) {
 	case config.BackendMinio:
 		return NewMinioImageStorage(cfg.Minio.Endpoint, cfg.Minio.AccessKey, cfg.Minio.SecretKey, cfg.Minio.Bucket, cfg.Minio.UseSSL)
 	case config.BackendS3:
-		return NewS3ImageStorage(cfg.S3.Region, cfg.S3.Endpoint, cfg.S3.AccessKey, cfg.S3.SecretKey, cfg.S3.Bucket, cfg.S3.UseSSL)
+		return NewS3ImageStorage(cfg.S3.Region, cfg.S3.Endpoint, cfg.S3.AccessKey, cfg.S3.SecretKey, cfg.S3.Bucket, cfg.S3.UseSSL, cfg.S3.ForcePathStyle)
 	default:
 		return nil, fmt.Errorf("unsupported object-store backend %q", cfg.Backend)
 	}

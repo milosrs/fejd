@@ -5,8 +5,8 @@ import (
 	"io"
 )
 
-// ImageStorage abstracts where image bytes live. MinIO and S3 (via minio-go)
-// are the object-store backends. The postgres backend stores bytes in the
+// ImageStorage abstracts where image bytes live. S3-compatible object stores
+// are accessed through minio-go. The postgres backend stores bytes in the
 // images.data column and is handled directly by the image service, so it has
 // no adapter here.
 type ImageStorage interface {
