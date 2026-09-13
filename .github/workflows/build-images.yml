@@ -1,0 +1,75 @@
+name: Build and publish Docker images
+
+on:
+    push:
+        tags:
+            - "v*"
+
+permissions:
+    contents: read
+    packages: write
+
+env:
+    REGISTRY: ghcr.io
+    IMAGE_PREFIX: ghcr.io/milosrs
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+
+            - name: Log in to GHCR
+              uses: docker/login-action@v3
+              with:
+                  registry: ghcr.io
+                  username: ${{ github.actor }}
+                  password: ${{ secrets.GITHUB_TOKEN }}
+
+            - name: Extract Docker metadata for backend
+              id: backend-meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.IMAGE_PREFIX }}/fejd-backend
+                  tags: |
+                      type=ref,event=tag
+                      type=sha
+
+            - name: Extract Docker metadata for frontend
+              id: frontend-meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ env.IMAGE_PREFIX }}/fejd-frontend
+                  tags: |
+                      type=ref,event=tag
+                      type=sha
+
+            - name: Build and push backend
+              uses: docker/build-push-action@v6
+              with:
+                  context: ./backend
+                  file: ./backend/Dockerfile
+                  push: true
+                  tags: ${{ steps.backend-meta.outputs.tags }}
+                  labels: ${{ steps.backend-meta.outputs.labels }}
+
+            - name: Build and push frontend
+              uses: docker/build-push-action@v6
+              with:
+                  context: ./frontend
+                  file: ./frontend/Dockerfile
+                  push: true
+                  build-args: |
+                      VITE_API_URL=
+                      VITE_KEYCLOAK_URL=https://auth.fejd.fyi
+                      VITE_KEYCLOAK_REALM=fejd
+                      VITE_KEYCLOAK_CLIENT_ID=fejd-frontend
+                      VITE_APP_DOMAIN=fejd.fyi
+                      VITE_APP_HOST=fejd.fyi
+                      VITE_GOOGLE_MAPS_API_KEY=${{ vars.VITE_GOOGLE_MAPS_API_KEY }}
+                      VITE_APP_STORE_URL=${{ vars.VITE_APP_STORE_URL }}
+                      VITE_PLAY_STORE_URL=${{ vars.VITE_PLAY_STORE_URL }}
+                  tags: ${{ steps.frontend-meta.outputs.tags }}
+                  labels: ${{ steps.frontend-meta.outputs.labels }}
