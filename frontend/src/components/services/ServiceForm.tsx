@@ -30,16 +30,16 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 
 export function ServiceForm({
   initial,
-  staff,
-  assignedEmployeeIds,
+  staff = [],
+  assignedEmployeeIds = [],
   onClose,
   onSubmit,
   saving,
   error,
 }: {
   initial?: Service
-  staff: Employee[]
-  assignedEmployeeIds: string[]
+  staff?: Employee[]
+  assignedEmployeeIds?: string[]
   onClose: () => void
   onSubmit: (values: ServiceFormValues) => void
   saving?: boolean
@@ -53,6 +53,7 @@ export function ServiceForm({
   )
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string>()
+  const staffList = staff ?? []
   const [employeeIds, setEmployeeIds] = useState<string[]>(assignedEmployeeIds)
   const employeesTouched = useRef(false)
   const { t } = useI18n()
@@ -154,13 +155,13 @@ export function ServiceForm({
             </Field>
 
             <Field label={t("services.fields.barbers")}>
-              {staff.length === 0 ? (
+              {staffList.length === 0 ? (
                 <p className="text-sm text-muted-foreground">
                   {t("services.noBarbers")}
                 </p>
               ) : (
                 <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
-                  {staff.map((employee) => {
+                  {staffList.map((employee) => {
                     const avatar = resolveImageUrl(employee.avatar)
                     const name =
                       employee.display_name?.trim() ||
