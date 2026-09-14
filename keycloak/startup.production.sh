@@ -1,15 +1,15 @@
 #!/bin/sh
 set -eu
 
-data_dir="${KC_DATA_DIR:-/tmp/keycloak-data}"
-export KC_DATA_DIR="$data_dir"
-mkdir -p "${data_dir}/import"
+import_dir="/opt/keycloak/data/import"
+mkdir -p "$import_dir"
+
 sed \
   -e '/"http:\/\/localhost:5173\/\*"/d' \
   -e '/"http:\/\/localhost:5173"/d' \
   -e '/"https:\/\/fejd\.fyi\/\*",/s/,$//' \
   -e '/"https:\/\/fejd\.fyi",/s/,$//' \
-  /opt/keycloak/realm-template.json > "${data_dir}/import/fejd-realm.json"
+  /opt/keycloak/realm-template.json > "${import_dir}/fejd-realm.json"
 
 exec /opt/keycloak/bin/kc.sh start \
   --import-realm \

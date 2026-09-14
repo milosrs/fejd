@@ -21,19 +21,7 @@ services:
       - fejd
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        VITE_API_URL: ""
-        VITE_KEYCLOAK_URL: https://auth.fejd.fyi
-        VITE_KEYCLOAK_REALM: fejd
-        VITE_KEYCLOAK_CLIENT_ID: fejd-frontend
-        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY:-}
-        VITE_APP_DOMAIN: fejd.fyi
-        VITE_APP_HOST: fejd.fyi
-        VITE_APP_STORE_URL: ${VITE_APP_STORE_URL:-}
-        VITE_PLAY_STORE_URL: ${VITE_PLAY_STORE_URL:-}
+    image: ghcr.io/milosrs/fejd-frontend:${FEJD_VERSION}
     container_name: fejd-frontend
     restart: unless-stopped
     expose:
@@ -48,9 +36,7 @@ services:
       - fejd
 
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: ghcr.io/milosrs/fejd-backend:${FEJD_VERSION}
     container_name: fejd-backend
     restart: unless-stopped
     environment:
@@ -170,10 +156,11 @@ services:
     container_name: fejd-seaweedfs
     restart: unless-stopped
     entrypoint: ["/bin/sh", "-c"]
-    command: >-
-      mkdir -p /etc/seaweedfs &&
-      printf "%s\n" "{\"identities\":[{\"name\":\"fejd\",\"credentials\":[{\"accessKey\":\"$${SEAWEEDFS_S3_ACCESS_KEY}\",\"secretKey\":\"$${SEAWEEDFS_S3_SECRET_KEY}\"}],\"actions\":[\"Admin\"]}]}" > /etc/seaweedfs/s3.json &&
-      exec weed server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    command: 
+      - >-
+        mkdir -p /etc/seaweedfs &&
+        printf "%s\n" "{\"identities\":[{\"name\":\"fejd\",\"credentials\":[{\"accessKey\":\"$${SEAWEEDFS_S3_ACCESS_KEY}\",\"secretKey\":\"$${SEAWEEDFS_S3_SECRET_KEY}\"}],\"actions\":[\"Admin\"]}]}" > /etc/seaweedfs/s3.json &&
+        exec weed server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
     environment:
       SEAWEEDFS_S3_ACCESS_KEY: ${SEAWEEDFS_S3_ACCESS_KEY:?Set SEAWEEDFS_S3_ACCESS_KEY in .env.production}
       SEAWEEDFS_S3_SECRET_KEY: ${SEAWEEDFS_S3_SECRET_KEY:?Set SEAWEEDFS_S3_SECRET_KEY in .env.production}
@@ -199,11 +186,12 @@ services:
       AWS_EC2_METADATA_DISABLED: "true"
       S3_BUCKET: ${S3_BUCKET:-fejd-images}
     entrypoint: ["/bin/sh", "-c"]
-    command: >-
-      until aws s3api head-bucket --bucket "$${S3_BUCKET}" --endpoint-url http://seaweedfs:8333 >/dev/null 2>&1; do
-        aws s3api create-bucket --bucket "$${S3_BUCKET}" --endpoint-url http://seaweedfs:8333 >/dev/null 2>&1 || true;
-        sleep 2;
-      done
+    command: 
+      - >-
+        until aws s3api head-bucket --bucket "$${S3_BUCKET}" --endpoint-url http://seaweedfs:8333 >/dev/null 2>&1; do
+          aws s3api create-bucket --bucket "$${S3_BUCKET}" --endpoint-url http://seaweedfs:8333 >/dev/null 2>&1 || true;
+          sleep 2;
+        done
     networks:
       - fejd
 

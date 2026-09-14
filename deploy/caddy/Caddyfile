@@ -1,9 +1,11 @@
 fejd.fyi {
-	@api path /api /api/*
-	reverse_proxy @api backend:8080
-	reverse_proxy frontend:80
+    handle_path /api/* {
+        reverse_proxy backend:8080
+    }
+
+    reverse_proxy frontend:80
 }
 
 auth.fejd.fyi {
-	reverse_proxy keycloak:8080
+    reverse_proxy keycloak:8080
 }
