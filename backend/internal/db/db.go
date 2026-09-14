@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 
+	"fejd-backend/internal/retry"
+
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -24,7 +26,7 @@ func NewPool(ctx context.Context) (*pgxpool.Pool, error) {
 		return nil, fmt.Errorf("failed to create connection pool: %w", err)
 	}
 
-	if err := pool.Ping(ctx); err != nil {
+	if err := retry.Do(ctx, "database", func() error { return pool.Ping(ctx) }); err != nil {
 		pool.Close()
 		return nil, fmt.Errorf("failed to ping database: %w", err)
 	}

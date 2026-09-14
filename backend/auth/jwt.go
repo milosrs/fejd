@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"fejd-backend/internal/retry"
+
 	"github.com/MicahParks/keyfunc/v3"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/time/rate"
@@ -52,11 +54,11 @@ const (
 type ContextKey string
 
 const (
-	ContextKeyClaims          ContextKey = "claims"
-	ContextKeyUserID          ContextKey = "user_id"
-	ContextKeyRoles           ContextKey = "roles"
-	ContextKeyAuthInvalid     ContextKey = "auth_invalid"
-	ContextKeyApprovalStatus  ContextKey = "approval_status"
+	ContextKeyClaims         ContextKey = "claims"
+	ContextKeyUserID         ContextKey = "user_id"
+	ContextKeyRoles          ContextKey = "roles"
+	ContextKeyAuthInvalid    ContextKey = "auth_invalid"
+	ContextKeyApprovalStatus ContextKey = "approval_status"
 )
 
 type KeycloakConfig struct {
@@ -78,7 +80,12 @@ func NewJWKSClient(config KeycloakConfig) (*JWKSClient, error) {
 		RateLimitWaitMax:  time.Second * 2,
 	}
 
-	jwks, err := keyfunc.NewDefaultOverrideCtx(context.Background(), []string{config.RealmURL + "/protocol/openid-connect/certs"}, options)
+	var jwks keyfunc.Keyfunc
+	err := retry.Do(context.Background(), "keycloak", func() error {
+		var err error
+		jwks, err = keyfunc.NewDefaultOverrideCtx(context.Background(), []string{config.RealmURL + "/protocol/openid-connect/certs"}, options)
+		return err
+	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to fetch JWKS: %w", err)
 	}

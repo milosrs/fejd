@@ -36,8 +36,14 @@ import (
 )
 
 func main() {
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
+
+	cfg, err := config.Load()
+	if err != nil {
+		log.Fatalf("Failed to load configuration: %v", err)
+	}
+	logStartupConfig(cfg)
 
 	pool, err := db.NewPool(ctx)
 	if err != nil {
@@ -47,11 +53,6 @@ func main() {
 
 	if err := db.RunMigrations(); err != nil {
 		log.Printf("Migration warning: %v", err)
-	}
-
-	cfg, err := config.Load()
-	if err != nil {
-		log.Fatalf("Failed to load configuration: %v", err)
 	}
 
 	keycloakConfig := auth.KeycloakConfig{
@@ -82,7 +83,7 @@ func main() {
 
 	var imageStorage storage.ImageStorage
 	if cfg.ImageStorage.Backend != config.BackendPostgres {
-		imageStorage, err = storage.NewFromConfig(cfg.ImageStorage)
+		imageStorage, err = storage.NewFromConfig(ctx, cfg.ImageStorage)
 		if err != nil {
 			log.Fatalf("Failed to initialize image storage: %v", err)
 		}
@@ -184,6 +185,26 @@ func main() {
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("Server failed: %v", err)
 	}
+}
+
+func logStartupConfig(cfg *config.Config) {
+	log.Printf("Starting backend with configuration: database=configured keycloak_url=%s keycloak_realm=%s keycloak_audiences=%v image_storage_backend=%s image_storage_bucket=%s image_storage_endpoint=%s port=%s run_jobs=%t app_domain=%s",
+		getEnv("KEYCLOAK_URL", "http://localhost:9090"), cfg.Keycloak.Realm, cfg.Keycloak.Audiences,
+		cfg.ImageStorage.Backend, storageBucket(cfg), storageEndpoint(cfg), getEnv("PORT", "8080"), cfg.Jobs.RunJobs, cfg.AppDomain)
+}
+
+func storageBucket(cfg *config.Config) string {
+	if cfg.ImageStorage.Backend == config.BackendS3 {
+		return cfg.ImageStorage.S3.Bucket
+	}
+	return cfg.ImageStorage.Minio.Bucket
+}
+
+func storageEndpoint(cfg *config.Config) string {
+	if cfg.ImageStorage.Backend == config.BackendS3 {
+		return cfg.ImageStorage.S3.Endpoint
+	}
+	return cfg.ImageStorage.Minio.Endpoint
 }
 
 func getEnv(key, defaultValue string) string {
