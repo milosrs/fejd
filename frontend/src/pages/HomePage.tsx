@@ -5,10 +5,13 @@ import { hasRole } from "../lib/ownership"
 import { useI18n } from "../lib/i18n"
 import { CreateSalonForm } from "../components/CreateSalonForm"
 import { SalonCard } from "../components/SalonCard"
+import { RealmAdminInvite } from "../components/admin/RealmAdminInvite"
+import { CustomerInvite } from "../components/invite/CustomerInvite"
 
 export function HomePage() {
   const authenticated = useAuthStore((s) => s.authenticated)
   const roles = useAuthStore((s) => s.roles)
+  const isRealmAdmin = useAuthStore((s) => s.isRealmAdmin)
   const { data: me, isLoading: meLoading } = useMe()
   const { data: directory, isLoading: directoryLoading } = useBusinesses()
   const { t } = useI18n()
@@ -29,6 +32,9 @@ export function HomePage() {
           ? t("home.owner.label")
           : t("home.intro")}
       </p>
+
+      {authenticated && isRealmAdmin && <RealmAdminInvite />}
+      {authenticated && !isRealmAdmin && <CustomerInvite />}
 
       {!authenticated ? (
         directoryLoading ? null : (

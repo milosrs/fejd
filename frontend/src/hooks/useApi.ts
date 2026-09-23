@@ -24,6 +24,7 @@ const URL_ADMIN_SERVICES_DELETE = "/api/admin/business/{businessID}/services/{se
 const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serviceID}/image" as const
 const URL_ADMIN_SERVICE_EMPLOYEES = "/api/admin/business/{businessID}/services/{serviceID}/employees" as const
 const URL_ADMIN_INVITATIONS = "/api/admin/business/{businessID}/invitations" as const
+const URL_ADMIN_PLATFORM_INVITATIONS = "/api/admin/invitations" as const
 const URL_MY_UNAVAILABILITY = "/api/admin/business/{businessID}/me/unavailability" as const
 const URL_MY_UNAVAILABILITY_DELETE = "/api/admin/business/{businessID}/me/unavailability/{unavailabilityID}" as const
 const URL_MY_RESERVATIONS = "/api/admin/business/{businessID}/me/appointments" as const
@@ -33,6 +34,7 @@ const URL_MY_SERVICES = "/api/admin/business/{businessID}/me/services" as const
 const URL_CUSTOMERS = "/api/admin/business/{businessID}/customers" as const
 const URL_INVITATION = "/api/invitations/{token}" as const
 const URL_INVITATION_ACCEPT = "/api/invitations/{token}/accept" as const
+const URL_CUSTOMER_INVITATIONS = "/api/invitations" as const
 const URL_APPOINTMENTS = "/api/appointments" as const
 const URL_ME_AVATAR = "/api/me/avatar" as const
 const URL_BUSINESSES = "/api/businesses" as const
@@ -318,11 +320,24 @@ export async function inviteEmployee(
 export type Invitation = Schemas["handler.InvitationResponse"]
 export type PublicInvitation = Schemas["handler.PublicInvitationResponse"]
 
-export async function createInvitation(businessId: string, body?: { expires_in_hours?: number }) {
+export async function createInvitation(
+  businessId: string,
+  body?: { role?: string; expires_in_hours?: number },
+) {
   const { data } = await POST(URL_ADMIN_INVITATIONS, {
     params: { path: { businessID: businessId } },
     body: body ?? {},
   })
+  return data
+}
+
+export async function createPlatformInvitation(body: { role: string; expires_in_hours?: number }) {
+  const { data } = await POST(URL_ADMIN_PLATFORM_INVITATIONS, { body })
+  return data
+}
+
+export async function createCustomerInvitation(body?: { expires_in_hours?: number }) {
+  const { data } = await POST(URL_CUSTOMER_INVITATIONS, { body: body ?? {} })
   return data
 }
 

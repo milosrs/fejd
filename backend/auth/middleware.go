@@ -200,6 +200,19 @@ func (m *Middleware) RequireApproved(next http.Handler) http.Handler {
 	})
 }
 
+// RequireRealmAdmin blocks requests whose user is not a Keycloak realm
+// administrator (realm-level "admin" role or the realm-management
+// "realm-admin" client role). Callers must run Authenticate first.
+func (m *Middleware) RequireRealmAdmin(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !IsRealmAdmin(GetClaimsFromRequest(r)) {
+			http.Error(w, "forbidden: realm admin required", http.StatusForbidden)
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+
 func GetClaimsFromRequest(r *http.Request) *Claims {
 	if claims, ok := r.Context().Value(ContextKeyClaims).(*Claims); ok {
 		return claims

@@ -20,6 +20,8 @@ export interface AuthAdapter {
   refresh(): Promise<boolean>
   getUserInfo(): AuthUserInfo | null
   getRoles(): string[]
+  /** Whether the current token identifies a Keycloak realm administrator. */
+  isRealmAdmin(): boolean
   /** Subscribe to auth-state changes; returns an unsubscribe function. */
   onAuthChange(listener: () => void): () => void
   /**

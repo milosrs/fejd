@@ -290,6 +290,15 @@ export const nativeAdapter: AuthAdapter = {
     return roles
   },
 
+  isRealmAdmin() {
+    if (!accessToken) return false
+    const claims = decodeJwt(accessToken)
+    const realmRoles: string[] = claims.realm_access?.roles ?? []
+    if (realmRoles.includes("admin")) return true
+    const rmRoles: string[] = claims.resource_access?.["realm-management"]?.roles ?? []
+    return rmRoles.includes("realm-admin")
+  },
+
   onAuthChange(listener: () => void) {
     changeListeners.add(listener)
     return () => changeListeners.delete(listener)

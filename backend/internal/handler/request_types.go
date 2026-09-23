@@ -46,7 +46,8 @@ type CreateEmployeeRequest struct {
 }
 
 type CreateInvitationRequest struct {
-	ExpiresInHours int `json:"expires_in_hours,omitempty" example:"48"`
+	Role           string `json:"role,omitempty" example:"employee"`
+	ExpiresInHours int    `json:"expires_in_hours,omitempty" example:"48"`
 }
 
 type InvitationResponse struct {

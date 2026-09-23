@@ -47,6 +47,7 @@ export function BarbersPage() {
   const [form, setForm] = useState<FormState>(null)
   const [pendingRemoval, setPendingRemoval] = useState<Employee | null>(null)
   const [inviteOpen, setInviteOpen] = useState(false)
+  const [inviteRole, setInviteRole] = useState<"employee" | "customer">("employee")
   const [notice, setNotice] = useState("")
 
   const editingOn = editing && isOwner
@@ -62,9 +63,10 @@ export function BarbersPage() {
     })
   }
 
-  const handleInviteClick = () => {
+  const handleInviteClick = (role: "employee" | "customer") => {
+    setInviteRole(role)
     setInviteOpen(true)
-    inviteLink.mutate(undefined, {
+    inviteLink.mutate({ role }, {
       onError: () => {
         setInviteOpen(false)
         setNotice(t("barbers.inviteError"))
@@ -97,9 +99,14 @@ export function BarbersPage() {
         <h2 className="text-xl font-semibold text-foreground">{t("barbers.title")}</h2>
         <div className="flex items-center gap-2">
           {isMember && (
-            <Button size="sm" variant="outline" onClick={handleInviteClick}>
-              <QrCode className="size-3" /> {t("barbers.invite")}
-            </Button>
+            <>
+              <Button size="sm" variant="outline" onClick={() => handleInviteClick("employee")}>
+                <QrCode className="size-3" /> {t("barbers.invite")}
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => handleInviteClick("customer")}>
+                <QrCode className="size-3" /> {t("barbers.inviteCustomer")}
+              </Button>
+            </>
           )}
           {editingOn && (
             <Button size="sm" onClick={() => setForm({ mode: "create" })}>
@@ -181,6 +188,7 @@ export function BarbersPage() {
         loading={inviteLink.isPending}
         error={inviteLink.error ? t("barbers.inviteError") : null}
         filename={`${slug}-invite`}
+        role={inviteRole}
       />
     </section>
   )

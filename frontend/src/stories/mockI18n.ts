@@ -95,6 +95,7 @@ export const mockI18nEn: Record<string, string> = {
 
   "barbers.title": "Barbers",
   "barbers.invite": "Invite",
+  "barbers.inviteCustomer": "Invite customer",
   "barbers.add": "Add barber",
   "barbers.loadError": "Couldn't load barbers. Please try again.",
   "barbers.empty": "No barbers listed yet.",
@@ -116,7 +117,12 @@ export const mockI18nEn: Record<string, string> = {
   "barberForm.fields.avatar": "Avatar",
 
   "invite.title": "Invite link",
+  "invite.friend": "Invite a friend",
+  "invite.friendError": "Couldn't generate an invite link. Please try again.",
   "invite.help": "Share this link or QR code. Scanning it lets someone join this salon as an employee.",
+  "invite.helpCustomer": "Share this link or QR code. Scanning it lets someone join this salon as a customer.",
+  "invite.helpOwner": "Share this link or QR code. Scanning it lets someone join Fejd as a salon owner.",
+  "invite.helpRealmAdmin": "Share this link or QR code. Scanning it lets someone join Fejd as a realm administrator.",
   "invite.generating": "Generating…",
   "invite.copied": "Copied",
   "invite.copyLink": "Copy link",
@@ -128,6 +134,7 @@ export const mockI18nEn: Record<string, string> = {
   "invite.landing.joining": "Joining {salon}…",
   "invite.landing.redirect": "You'll be redirected shortly.",
   "invite.landing.invitedTo": "You've been invited to {salon}",
+  "invite.landing.invitedToPlatform": "You've been invited to Fejd",
   "invite.landing.joinPrompt": "Register or log in to join this salon.",
   "invite.landing.noApp": "Don't have the app?",
 
@@ -197,6 +204,10 @@ export const mockI18nEn: Record<string, string> = {
   "schedule.awaitingApproval": "awaiting approval",
 
   "admin.loginPrompt": "Please log in to access admin.",
+  "admin.inviteOwner": "Invite owner",
+  "admin.inviteCustomer": "Invite customer",
+  "admin.inviteRealmAdmin": "Invite realm admin",
+  "admin.inviteError": "Couldn't generate an invite link. Please try again.",
   "admin.schedule.title": "Schedule Management",
   "admin.schedule.selectEmployee": "Select Employee",
   "admin.schedule.selectPlaceholder": "-- Select --",

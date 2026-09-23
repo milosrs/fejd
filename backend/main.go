@@ -150,6 +150,7 @@ func main() {
 		authMiddleware.OptionalAuthenticate,
 		authMiddleware.RequireApproved,
 		authMiddleware.RequireRole(auth.RoleOwner),
+		authMiddleware.RequireRealmAdmin,
 		businessHandler,
 		appointmentHandler,
 		adminHandler,

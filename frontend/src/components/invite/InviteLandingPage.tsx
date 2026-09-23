@@ -42,7 +42,9 @@ export function InviteLandingPage() {
       ) : (
         <>
           <h1 className="text-xl font-semibold text-foreground text-center">
-            {t("invite.landing.invitedTo", { salon: invitation?.salon_name ?? "" })}
+            {invitation?.salon_name
+              ? t("invite.landing.invitedTo", { salon: invitation.salon_name })
+              : t("invite.landing.invitedToPlatform")}
           </h1>
           <p className="text-muted-foreground text-center max-w-sm">
             {t("invite.landing.joinPrompt")}

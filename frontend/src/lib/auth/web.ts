@@ -82,6 +82,15 @@ export const webAdapter: AuthAdapter = {
     return parsedToken()?.realm_access?.roles ?? []
   },
 
+  isRealmAdmin() {
+    const t = parsedToken()
+    if (!t) return false
+    const realmRoles: string[] = t.realm_access?.roles ?? []
+    if (realmRoles.includes("admin")) return true
+    const rmRoles: string[] = t.resource_access?.["realm-management"]?.roles ?? []
+    return rmRoles.includes("realm-admin")
+  },
+
   onAuthChange(listener: () => void) {
     listeners.add(listener)
     return () => {

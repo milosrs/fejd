@@ -196,7 +196,7 @@ To test the full invite → password-set → app-open handoff on a device/simula
    KEYCLOAK_ADMIN_CLIENT_ID=fejd-admin \
    KEYCLOAK_ADMIN_CLIENT_SECRET=H6vKp9sQ2wXrT4yL8mN1cB3dV5fG7jZ0 \
    INVITE_REDIRECT_URI=fejd://callback \
-   go run ./cmd/fejd-admin invite --email you@example.com --name "You"
+   go run ./cmd/fejd-admin invite --email you@example.com --name "You" --role owner
    ```
 
 3. Open the invite email (caught by the local SMTP at `docker exec fejd-smtp

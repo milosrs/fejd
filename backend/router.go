@@ -18,7 +18,7 @@ import (
 // functions so routing can be tested without a live Keycloak JWKS.
 func newRouter(
 	cfg *config.Config,
-	authenticate, optionalAuthenticate, requireApproved, requireOwner func(http.Handler) http.Handler,
+	authenticate, optionalAuthenticate, requireApproved, requireOwner, requireRealmAdmin func(http.Handler) http.Handler,
 	businessHandler *handler.BusinessHandler,
 	appointmentHandler *handler.AppointmentHandler,
 	adminHandler *handler.AdminHandler,
@@ -65,6 +65,15 @@ func newRouter(
 		// the invitee before they register.
 		r.Get("/invitations/{token}", invitationHandler.GetInvitation)
 
+		// Realm-admin platform invitations (owner/customer): authenticated and
+		// realm-admin-gated, but not approval-gated (admins may lack the
+		// owner-onboarding approval flag).
+		r.Group(func(r chi.Router) {
+			r.Use(authenticate)
+			r.Use(requireRealmAdmin)
+			r.Post("/admin/invitations", invitationHandler.CreatePlatformInvitation)
+		})
+
 		// GET /api/me is exempt from approval so a pending user can read their
 		// own status; POST /api/me/business is gated.
 		r.Route("/me", func(r chi.Router) {
@@ -95,6 +104,10 @@ func newRouter(
 			// Accept is authenticated but NOT approval-gated, so a brand-new or
 			// still-pending user can redeem an invite right after registering.
 			r.Post("/invitations/{token}/accept", invitationHandler.AcceptInvitation)
+
+			// Customer invite ("invite a friend"): any authenticated user can
+			// mint a customer invite; no approval or role gate.
+			r.Post("/invitations", invitationHandler.CreateCustomerInvitation)
 		})
 
 		// Owner-facing: Authenticate + RequireApproved.

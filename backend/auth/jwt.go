@@ -51,6 +51,37 @@ const (
 	RoleCustomer = "Customer"
 )
 
+// IsRealmAdmin reports whether the claims identify a Keycloak realm
+// administrator. A full realm administrator carries the realm-level "admin"
+// role; administrators with narrower management rights carry the
+// realm-management "realm-admin" client role instead. Either is sufficient to
+// mint platform invitations.
+func IsRealmAdmin(c *Claims) bool {
+	if c == nil {
+		return false
+	}
+	for _, r := range c.RealmAccess["roles"] {
+		if r == "admin" {
+			return true
+		}
+	}
+
+	rm, ok := c.ResourceAccess["realm-management"].(map[string]any)
+	if !ok {
+		return false
+	}
+	roles, ok := rm["roles"].([]any)
+	if !ok {
+		return false
+	}
+	for _, r := range roles {
+		if s, ok := r.(string); ok && s == "realm-admin" {
+			return true
+		}
+	}
+	return false
+}
+
 type ContextKey string
 
 const (

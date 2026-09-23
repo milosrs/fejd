@@ -1149,7 +1149,7 @@ export interface paths {
         put?: never;
         /**
          * Create an invite link / QR code
-         * @description Generates a single-use invitation link that, when opened, links the recipient to this salon as an employee. Accessible to owners and employees.
+         * @description Generates a single-use invitation link that, when opened, links the recipient to this salon as an employee or customer. Accessible to owners and employees.
          */
         post: {
             parameters: {
@@ -1161,12 +1161,7 @@ export interface paths {
                 };
                 cookie?: never;
             };
-            /** @description Invitation options */
-            requestBody?: {
-                content: {
-                    "application/json": components["schemas"]["handler.CreateInvitationRequest"];
-                };
-            };
+            requestBody?: components["requestBodies"]["handler.CreateInvitationRequest"];
             responses: {
                 /** @description Created */
                 201: {
@@ -2840,6 +2835,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a platform invite link / QR code
+         * @description Generates a single-use invitation link that, when opened, grants the recipient the Owner or Customer platform role. Accessible to realm administrators only.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Invitation options */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.CreateInvitationRequest"];
+                };
+            };
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.InvitationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/appointments": {
         parameters: {
             query?: never;
@@ -3412,6 +3478,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create a customer invite link / QR code
+         * @description Generates a single-use invitation link that grants the recipient the Customer platform role. Accessible to any authenticated user.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: components["requestBodies"]["handler.CreateInvitationRequest"];
+            responses: {
+                /** @description Created */
+                201: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.InvitationResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/invitations/{token}": {
         parameters: {
             query?: never;
@@ -3483,7 +3606,7 @@ export interface paths {
         put?: never;
         /**
          * Accept an invite link
-         * @description Links the authenticated user to the invited salon as an employee and grants the Employee role. Idempotent; works for new and existing users.
+         * @description Links the authenticated user to the invited salon as an employee (granting the Employee role) or as a customer (granting the Customer role); platform invitations grant the Owner or Customer role instead. Idempotent; works for new and existing users.
          */
         post: {
             parameters: {
@@ -4044,6 +4167,8 @@ export interface components {
         "handler.CreateInvitationRequest": {
             /** @example 48 */
             expires_in_hours?: number;
+            /** @example employee */
+            role?: string;
         };
         "handler.CreateOwnAppointmentRequest": {
             /** @example 550e8400-e29b-41d4-a716-446655440000 */
@@ -4207,6 +4332,12 @@ export interface components {
                      */
                     file: string;
                 };
+            };
+        };
+        /** @description Invitation options */
+        "handler.CreateInvitationRequest": {
+            content: {
+                "application/json": components["schemas"]["handler.CreateInvitationRequest"];
             };
         };
         /** @description Rejection reason */

@@ -25,7 +25,7 @@ func NewInvitationHandler(invitations *service.InvitationService, defaultTTL tim
 
 // CreateInvitation godoc
 // @Summary      Create an invite link / QR code
-// @Description  Generates a single-use invitation link that, when opened, links the recipient to this salon as an employee. Accessible to owners and employees.
+// @Description  Generates a single-use invitation link that, when opened, links the recipient to this salon as an employee or customer. Accessible to owners and employees.
 // @Tags         invitations
 // @Accept       json
 // @Produce      json
@@ -61,8 +61,109 @@ func (h *InvitationHandler) CreateInvitation(w http.ResponseWriter, r *http.Requ
 		ttl = time.Duration(body.ExpiresInHours) * time.Hour
 	}
 
-	out, err := h.invitations.CreateInvitation(r.Context(), businessID, userID, ttl)
+	out, err := h.invitations.CreateInvitation(r.Context(), businessID, userID, body.Role, ttl)
 	if err != nil {
+		if status, ok := invitationErrorStatus(err); ok {
+			writeError(w, status, err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, InvitationResponse{
+		ID:        out.ID,
+		URL:       out.URL,
+		Token:     out.Token,
+		ExpiresAt: out.ExpiresAt,
+	})
+}
+
+// CreatePlatformInvitation godoc
+// @Summary      Create a platform invite link / QR code
+// @Description  Generates a single-use invitation link that, when opened, grants the recipient the Owner or Customer platform role. Accessible to realm administrators only.
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Param        body body CreateInvitationRequest true "Invitation options"
+// @Success      201 {object} InvitationResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/invitations [post]
+func (h *InvitationHandler) CreatePlatformInvitation(w http.ResponseWriter, r *http.Request) {
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	var body CreateInvitationRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	ttl := h.defaultTTL
+	if body.ExpiresInHours > 0 {
+		ttl = time.Duration(body.ExpiresInHours) * time.Hour
+	}
+
+	out, err := h.invitations.CreatePlatformInvitation(r.Context(), userID, body.Role, ttl)
+	if err != nil {
+		if status, ok := invitationErrorStatus(err); ok {
+			writeError(w, status, err.Error())
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusCreated, InvitationResponse{
+		ID:        out.ID,
+		URL:       out.URL,
+		Token:     out.Token,
+		ExpiresAt: out.ExpiresAt,
+	})
+}
+
+// CreateCustomerInvitation godoc
+// @Summary      Create a customer invite link / QR code
+// @Description  Generates a single-use invitation link that grants the recipient the Customer platform role. Accessible to any authenticated user.
+// @Tags         invitations
+// @Accept       json
+// @Produce      json
+// @Param        body body CreateInvitationRequest false "Invitation options"
+// @Success      201 {object} InvitationResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/invitations [post]
+func (h *InvitationHandler) CreateCustomerInvitation(w http.ResponseWriter, r *http.Request) {
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	var body CreateInvitationRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	ttl := h.defaultTTL
+	if body.ExpiresInHours > 0 {
+		ttl = time.Duration(body.ExpiresInHours) * time.Hour
+	}
+
+	out, err := h.invitations.CreateCustomerInvitation(r.Context(), userID, ttl)
+	if err != nil {
+		if status, ok := invitationErrorStatus(err); ok {
+			writeError(w, status, err.Error())
+			return
+		}
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -106,7 +207,7 @@ func (h *InvitationHandler) GetInvitation(w http.ResponseWriter, r *http.Request
 
 // AcceptInvitation godoc
 // @Summary      Accept an invite link
-// @Description  Links the authenticated user to the invited salon as an employee and grants the Employee role. Idempotent; works for new and existing users.
+// @Description  Links the authenticated user to the invited salon as an employee (granting the Employee role) or as a customer (granting the Customer role); platform invitations grant the Owner or Customer role instead. Idempotent; works for new and existing users.
 // @Tags         invitations
 // @Produce      json
 // @Param        token path string true "Invitation token"
@@ -134,6 +235,13 @@ func (h *InvitationHandler) AcceptInvitation(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	// Platform invitations have no salon; the caller just stays on their home
+	// page, so respond 200 with no business body.
+	if business == nil {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
 	writeJSON(w, http.StatusOK, dto.BusinessFromModel(*business))
 }
 
@@ -146,6 +254,10 @@ func invitationErrorStatus(err error) (int, bool) {
 		return http.StatusGone, true
 	case errors.Is(err, service.ErrCannotInviteOwner):
 		return http.StatusConflict, true
+	case errors.Is(err, service.ErrInvalidInviteRole):
+		return http.StatusBadRequest, true
+	case errors.Is(err, service.ErrCannotInviteEmployee):
+		return http.StatusForbidden, true
 	default:
 		return 0, false
 	}

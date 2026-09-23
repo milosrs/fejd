@@ -1288,7 +1288,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Generates a single-use invitation link that, when opened, links the recipient to this salon as an employee. Accessible to owners and employees.",
+                "description": "Generates a single-use invitation link that, when opened, links the recipient to this salon as an employee or customer. Accessible to owners and employees.",
                 "tags": [
                     "invitations"
                 ],
@@ -1305,14 +1305,7 @@
                     }
                 ],
                 "requestBody": {
-                    "content": {
-                        "application/json": {
-                            "schema": {
-                                "$ref": "#/components/schemas/handler.CreateInvitationRequest"
-                            }
-                        }
-                    },
-                    "description": "Invitation options"
+                    "$ref": "#/components/requestBodies/handler.CreateInvitationRequest"
                 },
                 "responses": {
                     "201": {
@@ -3198,6 +3191,73 @@
                 }
             }
         },
+        "/api/admin/invitations": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates a single-use invitation link that, when opened, grants the recipient the Owner or Customer platform role. Accessible to realm administrators only.",
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Create a platform invite link / QR code",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.CreateInvitationRequest"
+                            }
+                        }
+                    },
+                    "description": "Invitation options",
+                    "required": true
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.InvitationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/appointments": {
             "post": {
                 "security": [
@@ -3724,6 +3784,55 @@
                 }
             }
         },
+        "/api/invitations": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Generates a single-use invitation link that grants the recipient the Customer platform role. Accessible to any authenticated user.",
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "Create a customer invite link / QR code",
+                "requestBody": {
+                    "$ref": "#/components/requestBodies/handler.CreateInvitationRequest"
+                },
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.InvitationResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/invitations/{token}": {
             "get": {
                 "description": "Returns the target salon for an invite token, so the landing page can greet the invitee before they register. Never returns the token itself.",
@@ -3783,7 +3892,7 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Links the authenticated user to the invited salon as an employee and grants the Employee role. Idempotent; works for new and existing users.",
+                "description": "Links the authenticated user to the invited salon as an employee (granting the Employee role) or as a customer (granting the Customer role); platform invitations grant the Owner or Customer role instead. Idempotent; works for new and existing users.",
                 "tags": [
                     "invitations"
                 ],
@@ -4161,6 +4270,16 @@
                     }
                 },
                 "required": true
+            },
+            "handler.CreateInvitationRequest": {
+                "content": {
+                    "application/json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/handler.CreateInvitationRequest"
+                        }
+                    }
+                },
+                "description": "Invitation options"
             },
             "handler.RejectRequest": {
                 "content": {
@@ -4775,6 +4894,10 @@
                     "expires_in_hours": {
                         "type": "integer",
                         "example": 48
+                    },
+                    "role": {
+                        "type": "string",
+                        "example": "employee"
                     }
                 }
             },

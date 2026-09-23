@@ -11,6 +11,7 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -28,9 +29,13 @@ func invitationColumns() []string {
 
 func scanInvitation(row pgx.Row) (*models.Invitation, error) {
 	var inv models.Invitation
-	err := row.Scan(&inv.ID, &inv.BusinessID, &inv.TokenHash, &inv.Role, &inv.CreatedBy, &inv.MaxUses, &inv.UseCount, &inv.ExpiresAt, &inv.CreatedAt)
+	var businessID pgtype.UUID
+	err := row.Scan(&inv.ID, &businessID, &inv.TokenHash, &inv.Role, &inv.CreatedBy, &inv.MaxUses, &inv.UseCount, &inv.ExpiresAt, &inv.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan invitation: %w", err)
+	}
+	if businessID.Valid {
+		inv.BusinessID, _ = uuid.FromBytes(businessID.Bytes[:])
 	}
 	return &inv, nil
 }
@@ -45,10 +50,18 @@ func (s *InvitationStore) Create(ctx context.Context, q Querier, inv *models.Inv
 	if inv.MaxUses == 0 {
 		inv.MaxUses = 1
 	}
+
+	// Platform invitations have no business (business_id is NULL); salon
+	// invitations always carry a business id.
+	var businessID any = inv.BusinessID
+	if inv.BusinessID == uuid.Nil {
+		businessID = nil
+	}
+
 	sql, args, err := psql.
 		Insert("invitations").
 		Columns("id", "business_id", "token_hash", "role", "created_by", "max_uses", "use_count", "expires_at").
-		Values(inv.ID, inv.BusinessID, inv.TokenHash, inv.Role, inv.CreatedBy, inv.MaxUses, inv.UseCount, inv.ExpiresAt).
+		Values(inv.ID, businessID, inv.TokenHash, inv.Role, inv.CreatedBy, inv.MaxUses, inv.UseCount, inv.ExpiresAt).
 		Suffix("RETURNING created_at").
 		ToSql()
 	if err != nil {

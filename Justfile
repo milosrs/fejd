@@ -29,7 +29,7 @@ up:
 
 # Start all docker services except the frontend (run FE separately: just dev-frontend)
 up-backend:
-    docker compose up -d db minio keycloak smtp minio-init-buckets
+    docker compose up -d db seaweedfs keycloak smtp seaweedfs-init-buckets
 
 # Stop all services
 down:

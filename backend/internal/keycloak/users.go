@@ -122,6 +122,48 @@ func roleMappingSuccess(status int) bool {
 	return status == http.StatusCreated || status == http.StatusNoContent || status == http.StatusConflict
 }
 
+// AddClientRole grants a client role (e.g. realm-management:realm-admin) to a
+// user by client ID and role name. It resolves the client's internal UUID and
+// is idempotent.
+func (c *Client) AddClientRole(ctx context.Context, userID, clientID, roleName string) error {
+	clientUUID, err := c.clientUUID(ctx, clientID)
+	if err != nil {
+		return err
+	}
+
+	path := "/admin/realms/" + c.realm + "/users/" + userID + "/role-mappings/clients/" + clientUUID
+	body := []map[string]string{{"name": roleName}}
+
+	resp, err := c.request(ctx, "POST", path, body)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if roleMappingSuccess(resp.StatusCode) {
+		return nil
+	}
+	respBody, _ := io.ReadAll(resp.Body)
+	return fmt.Errorf("keycloak admin api error: POST %s -> %d: %s", path, resp.StatusCode, string(respBody))
+}
+
+func (c *Client) clientUUID(ctx context.Context, clientID string) (string, error) {
+	params := url.Values{}
+	params.Set("clientId", clientID)
+
+	var clients []struct {
+		ID       string `json:"id"`
+		ClientID string `json:"clientId"`
+	}
+	if err := c.do(ctx, "GET", "/admin/realms/"+c.realm+"/clients?"+params.Encode(), nil, &clients); err != nil {
+		return "", err
+	}
+	if len(clients) == 0 {
+		return "", fmt.Errorf("keycloak client not found: %s", clientID)
+	}
+	return clients[0].ID, nil
+}
+
 // CreateUserInput describes a user to create via the admin API.
 type CreateUserInput struct {
 	Username        string

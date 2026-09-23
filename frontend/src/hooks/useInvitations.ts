@@ -3,7 +3,8 @@ import { acceptInvitation, createInvitation, getInvitation, type Invitation } fr
 
 export function useInvitations(businessId: string) {
   const invite = useMutation({
-    mutationFn: (body?: { expires_in_hours?: number }) => createInvitation(businessId, body),
+    mutationFn: (body?: { role?: string; expires_in_hours?: number }) =>
+      createInvitation(businessId, body),
   })
 
   return { invite }

@@ -213,7 +213,8 @@ type EmployeeUnavailability struct {
 }
 
 // Invitation is a shareable link/QR invite that links a user to a business as
-// an employee. The raw token is never stored; only its hash is persisted.
+// an employee or customer. The raw token is never stored; only its hash is
+// persisted.
 type Invitation struct {
 	ID         uuid.UUID
 	BusinessID uuid.UUID

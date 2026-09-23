@@ -12,6 +12,7 @@ export function InviteDialog({
   loading = false,
   error = null,
   filename = "fejd-invite",
+  role = "employee",
 }: {
   open: boolean
   onClose: () => void
@@ -19,6 +20,7 @@ export function InviteDialog({
   loading?: boolean
   error?: string | null
   filename?: string
+  role?: "employee" | "customer" | "owner" | "realm-admin"
 }) {
   const qrRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
@@ -63,7 +65,13 @@ export function InviteDialog({
         </div>
 
         <p className="mt-2 text-sm text-muted-foreground">
-          {t("invite.help")}
+          {role === "customer"
+            ? t("invite.helpCustomer")
+            : role === "owner"
+              ? t("invite.helpOwner")
+              : role === "realm-admin"
+                ? t("invite.helpRealmAdmin")
+                : t("invite.help")}
         </p>
 
         {loading ? (
