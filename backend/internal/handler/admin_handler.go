@@ -1289,6 +1289,7 @@ func (h *AdminHandler) GetSalonPolicy(w http.ResponseWriter, r *http.Request) {
 		CancellationLeadHours: b.CancellationLeadHours,
 		NoShowAfterHours:      b.NoShowAfterHours,
 		SlotIntervalMinutes:   b.SlotIntervalMinutes,
+		AutoApprove:           b.AutoApprove,
 		WorkingHours:          dto.BusinessHoursFromModels(hours),
 	})
 }
@@ -1363,7 +1364,7 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		})
 	}
 
-	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterHours, body.SlotIntervalMinutes); err != nil {
+	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterHours, body.SlotIntervalMinutes, body.AutoApprove); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
@@ -1376,6 +1377,7 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		CancellationLeadHours: body.CancellationLeadHours,
 		NoShowAfterHours:      body.NoShowAfterHours,
 		SlotIntervalMinutes:   body.SlotIntervalMinutes,
+		AutoApprove:           body.AutoApprove,
 		WorkingHours:          dto.BusinessHoursFromModels(hours),
 	})
 }

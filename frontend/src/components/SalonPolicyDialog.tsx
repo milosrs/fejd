@@ -62,6 +62,7 @@ export function SalonPolicyDialog({
   const [leadHours, setLeadHours] = useState("")
   const [noShowHours, setNoShowHours] = useState("")
   const [slotInterval, setSlotInterval] = useState("30")
+  const [autoApprove, setAutoApprove] = useState(false)
   const [hours, setHours] = useState<HourRow[]>(defaultHours())
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
@@ -71,6 +72,7 @@ export function SalonPolicyDialog({
     setLeadHours(String(policy.cancellation_lead_hours))
     setNoShowHours(String(policy.no_show_after_hours))
     setSlotInterval(String(policy.slot_interval_minutes))
+    setAutoApprove(policy.auto_approve)
     if (policy.working_hours?.length) {
       setHours(
         policy.working_hours.map((wh) => ({
@@ -113,6 +115,7 @@ export function SalonPolicyDialog({
         cancellation_lead_hours: lead,
         no_show_after_hours: noShow,
         slot_interval_minutes: interval,
+        auto_approve: autoApprove,
         timezone: getLocalTimeZone(),
         working_hours: hours,
       })
@@ -172,6 +175,23 @@ export function SalonPolicyDialog({
               onChange={(e) => setSlotInterval(e.target.value)}
             />
           </div>
+
+          <label className="flex items-start gap-3 rounded-xl border border-border p-3">
+            <input
+              type="checkbox"
+              checked={autoApprove}
+              onChange={(e) => setAutoApprove(e.target.checked)}
+              className="mt-0.5 shrink-0"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-foreground">
+                {t("policy.autoApprove")}
+              </span>
+              <span className="block text-sm text-muted-foreground">
+                {t("policy.autoApproveHelp")}
+              </span>
+            </span>
+          </label>
 
           <div className="space-y-2">
             <Label>{t("policy.workingHours")}</Label>

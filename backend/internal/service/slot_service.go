@@ -171,11 +171,20 @@ func (s *SlotService) GetAvailableSlots(
 }
 
 func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.Appointment) error {
-	if appointment.Status == "" {
-		appointment.Status = models.AppointmentStatusConfirmed
-	}
 	if appointment.CreatedBy == "" {
 		appointment.CreatedBy = appointment.CustomerUserID
+	}
+
+	// New appointments start as pending unless the salon has automatic approval
+	// enabled, in which case they are confirmed straight away.
+	b, err := s.business.GetByID(ctx, appointment.BusinessID)
+	if err != nil {
+		return fmt.Errorf("business not found: %w", err)
+	}
+	if b.AutoApprove {
+		appointment.Status = models.AppointmentStatusConfirmed
+	} else {
+		appointment.Status = models.AppointmentStatusPending
 	}
 
 	svc, err := s.services.GetByID(ctx, appointment.ServiceID)
@@ -560,7 +569,6 @@ func (s *SlotService) BookOwnAppointment(ctx context.Context, businessID uuid.UU
 		CustomerUserID: customerUserID,
 		StartTime:      startTime,
 		EndTime:        startTime.Add(time.Duration(svc.DurationMinutes) * time.Minute),
-		Status:         models.AppointmentStatusConfirmed,
 		CreatedBy:      userID,
 	}
 

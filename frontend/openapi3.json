@@ -5206,12 +5206,17 @@
             "handler.SalonPolicyResponse": {
                 "type": "object",
                 "required": [
+                    "auto_approve",
                     "cancellation_lead_hours",
                     "no_show_after_hours",
                     "slot_interval_minutes",
                     "working_hours"
                 ],
                 "properties": {
+                    "auto_approve": {
+                        "type": "boolean",
+                        "example": false
+                    },
                     "cancellation_lead_hours": {
                         "type": "integer",
                         "example": 2
@@ -5340,12 +5345,17 @@
             "handler.UpdateSalonPolicyRequest": {
                 "type": "object",
                 "required": [
+                    "auto_approve",
                     "cancellation_lead_hours",
                     "no_show_after_hours",
                     "slot_interval_minutes",
                     "working_hours"
                 ],
                 "properties": {
+                    "auto_approve": {
+                        "type": "boolean",
+                        "example": false
+                    },
                     "cancellation_lead_hours": {
                         "type": "integer",
                         "example": 2

@@ -2,6 +2,7 @@ package handler
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -39,7 +40,7 @@ func TestAdminHandler_BookOwnAppointment_WalkIn(t *testing.T) {
 	assert.Equal(t, svcID, appt.ServiceID)
 	assert.Equal(t, emp1ID, appt.BusinessUserID)
 	assert.Empty(t, appt.CustomerUserID)
-	assert.Equal(t, "confirmed", appt.Status)
+	assert.Equal(t, "pending", appt.Status)
 }
 
 func TestAdminHandler_BookOwnAppointment_WithCustomer(t *testing.T) {
@@ -67,6 +68,24 @@ func TestAdminHandler_BookOwnAppointment_Past(t *testing.T) {
 	memberGuard(buStore, http.HandlerFunc(h.BookOwnAppointment)).ServeHTTP(rr, req)
 
 	require.Equal(t, http.StatusCreated, rr.Code)
+}
+
+func TestAdminHandler_BookOwnAppointment_AutoApprove(t *testing.T) {
+	h, buStore, businessID, _, _, svcID, _ := newReservationTestHandler(t)
+
+	// Enable automatic approval; the booking should be confirmed immediately.
+	require.NoError(t, h.businessStore.UpdatePolicy(context.Background(), businessID, 2, 2, 30, true))
+
+	start := time.Now().UTC().Add(3 * time.Hour).Truncate(time.Hour)
+	body := `{"service_id":"` + svcID.String() + `","start_time":"` + start.Format(time.RFC3339) + `"}`
+	req := bookOwnReq(businessID.String(), "emp-1", body)
+	rr := httptest.NewRecorder()
+	memberGuard(buStore, http.HandlerFunc(h.BookOwnAppointment)).ServeHTTP(rr, req)
+
+	require.Equal(t, http.StatusCreated, rr.Code)
+	var appt dto.Appointment
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &appt))
+	assert.Equal(t, "confirmed", appt.Status)
 }
 
 func TestAdminHandler_ListMyServices(t *testing.T) {

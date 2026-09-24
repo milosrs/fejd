@@ -4327,6 +4327,8 @@ export interface components {
             section_ids: string[];
         };
         "handler.SalonPolicyResponse": {
+            /** @example false */
+            auto_approve: boolean;
             /** @example 2 */
             cancellation_lead_hours: number;
             /** @example 2 */
@@ -4375,6 +4377,8 @@ export interface components {
             [key: string]: string;
         };
         "handler.UpdateSalonPolicyRequest": {
+            /** @example false */
+            auto_approve: boolean;
             /** @example 2 */
             cancellation_lead_hours: number;
             /** @example 2 */

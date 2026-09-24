@@ -21,6 +21,9 @@ type Business struct {
 	// SlotIntervalMinutes is the granularity (in minutes) of the booking slot
 	// grid. Soft policy, configurable by the owner.
 	SlotIntervalMinutes int
+	// AutoApprove is whether new appointments are approved automatically
+	// instead of waiting for a barber or owner to approve them.
+	AutoApprove bool
 }
 
 type BusinessUser struct {
@@ -203,12 +206,12 @@ const (
 )
 
 type EmployeeUnavailability struct {
-	ID             uuid.UUID
-	BusinessUserID uuid.UUID
-	StartTime      time.Time
-	EndTime        time.Time
-	Reason         string
-	Status         UnavailabilityStatus
+	ID              uuid.UUID
+	BusinessUserID  uuid.UUID
+	StartTime       time.Time
+	EndTime         time.Time
+	Reason          string
+	Status          UnavailabilityStatus
 	RejectionReason string
 }
 
