@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Builds the React login theme (keycloakify) and the hand-written email theme
-# into a single provider JAR, then copies it into keycloak/providers/, which
-# docker compose mounts at /opt/keycloak/providers.
-#   - login theme source: keycloak/theme-builder/src
-#   - email theme source: keycloak/theme-builder/email (messages + theme.properties)
+# Builds the Keycloak themes into provider JARs under keycloak/providers/ (which
+# docker compose mounts at /opt/keycloak/providers):
+#   - login theme:  keycloakify (React)   -> keycloak-theme-for-kc-all-other-versions.jar
+#   - email theme:  hand-written messages -> fejd-email-theme.jar
+# Source of truth: keycloak/theme-builder/{src,email}.
 THEME_NAME="${1:-fejd}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 THEME_BUILDER_DIR="$SCRIPT_DIR/keycloak/theme-builder"
@@ -18,34 +18,56 @@ fi
 cd "$THEME_BUILDER_DIR"
 node ./build.mjs
 
-# keycloakify emits the login theme as a provider JAR. Add the email theme
-# (messages + theme.properties) into the same JAR under theme/fejd/email/.
+PROVIDERS_DIR="$SCRIPT_DIR/keycloak/providers"
+mkdir -p "$PROVIDERS_DIR"
+
+# Login theme JAR (built by keycloakify).
+for jar in "$THEME_BUILDER_DIR"/dist_keycloak/keycloak-theme-for-*.jar; do
+    [ -e "$jar" ] || continue
+    cp "$jar" "$PROVIDERS_DIR/"
+    echo "Login theme JAR copied: $(basename "$jar")"
+done
+
+# Email theme JAR (hand-written theme.properties + messages). Shipped as a
+# separate JAR so it shows up independently in Keycloak's email-theme dropdown.
+# A valid Keycloak theme JAR needs:
+#   - META-INF/MANIFEST.MF
+#   - META-INF/keycloak-themes.json (lists the theme name + types)
+#   - theme/<name>/email/... resources with explicit directory entries
 EMAIL_SRC="$THEME_BUILDER_DIR/email"
-JAR="$THEME_BUILDER_DIR/dist_keycloak/keycloak-theme-for-kc-all-other-versions.jar"
-if [ -f "$JAR" ] && [ -d "$EMAIL_SRC" ]; then
-    python3 - "$JAR" "$EMAIL_SRC" <<'PY'
+EMAIL_JAR="$PROVIDERS_DIR/fejd-email-theme.jar"
+if [ -d "$EMAIL_SRC" ]; then
+    python3 - "$EMAIL_JAR" "$EMAIL_SRC" "$THEME_NAME" <<'PY'
+import json
 import os
 import sys
 import zipfile
 
-jar_path, email_src = sys.argv[1], sys.argv[2]
-prefix = "theme/fejd/email"
-with zipfile.ZipFile(jar_path, "a") as zf:
-    for root, _dirs, files in os.walk(email_src):
-        for name in files:
-            full = os.path.join(root, name)
-            arc = os.path.join(prefix, os.path.relpath(full, email_src))
-            zf.write(full, arc)
-            print(f"    + {arc}")
+jar_path, email_src, theme_name = sys.argv[1], sys.argv[2], sys.argv[3]
+prefix = f"theme/{theme_name}/email"
+
+files = []
+dirs = {"theme", f"theme/{theme_name}", prefix}
+for root, _dirnames, filenames in os.walk(email_src):
+    rel = os.path.relpath(root, email_src)
+    d = prefix if rel == "." else os.path.join(prefix, rel)
+    dirs.add(d)
+    for name in filenames:
+        full = os.path.join(root, name)
+        arc = os.path.join(prefix, os.path.relpath(full, email_src))
+        files.append((full, arc))
+
+with zipfile.ZipFile(jar_path, "w", zipfile.ZIP_DEFLATED) as zf:
+    zf.writestr("META-INF/MANIFEST.MF", "Manifest-Version: 1.0\nCreated-By: fejd-theme-builder\n\n")
+    themes_json = json.dumps({"themes": [{"name": theme_name, "types": ["email"]}]}, indent=2)
+    zf.writestr("META-INF/keycloak-themes.json", themes_json)
+    for d in sorted(dirs):
+        zf.writestr(d + "/", "")
+    for full, arc in sorted(files):
+        zf.write(full, arc)
+        print(f"    + {arc}")
 PY
+    echo "Email theme JAR copied: $(basename "$EMAIL_JAR")"
 fi
 
-PROVIDERS_DIR="$SCRIPT_DIR/keycloak/providers"
-mkdir -p "$PROVIDERS_DIR"
-for jar in "$THEME_BUILDER_DIR"/dist_keycloak/keycloak-theme-for-*.jar; do
-    [ -e "$jar" ] || continue
-    cp "$jar" "$PROVIDERS_DIR/"
-    echo "Theme JAR copied: $(basename "$jar") -> keycloak/providers/"
-done
-
-echo "Keycloak theme '$THEME_NAME' built as a JAR in keycloak/providers/"
+echo "Keycloak theme '$THEME_NAME' built into keycloak/providers/"
