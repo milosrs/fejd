@@ -4099,6 +4099,16 @@ export interface components {
             service_id: string;
             /** @description ServiceName is populated for staff-facing reservation lists only. */
             service_name?: string;
+            /**
+             * @description ServicePicture is the URL path of the service's picture, populated for
+             *     staff-facing reservation lists only.
+             */
+            service_picture?: string;
+            /**
+             * @description ServicePrice is the service's price, populated for staff-facing
+             *     reservation lists only.
+             */
+            service_price?: number;
             start_time: string;
             status: string;
         };
@@ -4127,6 +4137,8 @@ export interface components {
             user_id: string;
         };
         "dto.Customer": {
+            /** @description Avatar is the URL path of the customer's profile picture, if set. */
+            avatar?: string;
             display_name?: string;
             user_id: string;
         };

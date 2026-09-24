@@ -4466,6 +4466,14 @@
                         "description": "ServiceName is populated for staff-facing reservation lists only.",
                         "type": "string"
                     },
+                    "service_picture": {
+                        "description": "ServicePicture is the URL path of the service's picture, populated for\nstaff-facing reservation lists only.",
+                        "type": "string"
+                    },
+                    "service_price": {
+                        "description": "ServicePrice is the service's price, populated for staff-facing\nreservation lists only.",
+                        "type": "number"
+                    },
                     "start_time": {
                         "type": "string"
                     },
@@ -4571,6 +4579,10 @@
                     "user_id"
                 ],
                 "properties": {
+                    "avatar": {
+                        "description": "Avatar is the URL path of the customer's profile picture, if set.",
+                        "type": "string"
+                    },
                     "display_name": {
                         "type": "string"
                     },

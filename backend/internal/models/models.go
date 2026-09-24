@@ -143,6 +143,8 @@ type User struct {
 type Customer struct {
 	UserID      string
 	DisplayName string
+	// AvatarID references the user's profile picture in the images table.
+	AvatarID *uuid.UUID
 }
 
 type Appointment struct {

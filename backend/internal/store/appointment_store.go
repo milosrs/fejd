@@ -321,7 +321,7 @@ func scanAppointment(row rowScanner) (*models.Appointment, error) {
 // business, with their locally-cached display names (walk-ins excluded).
 func (s *AppointmentStore) ListCustomers(ctx context.Context, businessID uuid.UUID) ([]models.Customer, error) {
 	sql, args, err := psql.
-		Select("a.customer_user_id", "COALESCE(u.display_name, '')").
+		Select("a.customer_user_id", "COALESCE(u.display_name, '')", "u.avatar_id").
 		Distinct().
 		From("appointments a").
 		LeftJoin("users u ON u.id = a.customer_user_id").
@@ -342,9 +342,11 @@ func (s *AppointmentStore) ListCustomers(ctx context.Context, businessID uuid.UU
 	var customers []models.Customer
 	for rows.Next() {
 		var c models.Customer
-		if err := rows.Scan(&c.UserID, &c.DisplayName); err != nil {
+		var avatarID *uuid.UUID
+		if err := rows.Scan(&c.UserID, &c.DisplayName, &avatarID); err != nil {
 			return nil, fmt.Errorf("failed to scan customer: %w", err)
 		}
+		c.AvatarID = avatarID
 		customers = append(customers, c)
 	}
 	return customers, nil

@@ -192,10 +192,14 @@ func BusinessUsersFromModels(ms []models.BusinessUser) []BusinessUser {
 }
 
 func CustomerFromModel(m models.Customer) Customer {
-	return Customer{
+	c := Customer{
 		UserID:      m.UserID,
 		DisplayName: m.DisplayName,
 	}
+	if m.AvatarID != nil {
+		c.Avatar = "/api/images/" + m.AvatarID.String()
+	}
+	return c
 }
 
 func CustomersFromModels(ms []models.Customer) []Customer {
@@ -238,13 +242,16 @@ func AppointmentsFromModels(ms []models.Appointment) []Appointment {
 	return out
 }
 
-// StaffAppointmentsFromModels enriches appointments with their service name and
-// the salon's no-show grace period for staff-facing reservation lists.
-func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.UUID]string, noShowAfterHours int) []Appointment {
+// StaffAppointmentsFromModels enriches appointments with their service name,
+// price and picture and the salon's no-show grace period for staff-facing
+// reservation lists.
+func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.UUID]string, servicePrices map[uuid.UUID]float64, servicePictures map[uuid.UUID]string, noShowAfterHours int) []Appointment {
 	out := make([]Appointment, len(ms))
 	for i, m := range ms {
 		out[i] = AppointmentFromModel(m)
 		out[i].ServiceName = serviceNames[m.ServiceID]
+		out[i].ServicePrice = servicePrices[m.ServiceID]
+		out[i].ServicePicture = servicePictures[m.ServiceID]
 		out[i].NoShowAfterHours = noShowAfterHours
 	}
 	return out

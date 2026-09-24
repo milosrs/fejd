@@ -885,7 +885,7 @@ func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request
 		appointments = []models.Appointment{}
 	}
 
-	serviceNames, err := h.serviceNameMap(r.Context(), businessID)
+	serviceNames, servicePrices, servicePictures, err := h.serviceMaps(r.Context(), businessID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -896,7 +896,7 @@ func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request
 		noShowAfterHours = b.NoShowAfterHours
 	}
 
-	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, noShowAfterHours))
+	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, servicePrices, servicePictures, noShowAfterHours))
 }
 
 // CancelMyReservation godoc
@@ -1197,7 +1197,7 @@ func (h *AdminHandler) ListBusinessAppointments(w http.ResponseWriter, r *http.R
 		appointments = []models.Appointment{}
 	}
 
-	serviceNames, err := h.serviceNameMap(r.Context(), businessID)
+	serviceNames, servicePrices, servicePictures, err := h.serviceMaps(r.Context(), businessID)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -1208,7 +1208,7 @@ func (h *AdminHandler) ListBusinessAppointments(w http.ResponseWriter, r *http.R
 		noShowAfterHours = b.NoShowAfterHours
 	}
 
-	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, noShowAfterHours))
+	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, servicePrices, servicePictures, noShowAfterHours))
 }
 
 // ListBusinessUnavailability godoc
@@ -1242,16 +1242,22 @@ func (h *AdminHandler) ListBusinessUnavailability(w http.ResponseWriter, r *http
 	writeJSON(w, http.StatusOK, dto.EmployeeUnavailabilitysFromModels(unavail))
 }
 
-func (h *AdminHandler) serviceNameMap(ctx context.Context, businessID uuid.UUID) (map[uuid.UUID]string, error) {
+func (h *AdminHandler) serviceMaps(ctx context.Context, businessID uuid.UUID) (map[uuid.UUID]string, map[uuid.UUID]float64, map[uuid.UUID]string, error) {
 	services, err := h.serviceStore.ListByBusiness(ctx, businessID)
 	if err != nil {
-		return nil, err
+		return nil, nil, nil, err
 	}
 	names := make(map[uuid.UUID]string, len(services))
+	prices := make(map[uuid.UUID]float64, len(services))
+	pictures := make(map[uuid.UUID]string, len(services))
 	for _, svc := range services {
 		names[svc.ID] = svc.Name
+		prices[svc.ID] = svc.Price
+		if svc.PictureID != nil {
+			pictures[svc.ID] = "/api/images/" + svc.PictureID.String()
+		}
 	}
-	return names, nil
+	return names, prices, pictures, nil
 }
 
 // GetSalonPolicy godoc

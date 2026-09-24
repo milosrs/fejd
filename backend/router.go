@@ -147,7 +147,6 @@ func newRouter(
 				r.Get("/policy", adminHandler.GetSalonPolicy)
 				r.Put("/policy", adminHandler.UpdateSalonPolicy)
 
-				r.Get("/appointments", adminHandler.ListBusinessAppointments)
 				r.Get("/unavailability", adminHandler.ListBusinessUnavailability)
 			})
 
@@ -181,6 +180,12 @@ func newRouter(
 
 			r.With(customMiddleware.RequireBusinessMember(buStore)).
 				Get("/admin/business/{businessID}/customers", adminHandler.ListCustomers)
+
+			// Listing business appointments for the pending-approvals queue is
+			// available to any active member (employee or owner); acknowledging
+			// an individual appointment is still scoped to its provider or owner.
+			r.With(customMiddleware.RequireBusinessMember(buStore)).
+				Get("/admin/business/{businessID}/appointments", adminHandler.ListBusinessAppointments)
 
 			// Acknowledging customer appointments and employee reserved time:
 			// the appointment's provider or the owner may accept an appointment;

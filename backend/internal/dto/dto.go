@@ -65,6 +65,8 @@ type BusinessHours struct {
 type Customer struct {
 	UserID      string `json:"user_id" validate:"required"`
 	DisplayName string `json:"display_name"`
+	// Avatar is the URL path of the customer's profile picture, if set.
+	Avatar string `json:"avatar,omitempty"`
 }
 
 type Service struct {
@@ -122,6 +124,12 @@ type Appointment struct {
 	CreatedAt          time.Time `json:"created_at" validate:"required"`
 	// ServiceName is populated for staff-facing reservation lists only.
 	ServiceName string `json:"service_name,omitempty"`
+	// ServicePrice is the service's price, populated for staff-facing
+	// reservation lists only.
+	ServicePrice float64 `json:"service_price,omitempty"`
+	// ServicePicture is the URL path of the service's picture, populated for
+	// staff-facing reservation lists only.
+	ServicePicture string `json:"service_picture,omitempty"`
 	// CancellationLeadHours is populated for customer appointment lists so the
 	// UI can surface the salon's cancellation notice window.
 	CancellationLeadHours int `json:"cancellation_lead_hours,omitempty"`

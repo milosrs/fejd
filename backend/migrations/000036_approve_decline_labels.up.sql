@@ -10,5 +10,11 @@ INSERT INTO translations (key, locale, value) VALUES
     ('policy.autoApprove',        'rs', 'Automatsko odobravanje termina'),
     ('policy.autoApproveHelp',    'en', 'Approve new appointments automatically. Recommended for salons with many users that cannot keep track of all appointments.'),
     ('policy.autoApproveHelp',    'rs', 'Automatski odobri nove zakazane termine. Preporučeno za salone koji imaju puno korisnika i ne mogu da prate sve termine.'),
-    ('reservations.reasonOptional', 'en', 'Reason (optional)'),
-    ('reservations.reasonOptional', 'rs', 'Razlog (opciono)');
+    ('reservations.reasonOptional',  'en', 'Reason (optional)'),
+    ('reservations.reasonOptional',  'rs', 'Razlog (opciono)'),
+    ('reservations.customerDetails', 'en', 'Customer details'),
+    ('reservations.customerDetails', 'rs', 'Podaci o klijentu'),
+    ('reservations.serviceDetails',  'en', 'Service details'),
+    ('reservations.serviceDetails',  'rs', 'Podaci o usluzi'),
+    ('reservations.time',            'en', 'Time'),
+    ('reservations.time',            'rs', 'Vreme');

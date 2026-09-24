@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { format } from "date-fns"
 import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
+import { Clock } from "lucide-react"
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
 import {
@@ -24,6 +25,7 @@ import {
 } from "../hooks/useApi"
 import { useI18n } from "../lib/i18n"
 import { formatCancellationReason } from "../lib/cancellation"
+import { resolveImageUrl } from "../lib/images"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
 import { Textarea } from "../components/ui/textarea"
@@ -102,8 +104,9 @@ export function MyReservationsPage() {
   const { data: myUnavailability } = useMyUnavailability(businessId!)
   const { data: ownAppointments, isLoading: ownLoading } = useMyAppointments()
   const { data: me } = useMe()
+  const isMember = me?.businesses.some((b) => b.id === businessId)
   const isOwner = me?.businesses.some((b) => b.id === businessId && b.role === "admin")
-  const { data: businessAppointments, isLoading: businessAppointmentsLoading } = useBusinessAppointments(isOwner ? businessId! : "")
+  const { data: businessAppointments, isLoading: businessAppointmentsLoading } = useBusinessAppointments(isMember ? businessId! : "")
   const { data: businessUnavailability } = useBusinessUnavailability(isOwner ? businessId! : "")
   const { data: employees } = useAdminEmployees(isOwner ? businessId! : "")
   const { data: customers } = useCustomers(businessId!)
@@ -219,8 +222,12 @@ export function MyReservationsPage() {
   const customerName = (userId?: string) =>
     (customers ?? []).find((c) => c.user_id === userId)?.display_name?.trim() || t("reservations.customer")
 
+  const customerAvatar = (userId?: string) =>
+    (customers ?? []).find((c) => c.user_id === userId)?.avatar ?? ""
+
   const pendingAppointments = (businessAppointments ?? []).filter((a) => a.status === "pending")
   const pendingUnavailability = (businessUnavailability ?? []).filter((u) => u.status === "pending")
+  const hasPendingApprovals = pendingAppointments.length > 0 || (isOwner && pendingUnavailability.length > 0)
 
   const goToDate = (d: CalendarDate) => {
     setSelected(d)
@@ -324,11 +331,11 @@ export function MyReservationsPage() {
           <StatusBadge status={r.status} />
           {r.status === "pending" && (
             <>
-              <Button size="sm" onClick={() => handleAccept(r)}>
+              <Button variant="success" size="sm" onClick={() => handleAccept(r)}>
                 {t("reservations.accept")}
               </Button>
               <Button
-                variant="outline"
+                variant="danger"
                 size="sm"
                 onClick={() =>
                   setRejectTarget({
@@ -376,11 +383,11 @@ export function MyReservationsPage() {
           </span>
           {viewingEmployee && u.status === "pending" && (
             <>
-              <Button size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
+              <Button variant="success" size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
                 {t("reservations.accept")}
               </Button>
               <Button
-                variant="outline"
+                variant="danger"
                 size="sm"
                 onClick={() =>
                   setRejectTarget({
@@ -473,59 +480,94 @@ export function MyReservationsPage() {
           </div>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>{t("reservations.myAppointments")}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <MyAppointmentsList appointments={ownAppointments} isLoading={ownLoading} />
-          </CardContent>
-        </Card>
-
-        {isOwner && (
+        {isMember && (
           <Card>
             <CardHeader>
               <CardTitle>{t("reservations.pendingApprovals")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {pendingAppointments.length === 0 && pendingUnavailability.length === 0 ? (
+              {!hasPendingApprovals ? (
                 <p className="text-muted-foreground">{t("reservations.nothingToApprove")}</p>
               ) : (
                 <>
                   {pendingAppointments.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-muted-foreground">{t("reservations.customerAppointments")}</p>
-                      {pendingAppointments.map((a) => (
-                        <div key={a.id} className="flex items-center justify-between p-3 bg-muted rounded-md gap-3">
-                          <div className="min-w-0">
-                            <div className="font-medium">{a.service_name || t("reservations.service")}</div>
-                            <div className="text-sm text-muted-foreground">
-                              {employeeName(a.business_user_id)} · {format(new Date(a.start_time), "EEE, MMM d · h:mm a")}
+                      {pendingAppointments.map((a) => {
+                        const avatar = resolveImageUrl(customerAvatar(a.customer_user_id))
+                        const servicePicture = resolveImageUrl(a.service_picture)
+                        return (
+                          <div key={a.id} className="flex items-center gap-4 p-3 bg-muted rounded-md">
+                            <div className="min-w-0 flex-1 space-y-2">
+                              <div>
+                                <p className="text-xs font-medium text-muted-foreground">{t("reservations.customerDetails")}</p>
+                                <div className="mt-1 flex items-center gap-2">
+                                  {avatar ? (
+                                    <img
+                                      src={avatar}
+                                      alt=""
+                                      className="h-8 w-8 shrink-0 rounded-full object-cover ring-1 ring-border"
+                                    />
+                                  ) : (
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-background text-sm font-medium ring-1 ring-border">
+                                      {customerName(a.customer_user_id).charAt(0).toUpperCase()}
+                                    </span>
+                                  )}
+                                  <span className="truncate font-medium">{customerName(a.customer_user_id)}</span>
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-muted-foreground">{t("reservations.serviceDetails")}</p>
+                                <div className="mt-1 flex items-center gap-2">
+                                  {servicePicture ? (
+                                    <img
+                                      src={servicePicture}
+                                      alt=""
+                                      className="h-8 w-8 shrink-0 rounded-md object-cover ring-1 ring-border"
+                                    />
+                                  ) : (
+                                    <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-background text-sm ring-1 ring-border">
+                                      {t("reservations.service").charAt(0)}
+                                    </span>
+                                  )}
+                                  <span className="truncate text-sm">{a.service_name || t("reservations.service")}</span>
+                                  {(a.service_price ?? 0) > 0 && (
+                                    <span className="shrink-0 text-sm text-muted-foreground">${(a.service_price ?? 0).toFixed(2)}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <div>
+                                <p className="text-xs font-medium text-muted-foreground">{t("reservations.time")}</p>
+                                <div className="mt-1 flex items-center gap-2 text-sm text-muted-foreground">
+                                  <Clock className="size-4 shrink-0" />
+                                  <span className="truncate">{format(new Date(a.start_time), "EEE, MMM d · h:mm a")}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex shrink-0 flex-col gap-2">
+                              <Button variant="success" size="sm" onClick={() => handleAccept(a)}>
+                                {t("reservations.accept")}
+                              </Button>
+                              <Button
+                                variant="danger"
+                                size="sm"
+                                onClick={() =>
+                                  setRejectTarget({
+                                    kind: "appointment",
+                                    id: a.id,
+                                    label: `${a.service_name || t("reservations.service")} · ${customerName(a.customer_user_id)}`,
+                                  })
+                                }
+                              >
+                                {t("reservations.reject")}
+                              </Button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <Button size="sm" onClick={() => handleAccept(a)}>
-                              {t("reservations.accept")}
-                            </Button>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() =>
-                                setRejectTarget({
-                                  kind: "appointment",
-                                  id: a.id,
-                                  label: `${a.service_name || t("reservations.service")} · ${employeeName(a.business_user_id)}`,
-                                })
-                              }
-                            >
-                              {t("reservations.reject")}
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
+                        )
+                      })}
                     </div>
                   )}
-                  {pendingUnavailability.length > 0 && (
+                  {isOwner && pendingUnavailability.length > 0 && (
                     <div className="space-y-2">
                       <p className="text-sm font-medium text-muted-foreground">{t("reservations.reservedTime")}</p>
                       {pendingUnavailability.map((u) => (
@@ -538,11 +580,11 @@ export function MyReservationsPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <Button size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
+                            <Button variant="success" size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
                               {t("reservations.accept")}
                             </Button>
                             <Button
-                              variant="outline"
+                              variant="danger"
                               size="sm"
                               onClick={() =>
                                 setRejectTarget({
@@ -564,6 +606,15 @@ export function MyReservationsPage() {
             </CardContent>
           </Card>
         )}
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t("reservations.myAppointments")}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <MyAppointmentsList appointments={ownAppointments} isLoading={ownLoading} />
+          </CardContent>
+        </Card>
       </main>
 
       {cancelTarget && (
