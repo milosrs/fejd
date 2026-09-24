@@ -17,12 +17,12 @@ func NewFromConfig(ctx context.Context, cfg config.StorageConfig) (ImageStorage,
 	var err error
 
 	switch cfg.Backend {
-	case config.BackendMinio:
-		var minioStorage *MinioImageStorage
-		minioStorage, err = NewMinioImageStorage(cfg.Minio.Endpoint, cfg.Minio.AccessKey, cfg.Minio.SecretKey, cfg.Minio.Bucket, cfg.Minio.UseSSL)
-		storage = minioStorage
-		if minioStorage != nil {
-			objectStore = minioStorage.objectStore
+	case config.BackendSeaweedfs:
+		var seaweedfsStorage *SeaweedfsImageStorage
+		seaweedfsStorage, err = NewSeaweedfsImageStorage(cfg.Seaweedfs.Endpoint, cfg.Seaweedfs.AccessKey, cfg.Seaweedfs.SecretKey, cfg.Seaweedfs.Bucket, cfg.Seaweedfs.UseSSL)
+		storage = seaweedfsStorage
+		if seaweedfsStorage != nil {
+			objectStore = seaweedfsStorage.objectStore
 		}
 	case config.BackendS3:
 		var s3Storage *S3ImageStorage

@@ -12,7 +12,7 @@ import (
 )
 
 // objectStore implements the ImageStorage interface against an S3-compatible
-// object store (MinIO, AWS S3, etc.) via minio-go.
+// object store (SeaweedFS, AWS S3, etc.) via minio-go.
 type objectStore struct {
 	client *minio.Client
 	bucket string
@@ -61,18 +61,18 @@ func (s *objectStore) URL(ctx context.Context, key string) string {
 	return u.String()
 }
 
-type MinioImageStorage struct {
+type SeaweedfsImageStorage struct {
 	*objectStore
 }
 
-func NewMinioImageStorage(endpoint, accessKey, secretKey, bucket string, useSSL bool) (*MinioImageStorage, error) {
+func NewSeaweedfsImageStorage(endpoint, accessKey, secretKey, bucket string, useSSL bool) (*SeaweedfsImageStorage, error) {
 	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
 		Secure: useSSL,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to create minio client: %w", err)
+		return nil, fmt.Errorf("failed to create seaweedfs client: %w", err)
 	}
 
-	return &MinioImageStorage{objectStore: &objectStore{client: client, bucket: bucket}}, nil
+	return &SeaweedfsImageStorage{objectStore: &objectStore{client: client, bucket: bucket}}, nil
 }

@@ -13,13 +13,13 @@ import (
 type Backend string
 
 const (
-	BackendPostgres Backend = "postgres"
-	BackendMinio    Backend = "minio"
-	BackendS3       Backend = "s3"
+	BackendPostgres  Backend = "postgres"
+	BackendSeaweedfs Backend = "seaweedfs"
+	BackendS3        Backend = "s3"
 )
 
 // ObjectStoreConfig holds connection settings for an S3-compatible object
-// store (MinIO or a custom endpoint).
+// store (SeaweedFS or a custom endpoint).
 type ObjectStoreConfig struct {
 	Endpoint  string
 	AccessKey string
@@ -43,7 +43,7 @@ type S3Config struct {
 // StorageConfig selects the active image backend and its settings.
 type StorageConfig struct {
 	Backend        Backend
-	Minio          ObjectStoreConfig
+	Seaweedfs      ObjectStoreConfig
 	S3             S3Config
 	MaxUploadBytes int64
 }
@@ -102,17 +102,17 @@ type Config struct {
 // Load reads configuration from environment variables, applies defaults, and
 // validates the result.
 func Load() (*Config, error) {
-	backend := Backend(getEnv("IMAGE_STORAGE_BACKEND", "minio"))
+	backend := Backend(getEnv("IMAGE_STORAGE_BACKEND", "seaweedfs"))
 
 	cfg := &Config{
 		ImageStorage: StorageConfig{
 			Backend: backend,
-			Minio: ObjectStoreConfig{
-				Endpoint:  getEnv("MINIO_ENDPOINT", "minio:9000"),
-				AccessKey: getEnv("MINIO_ACCESS_KEY", "minioadmin"),
-				SecretKey: getEnv("MINIO_SECRET_KEY", "minioadmin"),
-				Bucket:    getEnv("MINIO_BUCKET", "fejd-images"),
-				UseSSL:    getEnvBool("MINIO_USE_SSL", false),
+			Seaweedfs: ObjectStoreConfig{
+				Endpoint:  getEnv("SEAWEEDFS_ENDPOINT", "localhost:8333"),
+				AccessKey: getEnv("SEAWEEDFS_ACCESS_KEY", "fejd_dev"),
+				SecretKey: getEnv("SEAWEEDFS_SECRET_KEY", "fejd_dev_secret"),
+				Bucket:    getEnv("SEAWEEDFS_BUCKET", "fejd-images"),
+				UseSSL:    getEnvBool("SEAWEEDFS_USE_SSL", false),
 			},
 			S3: S3Config{
 				Region:         getEnv("S3_REGION", ""),
@@ -138,7 +138,7 @@ func Load() (*Config, error) {
 			RunJobs:             getEnvBool("RUN_JOBS", true),
 			InviteExpiryHours:   int(getEnvInt("INVITE_EXPIRY_HOURS", 48)),
 			InviteRedirectURI:   getEnv("INVITE_REDIRECT_URI", ""),
-			InviteBaseURL:       getEnv("INVITE_BASE_URL", ""),
+			InviteBaseURL:       getEnv("INVITE_BASE_URL", "http://localhost:5173"),
 		},
 		Email: EmailConfig{
 			SMTPHost:              getEnv("SMTP_HOST", ""),
@@ -164,9 +164,9 @@ func Load() (*Config, error) {
 
 func (c *Config) validate() error {
 	switch c.ImageStorage.Backend {
-	case BackendPostgres, BackendMinio, BackendS3:
+	case BackendPostgres, BackendSeaweedfs, BackendS3:
 	default:
-		return fmt.Errorf("invalid IMAGE_STORAGE_BACKEND %q: must be postgres, minio or s3", c.ImageStorage.Backend)
+		return fmt.Errorf("invalid IMAGE_STORAGE_BACKEND %q: must be postgres, seaweedfs or s3", c.ImageStorage.Backend)
 	}
 
 	if c.ImageStorage.MaxUploadBytes <= 0 {
@@ -174,9 +174,9 @@ func (c *Config) validate() error {
 	}
 
 	switch c.ImageStorage.Backend {
-	case BackendMinio:
-		if c.ImageStorage.Minio.Endpoint == "" || c.ImageStorage.Minio.Bucket == "" {
-			return fmt.Errorf("minio backend requires MINIO_ENDPOINT and MINIO_BUCKET")
+	case BackendSeaweedfs:
+		if c.ImageStorage.Seaweedfs.Endpoint == "" || c.ImageStorage.Seaweedfs.Bucket == "" {
+			return fmt.Errorf("seaweedfs backend requires SEAWEEDFS_ENDPOINT and SEAWEEDFS_BUCKET")
 		}
 	case BackendS3:
 		s3 := c.ImageStorage.S3

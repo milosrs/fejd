@@ -198,14 +198,14 @@ func storageBucket(cfg *config.Config) string {
 	if cfg.ImageStorage.Backend == config.BackendS3 {
 		return cfg.ImageStorage.S3.Bucket
 	}
-	return cfg.ImageStorage.Minio.Bucket
+	return cfg.ImageStorage.Seaweedfs.Bucket
 }
 
 func storageEndpoint(cfg *config.Config) string {
 	if cfg.ImageStorage.Backend == config.BackendS3 {
 		return cfg.ImageStorage.S3.Endpoint
 	}
-	return cfg.ImageStorage.Minio.Endpoint
+	return cfg.ImageStorage.Seaweedfs.Endpoint
 }
 
 func getEnv(key, defaultValue string) string {

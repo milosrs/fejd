@@ -9,15 +9,15 @@ import (
 )
 
 func TestLoadDefaults(t *testing.T) {
-	t.Setenv("IMAGE_STORAGE_BACKEND", "minio")
-	t.Setenv("MINIO_ENDPOINT", "localhost:9000")
-	t.Setenv("MINIO_BUCKET", "bucket")
+	t.Setenv("IMAGE_STORAGE_BACKEND", "seaweedfs")
+	t.Setenv("SEAWEEDFS_ENDPOINT", "localhost:8333")
+	t.Setenv("SEAWEEDFS_BUCKET", "bucket")
 
 	cfg, err := Load()
 	require.NoError(t, err)
-	assert.Equal(t, BackendMinio, cfg.ImageStorage.Backend)
+	assert.Equal(t, BackendSeaweedfs, cfg.ImageStorage.Backend)
 	assert.Equal(t, int64(10*1024*1024), cfg.ImageStorage.MaxUploadBytes)
-	assert.Equal(t, "localhost:9000", cfg.ImageStorage.Minio.Endpoint)
+	assert.Equal(t, "localhost:8333", cfg.ImageStorage.Seaweedfs.Endpoint)
 }
 
 func TestLoadRejectsUnknownBackend(t *testing.T) {
@@ -48,9 +48,9 @@ func TestLoadS3(t *testing.T) {
 }
 
 func TestLoadRejectsNonPositiveMaxUpload(t *testing.T) {
-	t.Setenv("IMAGE_STORAGE_BACKEND", "minio")
-	t.Setenv("MINIO_ENDPOINT", "localhost:9000")
-	t.Setenv("MINIO_BUCKET", "bucket")
+	t.Setenv("IMAGE_STORAGE_BACKEND", "seaweedfs")
+	t.Setenv("SEAWEEDFS_ENDPOINT", "localhost:8333")
+	t.Setenv("SEAWEEDFS_BUCKET", "bucket")
 	t.Setenv("IMAGE_MAX_UPLOAD_MB", "0")
 
 	_, err := Load()
