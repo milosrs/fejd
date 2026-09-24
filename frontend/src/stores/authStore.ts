@@ -11,7 +11,7 @@ interface AuthState {
   pendingInviteToken: string | null
   init: () => Promise<void>
   login: () => Promise<void>
-  register: () => Promise<void>
+  register: (role?: string) => Promise<void>
   logout: () => Promise<void>
   setPendingInviteToken: (token: string | null) => void
 }
@@ -60,8 +60,8 @@ export const useAuthStore = create<AuthState>((set) => ({
     await auth.login()
   },
 
-  register: async () => {
-    await auth.register()
+  register: async (role?: string) => {
+    await auth.register(role)
   },
 
   logout: async () => {

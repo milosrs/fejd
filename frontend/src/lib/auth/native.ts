@@ -230,22 +230,25 @@ export const nativeAdapter: AuthAdapter = {
     await Browser.open({ url: `${AUTH_URL}?${params.toString()}`, windowName: "_self" })
   },
 
-  async register() {
+  async register(role?: string) {
     codeVerifier = randomString(64)
     const challenge = await generateChallenge(codeVerifier)
     await SecureStorage.setItem(K_CODE_VERIFIER, codeVerifier).catch(() => {})
     rememberReturnTo()
 
+    const params: Record<string, string> = {
+      client_id: CLIENT_ID,
+      redirect_uri: REDIRECT_URI,
+      response_type: "code",
+      scope: "openid profile email",
+      code_challenge: challenge,
+      code_challenge_method: "S256",
+    }
+    if (role) params.registration_role = role
+
     const registrationUrl =
       `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/registrations?` +
-      new URLSearchParams({
-        client_id: CLIENT_ID,
-        redirect_uri: REDIRECT_URI,
-        response_type: "code",
-        scope: "openid profile email",
-        code_challenge: challenge,
-        code_challenge_method: "S256",
-      }).toString()
+      new URLSearchParams(params).toString()
 
     await Browser.open({ url: registrationUrl, windowName: "_self" })
   },
@@ -276,6 +279,7 @@ export const nativeAdapter: AuthAdapter = {
   async refresh() {
     try {
       await refreshTokens()
+      notify()
       return true
     } catch {
       return false
@@ -288,6 +292,11 @@ export const nativeAdapter: AuthAdapter = {
 
   getRoles() {
     return roles
+  },
+
+  getRegistrationRole() {
+    if (!accessToken) return undefined
+    return decodeJwt(accessToken).registration_role
   },
 
   isRealmAdmin() {

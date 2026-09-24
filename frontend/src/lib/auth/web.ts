@@ -38,8 +38,14 @@ export const webAdapter: AuthAdapter = {
     await keycloak.login({ redirectUri: window.location.href })
   },
 
-  async register() {
-    await keycloak.register({ redirectUri: window.location.href })
+  async register(role?: string) {
+    if (!role) {
+      await keycloak.register({ redirectUri: window.location.href })
+      return
+    }
+    // Carry the invite role to the register page so its dropdown is locked.
+    const url = await keycloak.createRegisterUrl({ redirectUri: window.location.href })
+    window.location.assign(`${url}&registration_role=${encodeURIComponent(role)}`)
   },
 
   async logout() {
@@ -80,6 +86,10 @@ export const webAdapter: AuthAdapter = {
 
   getRoles() {
     return parsedToken()?.realm_access?.roles ?? []
+  },
+
+  getRegistrationRole() {
+    return parsedToken()?.registration_role
   },
 
   isRealmAdmin() {

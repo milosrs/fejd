@@ -25,6 +25,7 @@ type Claims struct {
 	GivenName      string              `json:"given_name"`
 	FamilyName     string              `json:"family_name"`
 	ApprovalStatus string              `json:"approval_status"`
+	RegistrationRole string            `json:"registration_role"`
 }
 
 // DisplayName derives a human-readable name from the identity claims, falling

@@ -16,12 +16,11 @@ THEME_ROOT := "./keycloak/themes"
 THEME_BUILDER_DIR := "./keycloak/theme-builder"
 
 keycloak-theme-converter theme-name:
-    @mkdir -p {{THEME_ROOT}} keycloak/providers
-    @[ -d "{{THEME_ROOT}}/{{theme-name}}" ] || { echo "Theme directory not found: {{THEME_ROOT}}/{{theme-name}}"; exit 1; }
+    @mkdir -p "{{THEME_ROOT}}/{{theme-name}}" keycloak/providers
     @cd {{THEME_BUILDER_DIR}} && [ -f package.json ] && node ./build.mjs || true
-    @echo "Keycloak theme source is ready at: {{THEME_ROOT}}/{{theme-name}}"
+    @echo "Keycloak theme built into: {{THEME_ROOT}}/{{theme-name}}"
     @echo "The theme directory is mounted into the Keycloak container through docker compose."
-    @echo "Developers can edit the theme assets in the repository and restart the Keycloak service."
+    @echo "Edit the React source under keycloak/theme-builder/src and re-run to regenerate."
 
 # Start all services in detached mode
 up:

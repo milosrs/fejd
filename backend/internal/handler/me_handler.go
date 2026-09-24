@@ -13,6 +13,7 @@ import (
 	"fejd-backend/internal/db"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
+	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
 
 	"github.com/jackc/pgx/v5"
@@ -42,11 +43,12 @@ type MeHandler struct {
 	buStore            *store.BusinessUserStore
 	userStore          *store.UserStore
 	businessHoursStore *store.BusinessHoursStore
+	registration       *service.RegistrationService
 	pool               *pgxpool.Pool
 }
 
-func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUserStore, userStore *store.UserStore, businessHoursStore *store.BusinessHoursStore, pool *pgxpool.Pool) *MeHandler {
-	return &MeHandler{businessStore: businessStore, buStore: buStore, userStore: userStore, businessHoursStore: businessHoursStore, pool: pool}
+func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUserStore, userStore *store.UserStore, businessHoursStore *store.BusinessHoursStore, registration *service.RegistrationService, pool *pgxpool.Pool) *MeHandler {
+	return &MeHandler{businessStore: businessStore, buStore: buStore, userStore: userStore, businessHoursStore: businessHoursStore, registration: registration, pool: pool}
 }
 
 // GetMe godoc
@@ -93,6 +95,40 @@ func (h *MeHandler) GetMe(w http.ResponseWriter, r *http.Request) {
 		Businesses:     dto.MeBusinessesFromModels(memberships),
 		Avatar:         avatar,
 	})
+}
+
+// ClaimRole godoc
+// @Summary      Finalize a self-registration role
+// @Description  Grants the realm role recorded in the registration_role token claim (Customer, Employee, or Owner) and clears the attribute. Idempotent; no-op when no role is pending.
+// @Tags         me
+// @Produce      json
+// @Security     BearerAuth
+// @Success      200 {object} map[string]bool
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Router       /api/me/claim-role [post]
+func (h *MeHandler) ClaimRole(w http.ResponseWriter, r *http.Request) {
+	userID, err := authutil.GetUserID(r)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "authentication required")
+		return
+	}
+
+	role := ""
+	if claims := auth.GetClaimsFromRequest(r); claims != nil {
+		role = claims.RegistrationRole
+	}
+	if role == "" {
+		writeJSON(w, http.StatusOK, map[string]any{"claimed": false})
+		return
+	}
+
+	if err := h.registration.ClaimRegistrationRole(r.Context(), userID, role); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{"claimed": true})
 }
 
 // CreateBusiness godoc

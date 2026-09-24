@@ -12,7 +12,12 @@ export interface AuthUserInfo {
 export interface AuthAdapter {
   init(): Promise<boolean>
   login(): Promise<void>
-  register(): Promise<void>
+  /**
+   * Start registration. On web `role` is carried to the Keycloak register page
+   * as a query param so the role dropdown can be locked (invite flow); it is
+   * omitted for ordinary self-registration.
+   */
+  register(role?: string): Promise<void>
   logout(): Promise<void>
   isAuthenticated(): boolean
   getToken(): Promise<string | undefined>
@@ -20,6 +25,8 @@ export interface AuthAdapter {
   refresh(): Promise<boolean>
   getUserInfo(): AuthUserInfo | null
   getRoles(): string[]
+  /** The pending self-registration role from the token claim, if any. */
+  getRegistrationRole(): string | undefined
   /** Whether the current token identifies a Keycloak realm administrator. */
   isRealmAdmin(): boolean
   /** Subscribe to auth-state changes; returns an unsubscribe function. */

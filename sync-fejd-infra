@@ -1,0 +1,71 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Copies the files fejd-infra needs to deploy from this repo into the Ansible
+# role's files/ tree (fejd-infra/ansible/roles/fejd/files/fejd/). Run this before
+# `ansible-playbook deploy.yml`. The Keycloak theme is generated first (it is
+# gitignored here), then everything is rsynced over.
+
+FEJD_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FEJD_INFRA_DIR="${FEJD_INFRA_DIR:-$FEJD_DIR/../fejd-infra}"
+DEST="$FEJD_INFRA_DIR/ansible/roles/fejd/files/fejd"
+
+BUILD_THEME=true
+if [ "${1:-}" = "--no-build" ]; then
+    BUILD_THEME=false
+fi
+
+if [ ! -d "$FEJD_INFRA_DIR/ansible/roles/fejd/files/fejd" ]; then
+    echo "fejd-infra role files not found at $DEST" >&2
+    echo "Set FEJD_INFRA_DIR to the fejd-infra checkout." >&2
+    exit 1
+fi
+
+if [ "$BUILD_THEME" = true ]; then
+    echo "==> Building Keycloak theme"
+    "$FEJD_DIR/keycloak-theme-converter" fejd
+fi
+
+mkdir -p \
+    "$DEST/deploy/caddy" \
+    "$DEST/deploy/smtp" \
+    "$DEST/db/init" \
+    "$DEST/keycloak/themes" \
+    "$DEST/keycloak/import"
+
+echo "==> Syncing files into $DEST"
+
+rsync -a \
+    "$FEJD_DIR/docker-compose.production.yml" \
+    "$DEST/docker-compose.production.yml"
+
+rsync -a --delete \
+    "$FEJD_DIR/deploy/caddy/" \
+    "$DEST/deploy/caddy/"
+
+rsync -a --delete \
+    "$FEJD_DIR/deploy/smtp/" \
+    "$DEST/deploy/smtp/"
+
+rsync -a --delete \
+    "$FEJD_DIR/db/init/" \
+    "$DEST/db/init/"
+
+# The generated theme. Exclude the keycloakify .gitignore (it would gitignore the
+# theme inside fejd-infra) and the JAR by-product.
+rsync -a --delete \
+    --exclude='.gitignore' \
+    --exclude='*.jar' \
+    "$FEJD_DIR/keycloak/themes/" \
+    "$DEST/keycloak/themes/"
+
+rsync -a \
+    "$FEJD_DIR/keycloak/import/fejd-realm.json" \
+    "$DEST/keycloak/import/fejd-realm.json"
+
+rsync -a \
+    "$FEJD_DIR/keycloak/startup.production.sh" \
+    "$DEST/keycloak/startup.production.sh"
+
+echo "==> Done. Review the diff in fejd-infra, commit it, then run:"
+echo "    cd $FEJD_INFRA_DIR && ansible-playbook -i ansible/inventory/production.ini ansible/playbooks/deploy.yml --ask-vault-pass"

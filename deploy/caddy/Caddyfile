@@ -1,5 +1,6 @@
 fejd.fyi {
-    handle_path /api/* {
+    handle_path /api
+    /* {
         reverse_proxy backend:8080
     }
 
@@ -8,4 +9,8 @@ fejd.fyi {
 
 auth.fejd.fyi {
     reverse_proxy keycloak:8080
+}
+
+www.fejd.fyi {
+    redir https://fejd.fyi{uri} permanent
 }

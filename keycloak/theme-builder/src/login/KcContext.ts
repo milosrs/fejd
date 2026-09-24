@@ -1,14 +1,9 @@
-export type KcContext = {
-  pageId: string;
-  url: {
-    loginAction: string;
-    resourcesPath: string;
-    themePath: string;
-  };
-  message?: {
-    summary?: string;
-  };
-  login?: {
-    username?: string;
-  };
+import type { ExtendKcContext } from "keycloakify/login";
+
+export type KcContextExtension = {
+    properties?: Record<string, string | undefined>;
 };
+
+export type KcContextExtensionPerPage = {};
+
+export type KcContext = ExtendKcContext<KcContextExtension, KcContextExtensionPerPage>;

@@ -82,6 +82,7 @@ func newRouter(
 
 			r.Get("/", meHandler.GetMe)
 			r.Post("/avatar", imageHandler.UploadAvatar)
+			r.Post("/claim-role", meHandler.ClaimRole)
 
 			r.Group(func(r chi.Router) {
 				r.Use(requireApproved)

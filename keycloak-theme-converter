@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Builds the React theme (keycloakify) and publishes the generated FTL into the
+# mounted theme directory keycloak/themes/<name>. Prefer this over hand-editing
+# the generated FTL; the source of truth is keycloak/theme-builder/src.
+THEME_NAME="${1:-fejd}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+THEME_BUILDER_DIR="$SCRIPT_DIR/keycloak/theme-builder"
+
+if [ ! -f "$THEME_BUILDER_DIR/package.json" ]; then
+    echo "theme-builder not found at $THEME_BUILDER_DIR" >&2
+    exit 1
+fi
+
+cd "$THEME_BUILDER_DIR"
+node ./build.mjs
+
+echo "Keycloak theme '$THEME_NAME' built into keycloak/themes/$THEME_NAME"

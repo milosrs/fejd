@@ -1,8 +1,47 @@
-export function KcPage() {
+import { Suspense, lazy } from "react";
+import type { ClassKey } from "keycloakify/login";
+import type { KcContext } from "./KcContext";
+import { useI18n } from "./i18n";
+import DefaultPage from "keycloakify/login/DefaultPage";
+import Template from "./Template";
+
+const Login = lazy(() => import("./pages/Login"));
+const Register = lazy(() => import("./pages/Register"));
+const LoginResetPassword = lazy(() => import("./pages/LoginResetPassword"));
+const UserProfileFormFields = lazy(() => import("keycloakify/login/UserProfileFormFields"));
+
+const doMakeUserConfirmPassword = true;
+
+export default function KcPage(props: { kcContext: KcContext }) {
+    const { kcContext } = props;
+    const { i18n } = useI18n({ kcContext });
+
     return (
-        <div className="login-card">
-            <h1>Welcome to FEJD</h1>
-            <p>This theme is built with Keycloakify and published into the Keycloak theme directory.</p>
-        </div>
+        <Suspense>
+            {(() => {
+                switch (kcContext.pageId) {
+                    case "login.ftl":
+                        return <Login {...{ kcContext, i18n, classes }} Template={Template} doUseDefaultCss={false} />;
+                    case "register.ftl":
+                        return <Register {...{ kcContext, i18n, classes }} Template={Template} doUseDefaultCss={false} />;
+                    case "login-reset-password.ftl":
+                        return <LoginResetPassword {...{ kcContext, i18n, classes }} Template={Template} doUseDefaultCss={false} />;
+                    default:
+                        return (
+                            <DefaultPage
+                                kcContext={kcContext}
+                                i18n={i18n}
+                                classes={classes}
+                                Template={Template}
+                                doUseDefaultCss={false}
+                                UserProfileFormFields={UserProfileFormFields}
+                                doMakeUserConfirmPassword={doMakeUserConfirmPassword}
+                            />
+                        );
+                }
+            })()}
+        </Suspense>
     );
 }
+
+const classes = {} satisfies { [key in ClassKey]?: string };

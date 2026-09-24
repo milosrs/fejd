@@ -58,6 +58,7 @@
             gradle
             jdk
             just
+            maven
             just-lsp
             nginx
             ngrok

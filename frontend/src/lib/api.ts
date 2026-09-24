@@ -65,3 +65,20 @@ const { GET, POST, PUT, DELETE } = apiClient
 
 export { GET, POST, PUT, DELETE, apiClient }
 export type { paths }
+
+/**
+ * Finalize a self-registration: asks the backend to grant the realm role
+ * carried in the token's registration_role claim (see /api/me/claim-role).
+ * Uses raw fetch because the endpoint is not part of the generated
+ * openapi-types client surface.
+ */
+export async function claimRegistrationRole(): Promise<boolean> {
+  const token = await auth.getToken()
+  const res = await fetch(`${API_BASE_URL}/api/me/claim-role`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) throw new Error(`claim-role failed: ${res.status}`)
+  const body = await res.json().catch(() => ({}))
+  return Boolean(body?.claimed)
+}

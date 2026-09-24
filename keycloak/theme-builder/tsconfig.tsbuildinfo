@@ -1,1 +1,1 @@
-{"root":["./src/kc.gen.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/login/KcContext.ts","./src/login/KcPage.tsx","./src/login/i18n.ts"],"version":"5.9.3"}
+{"root":["./src/kc.gen.tsx","./src/main.tsx","./src/vite-env.d.ts","./src/login/KcContext.ts","./src/login/KcPage.tsx","./src/login/Template.tsx","./src/login/i18n.ts","./src/login/sr.ts","./src/login/pages/Login.tsx","./src/login/pages/LoginResetPassword.tsx","./src/login/pages/Register.tsx"],"version":"5.9.3"}

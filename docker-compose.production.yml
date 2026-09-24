@@ -124,6 +124,7 @@ services:
       SMTP_HOST: smtp
       SMTP_PORT: "25"
       SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM in .env.production}
+      FEJD_APP_URL: https://fejd.fyi
       KC_HOSTNAME: https://auth.fejd.fyi
       KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "true"

@@ -27,7 +27,8 @@ import { SideDrawer } from "./components/ui/drawer"
 import { InviteLandingPage } from "./components/invite/InviteLandingPage"
 import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
 import { subdomainSlug, openAppHome } from "./lib/salonDomain"
-import { consumeReturnTo } from "./lib/auth"
+import { consumeReturnTo, auth } from "./lib/auth"
+import { claimRegistrationRole } from "./lib/api"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -76,6 +77,23 @@ function AppInit({ children }: { children: React.ReactNode }) {
     const current = location.pathname + location.search
     if (returnTo !== current) navigate(returnTo)
   }, [initialized, authenticated, navigate, location.pathname, location.search])
+
+  // Finalize a self-registration: grant the realm role chosen on the register
+  // page (carried in the token's registration_role claim), then refresh the
+  // token so realm_access.roles reflects it.
+  useEffect(() => {
+    if (!initialized || !authenticated) return
+    if (!auth.getRegistrationRole()) return
+    let cancelled = false
+    claimRegistrationRole()
+      .then(async () => {
+        if (!cancelled) await auth.refresh()
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [initialized, authenticated])
 
   if (!appReady) {
     return <Loader className={initialized ? "animate-fade-out" : undefined} />
@@ -161,7 +179,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
                 <Button variant="outline" onClick={login}>
                   {t("common.logIn")}
                 </Button>
-                <Button onClick={register}>{t("common.register")}</Button>
+                <Button onClick={() => register()}>{t("common.register")}</Button>
               </>
             )}
           </div>

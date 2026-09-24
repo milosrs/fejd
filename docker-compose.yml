@@ -89,6 +89,7 @@ services:
       SMTP_HOST: smtp
       SMTP_PORT: "25"
       SMTP_FROM: no-reply@fejd.local
+      FEJD_APP_URL: http://localhost:5173
     ports:
       - "9090:8080"
     depends_on:

@@ -11,6 +11,7 @@ import (
 	"fejd-backend/auth"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
+	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -24,7 +25,8 @@ func newTestMeHandler(t *testing.T) (*MeHandler, *store.BusinessStore, *store.Bu
 	buStore := store.NewBusinessUserStore(pool)
 	userStore := store.NewUserStore(pool)
 	businessHoursStore := store.NewBusinessHoursStore(pool)
-	return NewMeHandler(businessStore, buStore, userStore, businessHoursStore, pool), businessStore, buStore, pool
+	registration := service.NewRegistrationService(&noopInvitationUsers{})
+	return NewMeHandler(businessStore, buStore, userStore, businessHoursStore, registration, pool), businessStore, buStore, pool
 }
 
 func withUser(r *http.Request, userID, approvalStatus string) *http.Request {
@@ -113,6 +115,62 @@ func TestMeHandler_GetMe_EmployeeMembership(t *testing.T) {
 	require.Len(t, me.Businesses, 1)
 	assert.Equal(t, "my-salon", me.Businesses[0].Slug)
 	assert.Equal(t, "employee", me.Businesses[0].Role)
+}
+
+func TestMeHandler_ClaimRole_GrantsRole(t *testing.T) {
+	pool := setupHandlerTestDB(t)
+	businessStore := store.NewBusinessStore(pool)
+	buStore := store.NewBusinessUserStore(pool)
+	userStore := store.NewUserStore(pool)
+	businessHoursStore := store.NewBusinessHoursStore(pool)
+	users := &recordingUsers{}
+	h := NewMeHandler(businessStore, buStore, userStore, businessHoursStore, service.NewRegistrationService(users), pool)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/me/claim-role", nil)
+	ctx := context.WithValue(req.Context(), auth.ContextKeyUserID, "user-1")
+	ctx = context.WithValue(ctx, auth.ContextKeyClaims, &auth.Claims{RegistrationRole: "Owner"})
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	h.ClaimRole(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	assert.Equal(t, true, resp["claimed"])
+	require.Len(t, users.roles, 1)
+	assert.Equal(t, "Owner", users.roles[0])
+	require.Len(t, users.attrs, 1)
+	_, cleared := users.attrs[0]["registration_role"]
+	assert.True(t, cleared)
+}
+
+func TestMeHandler_ClaimRole_NoPendingRole(t *testing.T) {
+	h, _, _, _ := newTestMeHandler(t)
+
+	req := withUser(httptest.NewRequest(http.MethodPost, "/api/me/claim-role", nil), "user-1", "pending")
+	rr := httptest.NewRecorder()
+
+	h.ClaimRole(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var resp map[string]any
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	assert.Equal(t, false, resp["claimed"])
+}
+
+func TestMeHandler_ClaimRole_RejectsInvalidRole(t *testing.T) {
+	h, _, _, _ := newTestMeHandler(t)
+
+	req := httptest.NewRequest(http.MethodPost, "/api/me/claim-role", nil)
+	ctx := context.WithValue(req.Context(), auth.ContextKeyUserID, "user-1")
+	ctx = context.WithValue(ctx, auth.ContextKeyClaims, &auth.Claims{RegistrationRole: "admin"})
+	req = req.WithContext(ctx)
+
+	rr := httptest.NewRecorder()
+	h.ClaimRole(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
 }
 
 func TestMeHandler_CreateBusiness_SlugCollision(t *testing.T) {

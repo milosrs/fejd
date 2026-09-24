@@ -18,6 +18,16 @@ export function InviteLandingPage() {
     if (token) setToken(token)
   }, [token, setToken])
 
+  // Map the invitation's DB role to the Keycloak realm role used by the
+  // register-page dropdown. realm-admin invites have no dropdown equivalent and
+  // fall back to a normal (selectable) registration.
+  const inviteRole = invitation?.role
+  const role =
+    inviteRole === "customer" ? "Customer"
+    : inviteRole === "employee" ? "Employee"
+    : inviteRole === "owner" ? "Owner"
+    : undefined
+
   const playStore = import.meta.env.VITE_PLAY_STORE_URL
   const appStore = import.meta.env.VITE_APP_STORE_URL
 
@@ -50,7 +60,7 @@ export function InviteLandingPage() {
             {t("invite.landing.joinPrompt")}
           </p>
           <div className="flex gap-3">
-            <Button onClick={register}>{t("common.register")}</Button>
+            <Button onClick={() => register(role)}>{t("common.register")}</Button>
             <Button variant="outline" onClick={login}>
               {t("common.logIn")}
             </Button>
