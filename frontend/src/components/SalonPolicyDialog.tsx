@@ -121,6 +121,7 @@ export function SalonPolicyDialog({
       })
       await queryClient.invalidateQueries({ queryKey: ["salon", slug] })
       await queryClient.invalidateQueries({ queryKey: ["salon-policy", businessId] })
+      await queryClient.invalidateQueries({ queryKey: ["slots"] })
       onClose()
     } catch {
       setError(t("policy.failed"))

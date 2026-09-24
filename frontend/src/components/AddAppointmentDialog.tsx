@@ -40,6 +40,8 @@ export function AddAppointmentDialog({
         customer_user_id: customerId || undefined,
       })
       await queryClient.invalidateQueries({ queryKey: ["my-reservations", businessId] })
+      await queryClient.invalidateQueries({ queryKey: ["business-appointments", businessId] })
+      await queryClient.invalidateQueries({ queryKey: ["customers", businessId] })
       onClose()
     } catch {
       setError(t("addAppointment.failed"))

@@ -268,6 +268,13 @@ func (s *SlotService) PublishSlotUpdate(businessID uuid.UUID, businessUserID uui
 	})
 }
 
+// PublishSlotsChangedForBusiness publishes a slots_updated event for every
+// subscriber of the business. Used when a business-wide policy (e.g. the slot
+// interval) changes and every provider's availability should refresh.
+func (s *SlotService) PublishSlotsChangedForBusiness(businessID uuid.UUID) {
+	s.hub.Publish(businessID.String(), map[string]any{"type": "slots_updated"})
+}
+
 func (s *SlotService) publishSlotsChanged(businessID, businessUserID uuid.UUID) {
 	s.hub.Publish(businessID.String(), map[string]any{
 		"type":             "slots_updated",

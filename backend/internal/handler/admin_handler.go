@@ -1379,6 +1379,12 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	// The slot interval affects every provider's availability, so refresh
+	// slot subscribers (e.g. the booking page) immediately.
+	if h.slotService != nil {
+		h.slotService.PublishSlotsChangedForBusiness(businessID)
+	}
+
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
 		CancellationLeadHours: body.CancellationLeadHours,
 		NoShowAfterHours:      body.NoShowAfterHours,

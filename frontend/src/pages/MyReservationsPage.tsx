@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Clock } from "lucide-react"
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
+import { useReservationsStream } from "../hooks/useReservationsStream"
 import {
   useMyReservationsMonth,
   useMyAppointments,
@@ -106,6 +107,8 @@ export function MyReservationsPage() {
   const { data: me } = useMe()
   const isMember = me?.businesses.some((b) => b.id === businessId)
   const isOwner = me?.businesses.some((b) => b.id === businessId && b.role === "admin")
+  const slug = me?.businesses.find((b) => b.id === businessId)?.slug
+  useReservationsStream(businessId!, slug)
   const { data: businessAppointments, isLoading: businessAppointmentsLoading } = useBusinessAppointments(isMember ? businessId! : "")
   const { data: businessUnavailability } = useBusinessUnavailability(isOwner ? businessId! : "")
   const { data: employees } = useAdminEmployees(isOwner ? businessId! : "")
