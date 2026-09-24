@@ -55,12 +55,15 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
                                 ))}
                             </select>
                         )}
-                        <a className="btn btn-outline" href={appUrl}>
-                            {msgStr("doLogIn")}
-                        </a>
-                        <a className="btn btn-primary" href={appUrl}>
-                            {msgStr("doRegister")}
-                        </a>
+                        {kcContext.pageId === "login.ftl" ? (
+                            <a className="btn btn-primary" href={kcContext.url.registrationUrl}>
+                                {msgStr("doRegister")}
+                            </a>
+                        ) : (
+                            <a className="btn btn-primary" href={kcContext.url.loginUrl}>
+                                {msgStr("doLogIn")}
+                            </a>
+                        )}
                     </nav>
                 </div>
             </header>
