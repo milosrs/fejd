@@ -7,7 +7,7 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
     const { kcContext, i18n, Template, doUseDefaultCss, classes } = props;
 
     const { msg, msgStr } = i18n;
-    const { realm, url, login, messagesPerField } = kcContext;
+    const { realm, url, login, usernameHidden, messagesPerField } = kcContext;
 
     return (
         <Template
@@ -56,6 +56,17 @@ export default function Login(props: PageProps<Extract<KcContext, { pageId: "log
                 </div>
 
                 <div className="auth-options">
+                    {realm.rememberMe && !usernameHidden && (
+                        <label className="auth-remember">
+                            <input
+                                type="checkbox"
+                                id="rememberMe"
+                                name="rememberMe"
+                                defaultChecked={!!login.rememberMe}
+                            />
+                            <span>{msgStr("rememberMe")}</span>
+                        </label>
+                    )}
                     {realm.resetPasswordAllowed && (
                         <a className="auth-link" href={url.loginResetCredentialsUrl}>
                             {msgStr("forgotPassword")}

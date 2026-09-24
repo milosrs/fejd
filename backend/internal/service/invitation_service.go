@@ -29,6 +29,7 @@ var (
 	ErrCannotInviteOwner    = errors.New("cannot invite the salon owner")
 	ErrInvalidInviteRole    = errors.New("invalid invitation role")
 	ErrCannotInviteEmployee = errors.New("only the salon owner can invite employees")
+	ErrInviteBaseURLUnset   = errors.New("INVITE_BASE_URL is not configured")
 )
 
 // Invitation roles. They mirror the realm roles (Employee/Customer/Owner) and,
@@ -143,10 +144,15 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, businessID uui
 		return nil, fmt.Errorf("failed to create invitation: %w", err)
 	}
 
+	inviteURL, err := s.inviteURL(raw)
+	if err != nil {
+		return nil, err
+	}
+
 	return &InvitationOut{
 		ID:        inv.ID,
 		Token:     raw,
-		URL:       s.inviteURL(raw),
+		URL:       inviteURL,
 		ExpiresAt: inv.ExpiresAt,
 	}, nil
 }
@@ -189,10 +195,15 @@ func (s *InvitationService) mintPlatformInvite(ctx context.Context, createdBy, r
 		return nil, fmt.Errorf("failed to create invitation: %w", err)
 	}
 
+	inviteURL, err := s.inviteURL(raw)
+	if err != nil {
+		return nil, err
+	}
+
 	return &InvitationOut{
 		ID:        inv.ID,
 		Token:     raw,
-		URL:       s.inviteURL(raw),
+		URL:       inviteURL,
 		ExpiresAt: inv.ExpiresAt,
 	}, nil
 }
@@ -440,11 +451,11 @@ func validateInvitation(inv *models.Invitation) error {
 	return nil
 }
 
-func (s *InvitationService) inviteURL(token string) string {
+func (s *InvitationService) inviteURL(token string) (string, error) {
 	if s.baseURL == "" {
-		return "/invite/" + token
+		return "", ErrInviteBaseURLUnset
 	}
-	return strings.TrimRight(s.baseURL, "/") + "/invite/" + token
+	return strings.TrimRight(s.baseURL, "/") + "/invite/" + token, nil
 }
 
 // newInviteToken returns a 256-bit random URL-safe token and its SHA-256 hash.

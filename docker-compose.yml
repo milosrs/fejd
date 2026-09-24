@@ -96,7 +96,6 @@ services:
       - db
       - smtp
     volumes:
-      - ./keycloak/themes:/opt/keycloak/themes
       - ./keycloak/providers:/opt/keycloak/providers
       - ./keycloak/import:/opt/keycloak/data/import:ro
       - ./keycloak/startup.sh:/opt/keycloak/startup.sh:ro

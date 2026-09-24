@@ -1,6 +1,7 @@
 {
   "id": "7a3cb392-c1c7-4702-82fc-8c26c6db0ba7",
   "realm": "fejd",
+  "displayName": "Fejd",
   "notBefore": 0,
   "defaultSignatureAlgorithm": "RS256",
   "revokeRefreshToken": false,
@@ -29,7 +30,7 @@
   "sslRequired": "external",
   "registrationAllowed": true,
   "registrationEmailAsUsername": false,
-  "rememberMe": false,
+  "rememberMe": true,
   "verifyEmail": false,
   "loginWithEmailAllowed": true,
   "duplicateEmailsAllowed": false,
@@ -1901,6 +1902,7 @@
   ],
   "defaultLocale": "en",
   "loginTheme": "fejd",
+  "emailTheme": "fejd",
   "authenticationFlows": [
     {
       "id": "0b444e0e-0776-4fa7-a168-4f67f32dddd3",
@@ -2718,7 +2720,7 @@
       "name": "Update User Locale",
       "providerId": "update_user_locale",
       "enabled": true,
-      "defaultAction": false,
+      "defaultAction": true,
       "priority": 1000,
       "config": {}
     }

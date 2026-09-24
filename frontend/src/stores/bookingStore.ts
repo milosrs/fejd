@@ -1,4 +1,5 @@
 import { create } from "zustand"
+import { createJSONStorage, persist } from "zustand/middleware"
 
 export interface BookingState {
   selectedServiceId: string | null
@@ -12,14 +13,52 @@ export interface BookingState {
   reset: () => void
 }
 
-export const useBookingStore = create<BookingState>((set) => ({
-  selectedServiceId: null,
-  selectedEmployeeId: null,
-  selectedDate: null,
-  selectedSlot: null,
-  setService: (id) => set({ selectedServiceId: id, selectedEmployeeId: null, selectedDate: null, selectedSlot: null }),
-  setDate: (date) => set({ selectedDate: date, selectedEmployeeId: null, selectedSlot: null }),
-  selectSlot: (employeeId, slot) => set({ selectedEmployeeId: employeeId, selectedSlot: slot }),
-  clearSlot: () => set({ selectedSlot: null }),
-  reset: () => set({ selectedServiceId: null, selectedEmployeeId: null, selectedDate: null, selectedSlot: null }),
-}))
+const inMemoryStorage: Storage = {
+  getItem: () => null,
+  setItem: () => {},
+  removeItem: () => {},
+  clear: () => {},
+  key: () => null,
+  get length() {
+    return 0
+  },
+}
+
+function bookingStorage(): Storage {
+  try {
+    const storage = window.localStorage
+    const probe = "__fejd_booking_probe__"
+    storage.setItem(probe, "1")
+    storage.removeItem(probe)
+    return storage
+  } catch {
+    return inMemoryStorage
+  }
+}
+
+export const useBookingStore = create<BookingState>()(
+  persist(
+    (set) => ({
+      selectedServiceId: null,
+      selectedEmployeeId: null,
+      selectedDate: null,
+      selectedSlot: null,
+      setService: (id) => set({ selectedServiceId: id, selectedEmployeeId: null, selectedDate: null, selectedSlot: null }),
+      setDate: (date) => set({ selectedDate: date, selectedEmployeeId: null, selectedSlot: null }),
+      selectSlot: (employeeId, slot) => set({ selectedEmployeeId: employeeId, selectedSlot: slot }),
+      clearSlot: () => set({ selectedSlot: null }),
+      reset: () => set({ selectedServiceId: null, selectedEmployeeId: null, selectedDate: null, selectedSlot: null }),
+    }),
+    {
+      name: "fejd.booking",
+      version: 1,
+      storage: createJSONStorage(bookingStorage),
+      partialize: (state) => ({
+        selectedServiceId: state.selectedServiceId,
+        selectedEmployeeId: state.selectedEmployeeId,
+        selectedDate: state.selectedDate,
+        selectedSlot: state.selectedSlot,
+      }),
+    },
+  ),
+)

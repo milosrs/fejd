@@ -81,6 +81,22 @@ a {
   flex-shrink: 0;
 }
 
+.lang-select {
+  padding: 0.375rem 0.5rem;
+  border-radius: calc(var(--radius) * 0.6);
+  border: 1px solid var(--border);
+  background: var(--card);
+  color: var(--fg);
+  font-size: 0.8125rem;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.lang-select:focus {
+  outline: 2px solid var(--ring);
+  outline-offset: -1px;
+}
+
 /* --- Buttons -------------------------------------------------------------- */
 .btn {
   display: inline-flex;
@@ -287,7 +303,24 @@ a {
 
 .auth-options {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-remember {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted-fg);
+  font-size: 0.875rem;
+  cursor: pointer;
+  user-select: none;
+}
+
+.auth-remember input {
+  accent-color: var(--primary);
+  cursor: pointer;
 }
 
 .auth-link {

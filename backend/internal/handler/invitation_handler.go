@@ -258,6 +258,8 @@ func invitationErrorStatus(err error) (int, bool) {
 		return http.StatusBadRequest, true
 	case errors.Is(err, service.ErrCannotInviteEmployee):
 		return http.StatusForbidden, true
+	case errors.Is(err, service.ErrInviteBaseURLUnset):
+		return http.StatusInternalServerError, true
 	default:
 		return 0, false
 	}

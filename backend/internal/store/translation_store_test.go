@@ -42,7 +42,7 @@ func TestTranslationStore_ListByLocale_Seeded(t *testing.T) {
 		keys[tr.Key] = tr.Value
 	}
 	assert.Equal(t, "This page isn't set up yet", keys["landing.empty.title"])
-	assert.Equal(t, "To book, you have to register.", keys["services.book.requiresAuth"])
+	assert.Equal(t, "Log in to complete the reservation", keys["booking.loginToComplete"])
 	assert.Equal(t, "Choose a service", keys["booking.step.service"])
 
 	rs, err := store.ListByLocale(ctx, "rs")

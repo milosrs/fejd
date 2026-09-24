@@ -9,7 +9,7 @@ const ROLES = ["Customer", "Employee", "Owner"] as const;
 export default function Register(props: PageProps<Extract<KcContext, { pageId: "register.ftl" }>, I18n>) {
     const { kcContext, i18n, Template, doUseDefaultCss, classes } = props;
 
-    const { msg, msgStr } = i18n;
+    const { msg, msgStr, currentLanguage } = i18n;
     const { url, messagesPerField } = kcContext;
 
     // Invite flow: the role is carried into the registration URL and locks the
@@ -111,6 +111,21 @@ export default function Register(props: PageProps<Extract<KcContext, { pageId: "
                             <option value="Owner">{msgStr("roleOwner")}</option>
                         </select>
                     )}
+                </div>
+
+                <div className="field">
+                    <label htmlFor="locale" className="field-label">
+                        {msgStr("localeLabel")}
+                    </label>
+                    <select
+                        id="locale"
+                        name="user.attributes.locale"
+                        className="field-input field-select"
+                        defaultValue={currentLanguage.languageTag === "sr" ? "sr" : "en"}
+                    >
+                        <option value="en">{msgStr("languageEnglish")}</option>
+                        <option value="sr">{msgStr("languageSerbian")}</option>
+                    </select>
                 </div>
 
                 {kcContext.passwordRequired && (

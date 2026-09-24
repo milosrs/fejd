@@ -4,7 +4,6 @@ import { useSalonContext, useIsOwner } from "../context/SalonContext"
 import { useServices, useAdminEmployees, useServiceEmployeesAdmin, type Service } from "../hooks/useApi"
 import { useServiceMutations } from "../hooks/useServiceMutations"
 import { useBookingStore } from "../stores/bookingStore"
-import { useAuthStore } from "../stores/authStore"
 import { useI18n } from "../lib/i18n"
 import { salonPath } from "../lib/salonDomain"
 import { ServiceCard, ServiceCardSkeleton } from "../components/services/ServiceCard"
@@ -21,35 +20,29 @@ export function ServicesPage() {
   const navigate = useNavigate()
   const setService = useBookingStore((s) => s.setService)
   const reset = useBookingStore((s) => s.reset)
-  const authenticated = useAuthStore((s) => s.authenticated)
-  const login = useAuthStore((s) => s.login)
-  const { t, ready } = useI18n()
+  const { t } = useI18n()
 
   const businessId = salon?.business.id ?? ""
   const { data, isLoading, isError } = useServices(slug)
   const { create, update, remove, uploadImage, setEmployees } = useServiceMutations(businessId, slug)
-  const { data: staffData } = useAdminEmployees(businessId)
 
   const [form, setForm] = useState<FormState>(null)
   const [deleting, setDeleting] = useState<Service | null>(null)
   const [deleteError, setDeleteError] = useState("")
   const [formError, setFormError] = useState("")
 
+  const editingOn = editing && isOwner
+
   const editingServiceId = form?.mode === "edit" ? form.service.id : ""
+  const { data: staffData } = useAdminEmployees(editingOn ? businessId : "")
   const { data: assignedEmployees } = useServiceEmployeesAdmin(businessId, editingServiceId)
 
   const staff = (staffData ?? []).filter((e) => e.active)
   const assignedEmployeeIds = (assignedEmployees ?? []).map((e) => e.id)
 
-  const editingOn = editing && isOwner
   const services = editingOn ? (data ?? []) : (data ?? []).filter((s) => s.active)
-  const registerNote = !authenticated && ready ? t("services.book.requiresAuth") : undefined
 
   const handleBook = (serviceId: string) => {
-    if (!authenticated) {
-      login()
-      return
-    }
     reset()
     setService(serviceId)
     navigate(`${salonPath(slug, "/book")}?service=${serviceId}`)
@@ -153,7 +146,6 @@ export function ServicesPage() {
               key={service.id}
               service={service}
               onBook={handleBook}
-              note={registerNote}
               onEdit={editingOn ? () => openForm({ mode: "edit", service }) : undefined}
               onDelete={editingOn ? () => setDeleting(service) : undefined}
             />

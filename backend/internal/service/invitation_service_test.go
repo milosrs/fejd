@@ -27,6 +27,28 @@ func TestNewInviteToken(t *testing.T) {
 	assert.NotEqual(t, raw, hash)
 }
 
+func TestInviteURL(t *testing.T) {
+	t.Run("absolute", func(t *testing.T) {
+		s := &InvitationService{baseURL: "https://fejd.fyi"}
+		url, err := s.inviteURL("tok")
+		require.NoError(t, err)
+		assert.Equal(t, "https://fejd.fyi/invite/tok", url)
+	})
+
+	t.Run("trims trailing slash", func(t *testing.T) {
+		s := &InvitationService{baseURL: "https://fejd.fyi/"}
+		url, err := s.inviteURL("tok")
+		require.NoError(t, err)
+		assert.Equal(t, "https://fejd.fyi/invite/tok", url)
+	})
+
+	t.Run("missing base url", func(t *testing.T) {
+		s := &InvitationService{}
+		_, err := s.inviteURL("tok")
+		require.ErrorIs(t, err, ErrInviteBaseURLUnset)
+	})
+}
+
 func TestValidateInvitation(t *testing.T) {
 	now := time.Now().UTC()
 

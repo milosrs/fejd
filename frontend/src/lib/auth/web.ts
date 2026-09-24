@@ -5,6 +5,22 @@ function parsedToken(): Record<string, any> | undefined {
   return keycloak.tokenParsed as Record<string, any> | undefined
 }
 
+// The app stores its locale under "fejd-locale" (en | rs); map it to Keycloak's
+// locale codes so the auth pages open in the language the user picked in the app.
+const APP_LOCALE_TO_KC: Record<string, string> = {
+  en: "en",
+  rs: "sr",
+}
+
+function currentKcLocale(): string | undefined {
+  try {
+    const locale = localStorage.getItem("fejd-locale")
+    return locale ? APP_LOCALE_TO_KC[locale] : undefined
+  } catch {
+    return undefined
+  }
+}
+
 const listeners = new Set<() => void>()
 
 function notify() {
@@ -35,16 +51,17 @@ export const webAdapter: AuthAdapter = {
   },
 
   async login() {
-    await keycloak.login({ redirectUri: window.location.href })
+    await keycloak.login({ redirectUri: window.location.href, locale: currentKcLocale() })
   },
 
   async register(role?: string) {
+    const locale = currentKcLocale()
     if (!role) {
-      await keycloak.register({ redirectUri: window.location.href })
+      await keycloak.register({ redirectUri: window.location.href, locale })
       return
     }
     // Carry the invite role to the register page so its dropdown is locked.
-    const url = await keycloak.createRegisterUrl({ redirectUri: window.location.href })
+    const url = await keycloak.createRegisterUrl({ redirectUri: window.location.href, locale })
     window.location.assign(`${url}&registration_role=${encodeURIComponent(role)}`)
   },
 

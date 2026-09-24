@@ -19,10 +19,12 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
         bodyClassName,
     } = props;
 
-    const { msgStr } = i18n;
+    const { msgStr, currentLanguage, enabledLanguages } = i18n;
     const { message, isAppInitiatedAction } = kcContext;
 
     const appUrl = kcContext.properties?.fejdAppUrl || "https://fejd.fyi";
+
+    const langShort: Record<string, string> = { en: "EN", sr: "SR" };
 
     useEffect(() => {
         document.title = documentTitle ?? msgStr("loginTitle");
@@ -36,6 +38,23 @@ export default function Template(props: TemplateProps<KcContext, I18n>) {
                         <img src={`${PUBLIC_URL}/logo_dark.jpg`} alt="fejd" className="brand-logo" />
                     </a>
                     <nav className="topbar-actions">
+                        {enabledLanguages.length > 1 && (
+                            <select
+                                className="lang-select"
+                                aria-label="Language"
+                                value={currentLanguage.languageTag}
+                                onChange={(event) => {
+                                    const lang = enabledLanguages.find((l) => l.languageTag === event.target.value);
+                                    if (lang) window.location.href = lang.href;
+                                }}
+                            >
+                                {enabledLanguages.map((lang) => (
+                                    <option key={lang.languageTag} value={lang.languageTag}>
+                                        {langShort[lang.languageTag] ?? lang.label}
+                                    </option>
+                                ))}
+                            </select>
+                        )}
                         <a className="btn btn-outline" href={appUrl}>
                             {msgStr("doLogIn")}
                         </a>

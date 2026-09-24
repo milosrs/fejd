@@ -23,6 +23,7 @@ import { ThemeProvider } from "#components/theme-provider"
 import { OnboardingGate } from "#components/OnboardingGate"
 import { Loader } from "#components/Loader"
 import { UserMenu } from "./components/UserMenu"
+import { LanguageToggle } from "./components/LanguageToggle"
 import { SideDrawer } from "./components/ui/drawer"
 import { InviteLandingPage } from "./components/invite/InviteLandingPage"
 import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
@@ -172,6 +173,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <LanguageToggle />
             {authenticated ? (
               <UserMenu />
             ) : (

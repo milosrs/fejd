@@ -139,7 +139,6 @@ services:
       - "8080"
       - "9000"
     volumes:
-      - ./keycloak/themes:/opt/keycloak/themes:ro
       - ./keycloak/providers:/opt/keycloak/providers:ro
       - ./keycloak/import/fejd-realm.json:/opt/keycloak/realm-template.json:ro
       - ./keycloak/startup.production.sh:/opt/keycloak/startup.production.sh:ro

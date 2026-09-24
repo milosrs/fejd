@@ -67,6 +67,22 @@ export function consumeReturnTo(): string | undefined {
   }
 }
 
+// The app stores its locale under "fejd-locale" (en | rs); map it to Keycloak's
+// locale codes so the auth pages open in the language the user picked in the app.
+const APP_LOCALE_TO_KC: Record<string, string> = {
+  en: "en",
+  rs: "sr",
+}
+
+function currentKcLocale(): string | undefined {
+  try {
+    const locale = localStorage.getItem("fejd-locale")
+    return locale ? APP_LOCALE_TO_KC[locale] : undefined
+  } catch {
+    return undefined
+  }
+}
+
 // --- state -----------------------------------------------------------------
 
 let accessToken: string | null = null
@@ -226,6 +242,8 @@ export const nativeAdapter: AuthAdapter = {
       code_challenge_method: "S256",
       state: randomString(32),
     })
+    const locale = currentKcLocale()
+    if (locale) params.set("ui_locales", locale)
 
     await Browser.open({ url: `${AUTH_URL}?${params.toString()}`, windowName: "_self" })
   },
@@ -245,6 +263,8 @@ export const nativeAdapter: AuthAdapter = {
       code_challenge_method: "S256",
     }
     if (role) params.registration_role = role
+    const locale = currentKcLocale()
+    if (locale) params.ui_locales = locale
 
     const registrationUrl =
       `${KEYCLOAK_URL}/realms/${KEYCLOAK_REALM}/protocol/openid-connect/registrations?` +

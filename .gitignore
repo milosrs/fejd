@@ -56,6 +56,13 @@ frontend/ios/
 frontend/storybook-static/
 .pnpm-store/
 
+# Keycloak theme: provider JAR (built from keycloak/theme-builder via keycloakify)
+keycloak/providers/*.jar
+
+# Compiled vite config (generated from vite.config.ts by tsc -b)
+keycloak/theme-builder/vite.config.js
+keycloak/theme-builder/vite.config.d.ts
+
 # Generated swagger docs (intermediate)
 backend/docs/
 frontend/openapi.json

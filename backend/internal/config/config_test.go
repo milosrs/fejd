@@ -128,3 +128,26 @@ func TestLoadCORSDefaults(t *testing.T) {
 	assert.Empty(t, cfg.CORS.AllowedSuffix)
 	assert.Empty(t, cfg.AppDomain)
 }
+
+func TestLoadAcceptsValidInviteBaseURL(t *testing.T) {
+	for _, base := range []string{"https://fejd.fyi", "http://localhost:5173"} {
+		t.Run(base, func(t *testing.T) {
+			t.Setenv("INVITE_BASE_URL", base)
+
+			cfg, err := Load()
+			require.NoError(t, err)
+			assert.Equal(t, base, cfg.Jobs.InviteBaseURL)
+		})
+	}
+}
+
+func TestLoadRejectsInvalidInviteBaseURL(t *testing.T) {
+	for _, base := range []string{"fejd.fyi", "localhost:5173", "/invite", "ftp://fejd.fyi", "https://"} {
+		t.Run(base, func(t *testing.T) {
+			t.Setenv("INVITE_BASE_URL", base)
+
+			_, err := Load()
+			require.Error(t, err)
+		})
+	}
+}

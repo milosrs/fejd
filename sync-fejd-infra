@@ -30,7 +30,7 @@ mkdir -p \
     "$DEST/deploy/caddy" \
     "$DEST/deploy/smtp" \
     "$DEST/db/init" \
-    "$DEST/keycloak/themes" \
+    "$DEST/keycloak/providers" \
     "$DEST/keycloak/import"
 
 echo "==> Syncing files into $DEST"
@@ -51,13 +51,14 @@ rsync -a --delete \
     "$FEJD_DIR/db/init/" \
     "$DEST/db/init/"
 
-# The generated theme. Exclude the keycloakify .gitignore (it would gitignore the
-# theme inside fejd-infra) and the JAR by-product.
+# The theme provider JAR (built by keycloakify). Ship only the JAR, not the
+# .gitkeep or any other stray files.
 rsync -a --delete \
-    --exclude='.gitignore' \
-    --exclude='*.jar' \
-    "$FEJD_DIR/keycloak/themes/" \
-    "$DEST/keycloak/themes/"
+    --include='*/' \
+    --include='*.jar' \
+    --exclude='*' \
+    "$FEJD_DIR/keycloak/providers/" \
+    "$DEST/keycloak/providers/"
 
 rsync -a \
     "$FEJD_DIR/keycloak/import/fejd-realm.json" \

@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -190,6 +191,13 @@ func (c *Config) validate() error {
 
 	if c.Jobs.InviteExpiryHours <= 0 {
 		return fmt.Errorf("INVITE_EXPIRY_HOURS must be greater than zero")
+	}
+
+	if c.Jobs.InviteBaseURL != "" {
+		u, err := url.Parse(c.Jobs.InviteBaseURL)
+		if err != nil || u.Host == "" || (u.Scheme != "http" && u.Scheme != "https") {
+			return fmt.Errorf("INVITE_BASE_URL must be an absolute http(s) URL")
+		}
 	}
 
 	return nil

@@ -1,6 +1,5 @@
 fejd.fyi {
-    handle_path /api
-    /* {
+    handle_path /api/* {
         reverse_proxy backend:8080
     }
 

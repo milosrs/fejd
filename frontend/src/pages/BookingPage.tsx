@@ -48,6 +48,7 @@ export function BookingPage() {
     setDate,
     selectSlot,
     clearSlot,
+    reset,
   } = useBookingStore()
 
   useTimeSlotStream(slug)
@@ -91,6 +92,7 @@ export function BookingPage() {
         start_time: selectedSlot.start_time,
       })
       setBookedTime(selectedSlot.start_time)
+      reset()
     } catch (err) {
       const e = err as { status?: number; body?: { error?: string } }
       const msg = e?.body?.error ?? ""
@@ -263,7 +265,7 @@ export function BookingPage() {
                   {error && <p className="text-sm text-destructive">{error}</p>}
                   <Button onClick={handleBook} isDisabled={booking || !ready} className="w-full">
                     {!authenticated
-                      ? t("booking.loginToBook")
+                      ? t("booking.loginToComplete")
                       : booking
                         ? t("booking.booking")
                         : t("booking.confirm.button")}

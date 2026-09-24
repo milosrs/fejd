@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Builds the React theme (keycloakify) and publishes the generated FTL into the
-# mounted theme directory keycloak/themes/<name>. Prefer this over hand-editing
-# the generated FTL; the source of truth is keycloak/theme-builder/src.
+# Builds the React login theme (keycloakify) and the hand-written email theme
+# into a single provider JAR, then copies it into keycloak/providers/, which
+# docker compose mounts at /opt/keycloak/providers.
+#   - login theme source: keycloak/theme-builder/src
+#   - email theme source: keycloak/theme-builder/email (messages + theme.properties)
 THEME_NAME="${1:-fejd}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 THEME_BUILDER_DIR="$SCRIPT_DIR/keycloak/theme-builder"
@@ -16,4 +18,34 @@ fi
 cd "$THEME_BUILDER_DIR"
 node ./build.mjs
 
-echo "Keycloak theme '$THEME_NAME' built into keycloak/themes/$THEME_NAME"
+# keycloakify emits the login theme as a provider JAR. Add the email theme
+# (messages + theme.properties) into the same JAR under theme/fejd/email/.
+EMAIL_SRC="$THEME_BUILDER_DIR/email"
+JAR="$THEME_BUILDER_DIR/dist_keycloak/keycloak-theme-for-kc-all-other-versions.jar"
+if [ -f "$JAR" ] && [ -d "$EMAIL_SRC" ]; then
+    python3 - "$JAR" "$EMAIL_SRC" <<'PY'
+import os
+import sys
+import zipfile
+
+jar_path, email_src = sys.argv[1], sys.argv[2]
+prefix = "theme/fejd/email"
+with zipfile.ZipFile(jar_path, "a") as zf:
+    for root, _dirs, files in os.walk(email_src):
+        for name in files:
+            full = os.path.join(root, name)
+            arc = os.path.join(prefix, os.path.relpath(full, email_src))
+            zf.write(full, arc)
+            print(f"    + {arc}")
+PY
+fi
+
+PROVIDERS_DIR="$SCRIPT_DIR/keycloak/providers"
+mkdir -p "$PROVIDERS_DIR"
+for jar in "$THEME_BUILDER_DIR"/dist_keycloak/keycloak-theme-for-*.jar; do
+    [ -e "$jar" ] || continue
+    cp "$jar" "$PROVIDERS_DIR/"
+    echo "Theme JAR copied: $(basename "$jar") -> keycloak/providers/"
+done
+
+echo "Keycloak theme '$THEME_NAME' built as a JAR in keycloak/providers/"
