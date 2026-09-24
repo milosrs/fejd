@@ -177,6 +177,22 @@ func (s *AppointmentStore) ListByBusinessUser(ctx context.Context, businessUserI
 	return appointments, nil
 }
 
+// DeleteByBusiness removes every appointment for a business. Called before a
+// business is deleted because appointments reference businesses/business_users/
+// services without ON DELETE CASCADE.
+func (s *AppointmentStore) DeleteByBusiness(ctx context.Context, q Querier, businessID uuid.UUID) error {
+	sql, args, err := psql.
+		Delete("appointments").
+		Where(sq.Eq{"business_id": businessID}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}
+
 func (s *AppointmentStore) Cancel(ctx context.Context, id uuid.UUID, customerUserID string, reason string) error {
 	sql, args, err := psql.
 		Update("appointments").

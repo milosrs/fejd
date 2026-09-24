@@ -75,3 +75,36 @@ func (s *ImageStore) Delete(ctx context.Context, q Querier, id uuid.UUID) error 
 	_, err = q.Exec(ctx, sql, args...)
 	return err
 }
+
+// ListByBusiness returns all images owned by a business, so deletion can remove
+// their object-store bytes before the rows (and, transitively, the business).
+func (s *ImageStore) ListByBusiness(ctx context.Context, businessID uuid.UUID) ([]models.Image, error) {
+	sql, args, err := psql.
+		Select("id", "business_id", "storage", "COALESCE(object_key, '')", "data", "COALESCE(url, '')", "COALESCE(content_type, '')", "created_at").
+		From("images").
+		Where(sq.Eq{"business_id": businessID}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list images: %w", err)
+	}
+	defer rows.Close()
+
+	var images []models.Image
+	for rows.Next() {
+		var img models.Image
+		var bID *uuid.UUID
+		if err := rows.Scan(&img.ID, &bID, &img.Storage, &img.ObjectKey, &img.Data, &img.URL, &img.ContentType, &img.CreatedAt); err != nil {
+			return nil, fmt.Errorf("failed to scan image: %w", err)
+		}
+		if bID != nil {
+			img.BusinessID = *bID
+		}
+		images = append(images, img)
+	}
+	return images, nil
+}

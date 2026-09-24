@@ -121,6 +121,7 @@ func newRouter(
 				r.Use(customMiddleware.RequireBusinessAdmin(buStore))
 
 				r.Put("/name", adminHandler.RenameBusiness)
+				r.Delete("/", adminHandler.DeleteBusiness)
 
 				r.Post("/employees", adminHandler.CreateEmployee)
 				r.Get("/employees", adminHandler.GetEmployees)

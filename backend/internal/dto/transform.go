@@ -251,12 +251,22 @@ func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.
 }
 
 // CustomerAppointmentsFromModels enriches customer appointments with each
-// salon's cancellation notice window so the UI can surface the deadline.
-func CustomerAppointmentsFromModels(ms []models.Appointment, leadHoursByBusiness map[uuid.UUID]int) []Appointment {
+// salon's cancellation notice window and identifying info (name, slug, logo)
+// so the UI can surface the deadline and render the salon the customer booked.
+func CustomerAppointmentsFromModels(
+	ms []models.Appointment,
+	leadHoursByBusiness map[uuid.UUID]int,
+	businessNames map[uuid.UUID]string,
+	businessSlugs map[uuid.UUID]string,
+	businessLogos map[uuid.UUID]string,
+) []Appointment {
 	out := make([]Appointment, len(ms))
 	for i, m := range ms {
 		out[i] = AppointmentFromModel(m)
 		out[i].CancellationLeadHours = leadHoursByBusiness[m.BusinessID]
+		out[i].BusinessName = businessNames[m.BusinessID]
+		out[i].BusinessSlug = businessSlugs[m.BusinessID]
+		out[i].BusinessLogo = businessLogos[m.BusinessID]
 	}
 	return out
 }

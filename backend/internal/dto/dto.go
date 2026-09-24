@@ -82,9 +82,9 @@ type Service struct {
 // Section is a landing-page content block. Content is a locale-keyed object
 // ({ "<locale>": { ...type-specific fields } }).
 type Section struct {
-	ID       uuid.UUID `json:"id" validate:"required"`
-	PageID   uuid.UUID `json:"page_id" validate:"required"`
-	Type     string    `json:"type" validate:"required"`
+	ID     uuid.UUID `json:"id" validate:"required"`
+	PageID uuid.UUID `json:"page_id" validate:"required"`
+	Type   string    `json:"type" validate:"required"`
 	// Content is a locale-keyed JSON object.
 	Content  json.RawMessage `json:"content" validate:"required" swaggertype:"object"`
 	Position int             `json:"position" validate:"required"`
@@ -128,6 +128,12 @@ type Appointment struct {
 	// NoShowAfterHours is populated for staff reservation lists so the UI can
 	// surface when a no-show may be recorded.
 	NoShowAfterHours int `json:"no_show_after_hours,omitempty"`
+	// BusinessName is the salon's name, populated for customer appointment lists.
+	BusinessName string `json:"business_name,omitempty"`
+	// BusinessSlug is the salon's slug, populated for customer appointment lists.
+	BusinessSlug string `json:"business_slug,omitempty"`
+	// BusinessLogo is the salon's logo URL path, populated for customer appointment lists.
+	BusinessLogo string `json:"business_logo,omitempty"`
 }
 
 type TimeSlot struct {

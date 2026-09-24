@@ -19,6 +19,8 @@ const inviteClientID = "salon-mobile"
 type UserInviter interface {
 	CreateUser(ctx context.Context, in keycloak.CreateUserInput) (string, error)
 	ExecuteActionsEmail(ctx context.Context, userID string, actions []string, clientID, redirectURI string, lifespan int) error
+	AddRealmRole(ctx context.Context, userID, roleName string) error
+	RemoveRealmRole(ctx context.Context, userID, roleName string) error
 }
 
 type EmployeeService struct {
@@ -84,4 +86,22 @@ func (s *EmployeeService) Invite(ctx context.Context, businessID uuid.UUID, name
 	}
 
 	return bu, nil
+}
+
+// RevokeEmployeeRole drops the Employee realm role from a user, keeping the
+// account itself intact. It is idempotent so it can be re-run safely.
+func (s *EmployeeService) RevokeEmployeeRole(ctx context.Context, userID string) error {
+	if err := s.inviter.RemoveRealmRole(ctx, userID, "Employee"); err != nil {
+		return fmt.Errorf("failed to remove employee role: %w", err)
+	}
+	return nil
+}
+
+// GrantCustomerRole assigns the Customer realm role to a user, switching a
+// former employee back to a plain customer. It is idempotent.
+func (s *EmployeeService) GrantCustomerRole(ctx context.Context, userID string) error {
+	if err := s.inviter.AddRealmRole(ctx, userID, "Customer"); err != nil {
+		return fmt.Errorf("failed to assign customer role: %w", err)
+	}
+	return nil
 }

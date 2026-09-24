@@ -7,6 +7,94 @@
         "version": "1.0"
     },
     "paths": {
+        "/api/admin/business/{businessID}": {
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Permanently deletes a salon and all of its data after the caller confirms the salon's name.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Delete a salon",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.DeleteBusinessRequest"
+                            }
+                        }
+                    },
+                    "description": "Salon name confirmation",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/business/{businessID}/appointments": {
             "get": {
                 "security": [
@@ -4330,6 +4418,18 @@
                     "business_id": {
                         "type": "string"
                     },
+                    "business_logo": {
+                        "description": "BusinessLogo is the salon's logo URL path, populated for customer appointment lists.",
+                        "type": "string"
+                    },
+                    "business_name": {
+                        "description": "BusinessName is the salon's name, populated for customer appointment lists.",
+                        "type": "string"
+                    },
+                    "business_slug": {
+                        "description": "BusinessSlug is the salon's slug, populated for customer appointment lists.",
+                        "type": "string"
+                    },
                     "business_user_id": {
                         "type": "string"
                     },
@@ -4958,6 +5058,18 @@
                     "start_time": {
                         "type": "string",
                         "example": "2024-01-01T09:00:00Z"
+                    }
+                }
+            },
+            "handler.DeleteBusinessRequest": {
+                "type": "object",
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "name": {
+                        "type": "string",
+                        "example": "My Salon"
                     }
                 }
             },

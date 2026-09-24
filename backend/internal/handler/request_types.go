@@ -77,9 +77,9 @@ type CreateUnavailabilityRequest struct {
 }
 
 type SalonPolicyResponse struct {
-	CancellationLeadHours int                `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterHours      int                `json:"no_show_after_hours" validate:"required" example:"2"`
-	SlotIntervalMinutes   int                `json:"slot_interval_minutes" validate:"required" example:"30"`
+	CancellationLeadHours int                 `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterHours      int                 `json:"no_show_after_hours" validate:"required" example:"2"`
+	SlotIntervalMinutes   int                 `json:"slot_interval_minutes" validate:"required" example:"30"`
 	WorkingHours          []dto.BusinessHours `json:"working_hours" validate:"required"`
 }
 
@@ -133,6 +133,10 @@ type BusinessCreateInput struct {
 }
 
 type RenameBusinessRequest struct {
+	Name string `json:"name" validate:"required" example:"My Salon"`
+}
+
+type DeleteBusinessRequest struct {
 	Name string `json:"name" validate:"required" example:"My Salon"`
 }
 

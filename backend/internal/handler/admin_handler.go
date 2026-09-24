@@ -4,13 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"fejd-backend/internal/authutil"
 	"fejd-backend/internal/db"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
+	"fmt"
+	"log"
 	"net/http"
 	"strings"
 	"time"
@@ -480,6 +481,14 @@ func (h *AdminHandler) RemoveEmployee(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
+	}
+
+	// The user account stays in the system; only the Employee realm role is
+	// dropped so they are no longer recognized as an employee anywhere.
+	if h.employeeService != nil {
+		if err := h.employeeService.RevokeEmployeeRole(r.Context(), targetUserID); err != nil {
+			log.Printf("[admin] failed to revoke employee role for %s: %v", targetUserID, err)
+		}
 	}
 
 	writeJSON(w, http.StatusOK, RemoveEmployeeResponse{
@@ -1441,6 +1450,86 @@ func (h *AdminHandler) RenameBusiness(w http.ResponseWriter, r *http.Request) {
 	business.Name = name
 	business.Slug = newSlug
 	writeJSON(w, http.StatusOK, dto.BusinessFromModel(*business))
+}
+
+// DeleteBusiness godoc
+// @Summary      Delete a salon
+// @Description  Permanently deletes a salon and all of its data after the caller confirms the salon's name.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body DeleteBusinessRequest true "Salon name confirmation"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID} [delete]
+func (h *AdminHandler) DeleteBusiness(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	var body DeleteBusinessRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	business, err := h.businessStore.GetByID(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	if strings.TrimSpace(body.Name) != business.Name {
+		writeError(w, http.StatusBadRequest, "salon name does not match")
+		return
+	}
+
+	// Employees lose their Employee realm role and are switched back to plain
+	// customers; the owner keeps their Owner role. The Keycloak accounts stay.
+	if h.employeeService != nil {
+		members, err := h.buStore.ListByBusiness(r.Context(), businessID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to list employees")
+			return
+		}
+		for _, bu := range members {
+			if bu.Role != "employee" {
+				continue
+			}
+			if err := h.employeeService.RevokeEmployeeRole(r.Context(), bu.UserID); err != nil {
+				log.Printf("[admin] failed to revoke employee role for %s: %v", bu.UserID, err)
+			}
+			if err := h.employeeService.GrantCustomerRole(r.Context(), bu.UserID); err != nil {
+				log.Printf("[admin] failed to grant customer role for %s: %v", bu.UserID, err)
+			}
+		}
+	}
+
+	if err := h.appointmentStore.DeleteByBusiness(r.Context(), h.pool, businessID); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to delete appointments")
+		return
+	}
+
+	if h.imageService != nil {
+		if err := h.imageService.DeleteAllForBusiness(r.Context(), businessID); err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to delete salon images")
+			return
+		}
+	}
+
+	if err := h.businessStore.Delete(r.Context(), h.pool, businessID); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to delete business")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "salon deleted"})
 }
 
 // loadTimezone resolves an IANA timezone name to a location, defaulting to UTC

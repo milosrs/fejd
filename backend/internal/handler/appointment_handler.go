@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fejd-backend/internal/authutil"
@@ -20,6 +21,7 @@ type AppointmentHandler struct {
 	services     *store.ServiceStore
 	business     *store.BusinessStore
 	buStore      *store.BusinessUserStore
+	imageLinks   *store.ImageLinkStore
 	slotService  *service.SlotService
 }
 
@@ -29,12 +31,14 @@ func NewAppointmentHandler(
 	business *store.BusinessStore,
 	buStore *store.BusinessUserStore,
 	slotService *service.SlotService,
+	imageLinks *store.ImageLinkStore,
 ) *AppointmentHandler {
 	return &AppointmentHandler{
 		appointments: appointments,
 		services:     services,
 		business:     business,
 		buStore:      buStore,
+		imageLinks:   imageLinks,
 		slotService:  slotService,
 	}
 }
@@ -141,16 +145,39 @@ func (h *AppointmentHandler) ListMyAppointments(w http.ResponseWriter, r *http.R
 	}
 
 	leadHoursByBusiness := make(map[uuid.UUID]int)
+	businessNames := make(map[uuid.UUID]string)
+	businessSlugs := make(map[uuid.UUID]string)
+	businessLogos := make(map[uuid.UUID]string)
 	for _, a := range appointments {
 		if _, ok := leadHoursByBusiness[a.BusinessID]; ok {
 			continue
 		}
 		if b, err := h.business.GetByID(r.Context(), a.BusinessID); err == nil {
 			leadHoursByBusiness[a.BusinessID] = b.CancellationLeadHours
+			businessNames[a.BusinessID] = b.Name
+			businessSlugs[a.BusinessID] = b.Slug
 		}
+		businessLogos[a.BusinessID] = h.businessLogo(r.Context(), a.BusinessID)
 	}
 
-	writeJSON(w, http.StatusOK, dto.CustomerAppointmentsFromModels(appointments, leadHoursByBusiness))
+	writeJSON(w, http.StatusOK, dto.CustomerAppointmentsFromModels(
+		appointments, leadHoursByBusiness, businessNames, businessSlugs, businessLogos,
+	))
+}
+
+// businessLogo returns the URL path of a salon's logo image, or "" if it has
+// none. The path is served by the public image endpoint.
+func (h *AppointmentHandler) businessLogo(ctx context.Context, businessID uuid.UUID) string {
+	links, err := h.imageLinks.ListByEntity(ctx, "business", businessID)
+	if err != nil {
+		return ""
+	}
+	for _, l := range links {
+		if l.Purpose == "logo" {
+			return "/api/images/" + l.ImageID.String()
+		}
+	}
+	return ""
 }
 
 // Cancel godoc

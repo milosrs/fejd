@@ -53,6 +53,7 @@
     --animate-breathing: breathing var(--breathing-speed, 2.1s) cubic-bezier(0.4, 0, 0.6, 1) infinite;
     --animate-fade-in: fade-in 0.4s ease-out both;
     --animate-fade-out: fade-out 0.35s ease-in both;
+    --animate-slide-in-left: slide-in-left 0.25s ease-out both;
 
     @keyframes breathing {
         0%,
@@ -84,6 +85,16 @@
 
         to {
             opacity: 0;
+        }
+    }
+
+    @keyframes slide-in-left {
+        from {
+            transform: translateX(-100%);
+        }
+
+        to {
+            transform: translateX(0);
         }
     }
 }

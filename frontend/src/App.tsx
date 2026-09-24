@@ -1,10 +1,9 @@
 import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom"
-import { QueryClient, QueryClientProvider, useMutation, useQueryClient } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
-import { UserRound } from "lucide-react"
+import { Menu as MenuIcon } from "lucide-react"
 import { useAuthStore } from "./stores/authStore"
 import { useMe } from "./hooks/useMe"
-import { uploadAvatar } from "./hooks/useApi"
 import { useHeaderHeightMeasure } from "./hooks/useHeaderHeightMeasure"
 import { HomePage } from "./pages/HomePage"
 import { LandingPage } from "./pages/LandingPage"
@@ -21,15 +20,13 @@ import { Toaster } from "./components/ui/toaster"
 import { Button } from "./components/ui/button"
 import { I18nProvider, useI18n } from "./lib/i18n"
 import { ThemeProvider } from "#components/theme-provider"
-import { ModeToggle } from "#components/mode-toggle"
-import { LanguageToggle } from "#components/LanguageToggle"
 import { OnboardingGate } from "#components/OnboardingGate"
 import { Loader } from "#components/Loader"
+import { UserMenu } from "./components/UserMenu"
+import { SideDrawer } from "./components/ui/drawer"
 import { InviteLandingPage } from "./components/invite/InviteLandingPage"
 import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
 import { subdomainSlug, openAppHome } from "./lib/salonDomain"
-import { resolveImageUrl } from "./lib/images"
-import { pickImage } from "./lib/imagePicker"
 import { consumeReturnTo } from "./lib/auth"
 
 const queryClient = new QueryClient({
@@ -38,50 +35,14 @@ const queryClient = new QueryClient({
   },
 })
 
-function ProfileAvatar({ src, name }: { src?: string; name?: string }) {
-  const [loaded, setLoaded] = useState(false)
-  const [failed, setFailed] = useState(false)
-
-  useEffect(() => {
-    setLoaded(false)
-    setFailed(false)
-  }, [src])
-
-  const showImage = !!src && !failed
-
-  return (
-    <span className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-muted text-muted-foreground">
-      {showImage && (
-        <>
-          <img
-            src={src}
-            alt={name}
-            onLoad={() => setLoaded(true)}
-            onError={() => setFailed(true)}
-            className={`absolute inset-0 h-full w-full object-cover transition-opacity ${loaded ? "opacity-100" : "opacity-0"
-              }`}
-          />
-          {!loaded && (
-            <span className="absolute inset-0 animate-pulse rounded-full bg-muted" />
-          )}
-        </>
-      )}
-      {!showImage && <UserRound className="size-5" />}
-    </span>
-  )
-}
-
 function AppInit({ children }: { children: React.ReactNode }) {
   const init = useAuthStore((s) => s.init)
   const initialized = useAuthStore((s) => s.initialized)
   const authenticated = useAuthStore((s) => s.authenticated)
-  const userInfo = useAuthStore((s) => s.userInfo)
-  const logout = useAuthStore((s) => s.logout)
   const login = useAuthStore((s) => s.login)
   const register = useAuthStore((s) => s.register)
   const navigate = useNavigate()
   const location = useLocation()
-  const queryClient = useQueryClient()
   const { data: me } = useMe()
   const topHeaderRef = useHeaderHeightMeasure("--top-header-height")
   const { t } = useI18n()
@@ -91,12 +52,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
     businesses.find((b) => b.role === "admin") ?? businesses[0]
   const hasSalon = businesses.length > 0
 
-  const uploadAvatarMutation = useMutation({
-    mutationFn: (file: File) => uploadAvatar(file),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["me"] })
-    },
-  })
+  const [navOpen, setNavOpen] = useState(false)
 
   useEffect(() => {
     init()
@@ -131,18 +87,25 @@ function AppInit({ children }: { children: React.ReactNode }) {
     return !!first && !["invite", "my", "admin"].includes(first)
   })()
 
-  const avatarUrl = resolveImageUrl(me?.avatar)
-  const handlePickAvatar = async () => {
-    const file = await pickImage()
-    if (file) uploadAvatarMutation.mutate(file)
-  }
-
   return (
     <div className="animate-fade-in">
       <InviteAcceptHandler />
-      <header ref={topHeaderRef} className="border-b">
-        <div className="flex items-center justify-between gap-4 px-6 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3">
-          <div className="flex min-w-0 items-center gap-3">
+      <header
+        ref={topHeaderRef}
+        className="sticky top-0 z-40 border-b border-border bg-background"
+      >
+        <div className="flex items-center justify-between gap-3 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 sm:px-6">
+          <div className="flex min-w-0 items-center gap-2">
+            {authenticated && (
+              <button
+                type="button"
+                onClick={() => setNavOpen(true)}
+                aria-label={t("app.menu")}
+                className="shrink-0 rounded-md p-1.5 text-foreground hover:bg-muted md:hidden"
+              >
+                <MenuIcon className="size-5" />
+              </button>
+            )}
             <button
               type="button"
               onClick={() => openAppHome(navigate)}
@@ -153,15 +116,12 @@ function AppInit({ children }: { children: React.ReactNode }) {
               <img src="/logo_dark.jpg" alt="fejd" className="hidden h-7 w-auto dark:block" />
             </button>
             {authenticated && (
-              <>
-                <span className="truncate text-sm text-foreground">
-                  {t("app.welcome", { name: userInfo?.name ?? "" })}
-                </span>
+              <div className="hidden min-w-0 items-center gap-2 md:flex">
                 {isSalonView && (
                   <button
                     type="button"
                     onClick={() => openAppHome(navigate)}
-                    className="ml-2 shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                    className="shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
                   >
                     {t("app.allSalons")}
                   </button>
@@ -190,29 +150,12 @@ function AppInit({ children }: { children: React.ReactNode }) {
                     </>
                   )}
                 </nav>
-              </>
+              </div>
             )}
           </div>
-          <div className="flex shrink-0 items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2">
             {authenticated ? (
-              <>
-                <button
-                  onClick={logout}
-                  className="text-sm text-muted-foreground underline hover:text-foreground"
-                >
-                  {t("app.logout")}
-                </button>
-                <ModeToggle />
-                <LanguageToggle />
-                <button
-                  type="button"
-                  onClick={handlePickAvatar}
-                  aria-label={t("app.uploadAvatar")}
-                  className="shrink-0 overflow-hidden rounded-full ring-2 ring-border hover:opacity-80 focus:outline-none focus-visible:ring-primary"
-                >
-                  <ProfileAvatar src={avatarUrl} name={userInfo?.name} />
-                </button>
-              </>
+              <UserMenu />
             ) : (
               <>
                 <Button variant="outline" onClick={login}>
@@ -224,6 +167,55 @@ function AppInit({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      {authenticated && (
+        <SideDrawer
+          open={navOpen}
+          onClose={() => setNavOpen(false)}
+          title={t("app.navigation")}
+        >
+          <nav className="flex flex-col gap-1 p-2">
+            {isSalonView && (
+              <button
+                type="button"
+                onClick={() => {
+                  setNavOpen(false)
+                  openAppHome(navigate)
+                }}
+                className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted"
+              >
+                {t("app.allSalons")}
+              </button>
+            )}
+            <Link
+              to="/my/appointments"
+              onClick={() => setNavOpen(false)}
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+            >
+              {t("nav.myAppointments")}
+            </Link>
+            {hasSalon && primaryBusiness && (
+              <>
+                <Link
+                  to={`/admin/business/${primaryBusiness.id}/my-reservations`}
+                  onClick={() => setNavOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  {t("nav.myReservations")}
+                </Link>
+                <Link
+                  to={`/admin/business/${primaryBusiness.id}/my-schedule`}
+                  onClick={() => setNavOpen(false)}
+                  className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+                >
+                  {t("nav.reserveMyTime")}
+                </Link>
+              </>
+            )}
+          </nav>
+        </SideDrawer>
+      )}
+
       {children}
     </div>
   )

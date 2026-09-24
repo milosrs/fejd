@@ -100,6 +100,31 @@ func (c *Client) AddRealmRole(ctx context.Context, userID, roleName string) erro
 	return fmt.Errorf("keycloak admin api error: POST %s -> %d: %s", path, resp.StatusCode, string(respBody))
 }
 
+// RemoveRealmRole revokes a realm role from a user by role name. It is
+// idempotent: removing a role the user does not hold is treated as success.
+func (c *Client) RemoveRealmRole(ctx context.Context, userID, roleName string) error {
+	path := "/admin/realms/" + c.realm + "/users/" + userID + "/role-mappings/realm"
+	body := []map[string]string{{"name": roleName}}
+
+	resp, err := c.request(ctx, "DELETE", path, body)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if roleUnmappingSuccess(resp.StatusCode) {
+		return nil
+	}
+	respBody, _ := io.ReadAll(resp.Body)
+	return fmt.Errorf("keycloak admin api error: DELETE %s -> %d: %s", path, resp.StatusCode, string(respBody))
+}
+
+// roleUnmappingSuccess reports whether a role-mapping removal status code
+// represents success (204 no content, or 404 when the mapping/role is absent).
+func roleUnmappingSuccess(status int) bool {
+	return status == http.StatusNoContent || status == http.StatusNotFound
+}
+
 // ListRealmRoles returns the names of the realm roles mapped to a user.
 func (c *Client) ListRealmRoles(ctx context.Context, userID string) ([]string, error) {
 	var roles []struct {

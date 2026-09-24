@@ -108,7 +108,7 @@ func main() {
 	)
 
 	appointmentHandler := handler.NewAppointmentHandler(
-		appointmentStore, serviceStore, businessStore, buStore, slotService,
+		appointmentStore, serviceStore, businessStore, buStore, slotService, imageLinkStore,
 	)
 
 	keycloakAdmin := keycloak.NewClient(cfg.Keycloak)

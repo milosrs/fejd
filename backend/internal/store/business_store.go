@@ -201,3 +201,19 @@ func (s *BusinessStore) SlugExists(ctx context.Context, q Querier, slug string) 
 	}
 	return exists, nil
 }
+
+// Delete removes a business row. Callers must delete dependent rows (images and
+// appointments) first because those reference businesses without ON DELETE
+// CASCADE; every other dependent table cascades automatically.
+func (s *BusinessStore) Delete(ctx context.Context, q Querier, id uuid.UUID) error {
+	sql, args, err := psql.
+		Delete("businesses").
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}

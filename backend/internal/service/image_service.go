@@ -429,7 +429,8 @@ func (s *ImageService) IsProfilePicture(ctx context.Context, imageID uuid.UUID) 
 
 // Delete removes an image and its links (cascading). Object-store bytes are
 // deleted first; on failure the DB row is kept so the object stays traceable.
-func (s *ImageService) Delete(ctx context.Context, img *models.Image) error {	if img.Storage != string(config.BackendPostgres) {
+func (s *ImageService) Delete(ctx context.Context, img *models.Image) error {
+	if img.Storage != string(config.BackendPostgres) {
 		if s.storage == nil {
 			return fmt.Errorf("object storage is not configured")
 		}
@@ -452,6 +453,23 @@ func (s *ImageService) DeleteImageScoped(ctx context.Context, img *models.Image,
 		return s.Delete(ctx, img)
 	}
 	return s.links.DeleteByID(ctx, s.pool, authorizedLinkID)
+}
+
+// DeleteAllForBusiness removes every image owned by a business (object-store
+// bytes first, then rows). Called before a business is deleted, since images
+// reference businesses with ON DELETE RESTRICT.
+func (s *ImageService) DeleteAllForBusiness(ctx context.Context, businessID uuid.UUID) error {
+	images, err := s.images.ListByBusiness(ctx, businessID)
+	if err != nil {
+		return err
+	}
+
+	for i := range images {
+		if err := s.Delete(ctx, &images[i]); err != nil {
+			log.Printf("[images] failed to delete business image %s: %v", images[i].ID, err)
+		}
+	}
+	return nil
 }
 
 // UnlinkAndMaybeDeleteAll removes every link for an entity and deletes images

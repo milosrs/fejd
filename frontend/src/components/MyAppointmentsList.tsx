@@ -4,15 +4,45 @@ import { useQueryClient } from "@tanstack/react-query"
 import { cancelAppointment, type Appointment } from "../hooks/useApi"
 import { useI18n } from "../lib/i18n"
 import { formatCancellationReason } from "../lib/cancellation"
+import { resolveImageUrl } from "../lib/images"
 import { Button } from "./ui/button"
 import { Label } from "./ui/label"
 import { Textarea } from "./ui/textarea"
-import { Card, CardHeader, CardTitle, CardContent } from "./ui/card"
+import { Card, CardTitle, CardContent } from "./ui/card"
 
 function canCancel(apt: Appointment): boolean {
   if (apt.status !== "confirmed" && apt.status !== "pending") return false
   const leadMs = (apt.cancellation_lead_hours ?? 0) * 3600 * 1000
   return new Date().getTime() <= new Date(apt.start_time).getTime() - leadMs
+}
+
+const STATUS_LABELS: Record<string, string> = {
+  pending: "appointments.status.pending",
+  confirmed: "appointments.status.confirmed",
+  completed: "appointments.status.completed",
+  cancelled: "appointments.status.cancelled",
+  no_show: "appointments.status.noShow",
+}
+
+const STATUS_STYLES: Record<string, string> = {
+  pending: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
+  confirmed: "bg-green-500/15 text-green-600 dark:text-green-400",
+  completed: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
+  cancelled: "bg-red-500/15 text-red-600 dark:text-red-400",
+  no_show: "bg-muted text-muted-foreground",
+}
+
+function StatusBadge({ status }: { status: string }) {
+  const { t } = useI18n()
+  return (
+    <span
+      className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
+        STATUS_STYLES[status] ?? "bg-muted text-muted-foreground"
+      }`}
+    >
+      {t(STATUS_LABELS[status] ?? `status.${status}`)}
+    </span>
+  )
 }
 
 // MyAppointmentsList renders the appointments the current user booked
@@ -60,47 +90,66 @@ export function MyAppointmentsList({
         <p className="text-muted-foreground">{t("appointments.empty")}</p>
       ) : (
         <div className="space-y-4">
-          {list.map((apt: Appointment) => (
-            <Card key={apt.id}>
-              <CardHeader>
-                <CardTitle className="text-base">
-                  {format(new Date(apt.start_time), "EEEE, MMMM d, yyyy 'at' h:mm a")}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <p className="text-sm text-muted-foreground">
-                  {t("appointments.durationStatus", {
-                    duration: Math.round((new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime()) / 60000),
-                    status: t(`status.${apt.status}`),
-                  })}
-                </p>
-                {apt.cancellation_reason && (
-                  <p className="text-xs text-muted-foreground">
-                    {t("appointments.reason", { reason: formatCancellationReason(apt.cancellation_reason, t) })}
-                  </p>
-                )}
-                {(apt.status === "confirmed" || apt.status === "pending") && (
-                  canCancel(apt) ? (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setCancelTarget(apt)
-                        setReason("")
-                      }}
-                    >
-                      {t("reservations.cancel")}
-                    </Button>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">
-                      {t("appointments.deadlinePassed")}
-                      {apt.cancellation_lead_hours ? ` (${t("appointments.noticeRequired", { hours: apt.cancellation_lead_hours })})` : ""}.
-                    </p>
-                  )
-                )}
-              </CardContent>
-            </Card>
-          ))}
+          {list.map((apt: Appointment) => {
+            const logoUrl = resolveImageUrl(apt.business_logo)
+            const fallback = (apt.business_name ?? "?").charAt(0).toUpperCase()
+            return (
+              <Card key={apt.id}>
+                <CardContent className="flex items-center gap-4">
+                  <div className="shrink-0">
+                    {logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt={apt.business_name ?? ""}
+                        className="size-12 rounded-full border border-border bg-background object-cover"
+                      />
+                    ) : (
+                      <span className="flex size-12 items-center justify-center rounded-full bg-muted text-lg font-semibold text-foreground">
+                        {fallback}
+                      </span>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-2">
+                    <CardTitle>
+                      {format(new Date(apt.start_time), "EEEE, MMMM d, yyyy 'at' h:mm a")}
+                    </CardTitle>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <StatusBadge status={apt.status} />
+                      <span className="text-sm text-muted-foreground">
+                        {t("appointments.duration", {
+                          duration: Math.round((new Date(apt.end_time).getTime() - new Date(apt.start_time).getTime()) / 60000),
+                        })}
+                      </span>
+                    </div>
+                    {apt.cancellation_reason && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("appointments.reason", { reason: formatCancellationReason(apt.cancellation_reason, t) })}
+                      </p>
+                    )}
+                    {(apt.status === "confirmed" || apt.status === "pending") && (
+                      canCancel(apt) ? (
+                        <Button
+                          variant="destructive"
+                          size="sm"
+                          onClick={() => {
+                            setCancelTarget(apt)
+                            setReason("")
+                          }}
+                        >
+                          {t("reservations.cancel")}
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          {t("appointments.deadlinePassed")}
+                          {apt.cancellation_lead_hours ? ` (${t("appointments.noticeRequired", { hours: apt.cancellation_lead_hours })})` : ""}.
+                        </p>
+                      )
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
           {message && (
             <p className={`text-sm ${message.startsWith("Failed") ? "text-red-500" : "text-green-600"}`}>
               {message}

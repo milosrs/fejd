@@ -39,6 +39,7 @@ const URL_APPOINTMENTS = "/api/appointments" as const
 const URL_ME_AVATAR = "/api/me/avatar" as const
 const URL_BUSINESSES = "/api/businesses" as const
 const URL_ADMIN_BUSINESS_NAME = "/api/admin/business/{businessID}/name" as const
+const URL_ADMIN_BUSINESS_DELETE = "/api/admin/business/{businessID}" as const
 const URL_ADMIN_APPOINTMENTS = "/api/admin/business/{businessID}/appointments" as const
 const URL_ADMIN_APPOINTMENTS_ACCEPT = "/api/admin/business/{businessID}/appointments/{appointmentID}/accept" as const
 const URL_ADMIN_APPOINTMENTS_REJECT = "/api/admin/business/{businessID}/appointments/{appointmentID}/reject" as const
@@ -169,6 +170,14 @@ export async function updateSalonPolicy(businessId: string, policy: SalonPolicyI
 
 export async function renameBusiness(businessId: string, name: string) {
   const { data } = await PUT(URL_ADMIN_BUSINESS_NAME, {
+    params: { path: { businessID: businessId } },
+    body: { name },
+  })
+  return data
+}
+
+export async function deleteBusiness(businessId: string, name: string) {
+  const { data } = await DELETE(URL_ADMIN_BUSINESS_DELETE, {
     params: { path: { businessID: businessId } },
     body: { name },
   })

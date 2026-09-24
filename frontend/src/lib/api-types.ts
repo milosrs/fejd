@@ -4,6 +4,89 @@
  */
 
 export interface paths {
+    "/api/admin/business/{businessID}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete a salon
+         * @description Permanently deletes a salon and all of its data after the caller confirms the salon's name.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Salon name confirmation */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.DeleteBusinessRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/business/{businessID}/appointments": {
         parameters: {
             query?: never;
@@ -3990,6 +4073,12 @@ export interface components {
     schemas: {
         "dto.Appointment": {
             business_id: string;
+            /** @description BusinessLogo is the salon's logo URL path, populated for customer appointment lists. */
+            business_logo?: string;
+            /** @description BusinessName is the salon's name, populated for customer appointment lists. */
+            business_name?: string;
+            /** @description BusinessSlug is the salon's slug, populated for customer appointment lists. */
+            business_slug?: string;
             business_user_id: string;
             /**
              * @description CancellationLeadHours is populated for customer appointment lists so the
@@ -4191,6 +4280,10 @@ export interface components {
             reason?: string;
             /** @example 2024-01-01T09:00:00Z */
             start_time: string;
+        };
+        "handler.DeleteBusinessRequest": {
+            /** @example My Salon */
+            name: string;
         };
         "handler.ErrorResponse": {
             /** @example error message */

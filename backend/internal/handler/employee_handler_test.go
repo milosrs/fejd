@@ -11,6 +11,7 @@ import (
 	"fejd-backend/internal/middleware"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
+	"fejd-backend/internal/sse"
 	"fejd-backend/internal/store"
 
 	"github.com/google/uuid"
@@ -25,6 +26,8 @@ type fakeInviter struct {
 	clientID        string
 	redirectURI     string
 	lifespan        int
+	addedRoles      []string
+	removedRoles    []string
 	err             error
 }
 
@@ -41,6 +44,16 @@ func (f *fakeInviter) ExecuteActionsEmail(ctx context.Context, userID string, ac
 	f.clientID = clientID
 	f.redirectURI = redirectURI
 	f.lifespan = lifespan
+	return f.err
+}
+
+func (f *fakeInviter) AddRealmRole(ctx context.Context, userID, roleName string) error {
+	f.addedRoles = append(f.addedRoles, roleName)
+	return f.err
+}
+
+func (f *fakeInviter) RemoveRealmRole(ctx context.Context, userID, roleName string) error {
+	f.removedRoles = append(f.removedRoles, roleName)
 	return f.err
 }
 
@@ -128,4 +141,49 @@ func TestAdminHandler_CreateEmployee_NonOwnerRejected(t *testing.T) {
 	guarded.ServeHTTP(rr, req)
 
 	require.Equal(t, http.StatusForbidden, rr.Code)
+}
+
+func TestAdminHandler_RemoveEmployee_RevokesRole(t *testing.T) {
+	pool := setupHandlerTestDB(t)
+	ctx := context.Background()
+
+	businessStore := store.NewBusinessStore(pool)
+	buStore := store.NewBusinessUserStore(pool)
+	serviceStore := store.NewServiceStore(pool)
+	appointmentStore := store.NewAppointmentStore(pool)
+	workingHoursStore := store.NewWorkingHoursStore(pool)
+	overrideStore := store.NewWorkingHoursOverrideStore(pool)
+	businessHoursStore := store.NewBusinessHoursStore(pool)
+	employeeServiceStore := store.NewEmployeeServiceStore(pool)
+	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
+	hub := sse.NewHub()
+
+	slotService := service.NewSlotService(
+		appointmentStore, workingHoursStore, businessHoursStore, overrideStore,
+		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
+	)
+
+	inviter := &fakeInviter{userID: "emp-1"}
+	employeeService := service.NewEmployeeService(inviter, buStore, employeeServiceStore, pool, "fejd://callback", 48*3600)
+
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, appointmentStore, slotService, nil, employeeService, pool)
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+	require.NoError(t, buStore.Create(ctx, pool, &models.BusinessUser{BusinessID: b.ID, UserID: "owner", Role: "admin"}))
+	require.NoError(t, buStore.Create(ctx, pool, &models.BusinessUser{BusinessID: b.ID, UserID: "emp-1", Role: "employee"}))
+
+	req := withPathParams(
+		httptest.NewRequest(http.MethodDelete, "/api/admin/business/"+b.ID.String()+"/employees/emp-1", nil),
+		map[string]string{"businessID": b.ID.String(), "userID": "emp-1"},
+	)
+	rr := httptest.NewRecorder()
+	h.RemoveEmployee(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	assert.Contains(t, inviter.removedRoles, "Employee")
+
+	bu, err := buStore.GetByBusinessAndUser(ctx, b.ID, "emp-1")
+	require.NoError(t, err)
+	assert.False(t, bu.Active)
 }

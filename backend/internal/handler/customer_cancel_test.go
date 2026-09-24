@@ -48,6 +48,7 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 	businessHoursStore := store.NewBusinessHoursStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
 	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
+	imageLinkStore := store.NewImageLinkStore(pool)
 	hub := sse.NewHub()
 
 	slotService := service.NewSlotService(
@@ -88,7 +89,7 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 	recentApptID := insertAppt("customer-5", time.Now().UTC().Add(-1*time.Hour))
 
 	return &cancelTestEnv{
-		apptHandler:      NewAppointmentHandler(appointmentStore, serviceStore, businessStore, buStore, slotService),
+		apptHandler:      NewAppointmentHandler(appointmentStore, serviceStore, businessStore, buStore, slotService, imageLinkStore),
 		adminHandler:     NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, appointmentStore, slotService, nil, nil, pool),
 		appointmentStore: appointmentStore,
 		businessStore:    businessStore,
