@@ -198,7 +198,8 @@ func (s *AppointmentStore) Cancel(ctx context.Context, id uuid.UUID, customerUse
 		Update("appointments").
 		Set("status", string(models.AppointmentStatusCancelled)).
 		Set("cancellation_reason", reason).
-		Where(sq.Eq{"id": id, "customer_user_id": customerUserID, "status": string(models.AppointmentStatusConfirmed)}).
+		Where(sq.Eq{"id": id, "customer_user_id": customerUserID}).
+		Where(sq.Eq{"status": []string{string(models.AppointmentStatusPending), string(models.AppointmentStatusConfirmed)}}).
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("failed to build query: %w", err)

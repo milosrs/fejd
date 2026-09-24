@@ -171,14 +171,16 @@ export function MyAppointmentsList({
             <p className="mt-2 text-sm text-muted-foreground">
               {format(new Date(cancelTarget.start_time), "EEEE, MMMM d 'at' h:mm a")}
             </p>
-            <div className="mt-4 space-y-1">
-              <Label>{t("appointments.reasonLabel")}</Label>
-              <Textarea
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-                placeholder={t("appointments.reasonPlaceholder")}
-              />
-            </div>
+            {cancelTarget.status === "confirmed" && (
+              <div className="mt-4 space-y-1">
+                <Label>{t("appointments.reasonLabel")}</Label>
+                <Textarea
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                  placeholder={t("appointments.reasonPlaceholder")}
+                />
+              </div>
+            )}
             <div className="mt-6 flex justify-end gap-2">
               <Button variant="outline" onClick={() => setCancelTarget(null)}>
                 {t("common.back")}

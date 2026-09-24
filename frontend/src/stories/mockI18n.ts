@@ -287,6 +287,7 @@ export const mockI18nEn: Record<string, string> = {
   "reservations.reservedTime": "Reserved time",
   "reservations.cancelReservation": "Cancel reservation",
   "reservations.reasonRequired": "Reason (required)",
+  "reservations.reasonOptional": "Reason (optional)",
   "reservations.cancelPlaceholder": "Why are you cancelling?",
   "reservations.cancelling": "Cancelling…",
   "reservations.rejectPlaceholder": "Why are you rejecting this?",

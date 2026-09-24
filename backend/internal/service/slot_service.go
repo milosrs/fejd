@@ -688,6 +688,10 @@ func mapAppointmentError(err error) error {
 // ErrForbidden is returned when the caller is not allowed to perform an action.
 var ErrForbidden = errors.New("not allowed to perform this action")
 
+// ErrReasonRequired is returned when a non-owner rejects an appointment without
+// a reason. Owners may decline without one.
+var ErrReasonRequired = errors.New("reason is required")
+
 // AcceptAppointment acknowledges a pending customer appointment. The
 // appointment's provider or the business owner may accept it.
 func (s *SlotService) AcceptAppointment(ctx context.Context, businessID uuid.UUID, callerUserID string, appointmentID uuid.UUID) error {
@@ -768,6 +772,12 @@ func (s *SlotService) RejectAppointment(ctx context.Context, businessID uuid.UUI
 
 	if caller.ID != appt.BusinessUserID && caller.Role != "admin" {
 		return ErrForbidden
+	}
+
+	// Employees must provide a reason when declining; the owner may decline
+	// without one.
+	if reason == "" && caller.Role != "admin" {
+		return ErrReasonRequired
 	}
 
 	if err := db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {

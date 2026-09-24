@@ -33,6 +33,7 @@ type cancelTestEnv struct {
 	policyApptID     uuid.UUID
 	pastApptID       uuid.UUID
 	recentApptID     uuid.UUID
+	pendingApptID    uuid.UUID
 }
 
 func newCancelTestEnv(t *testing.T) *cancelTestEnv {
@@ -88,6 +89,13 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 	pastApptID := insertAppt("customer-4", time.Now().UTC().Add(-3*time.Hour))
 	recentApptID := insertAppt("customer-5", time.Now().UTC().Add(-1*time.Hour))
 
+	pendingApptID := uuid.New()
+	_, err = pool.Exec(ctx,
+		`INSERT INTO appointments (id, business_id, service_id, business_user_id, customer_user_id, start_time, end_time, status, created_by)
+		 VALUES ($1, $2, $3, $4, $5, $6, $7, 'pending', $5)`,
+		pendingApptID, b.ID, svc.ID, emp1.ID, "customer-6", time.Now().UTC().Add(10*time.Hour), time.Now().UTC().Add(10*time.Hour).Add(30*time.Minute))
+	require.NoError(t, err)
+
 	return &cancelTestEnv{
 		apptHandler:      NewAppointmentHandler(appointmentStore, serviceStore, businessStore, buStore, slotService, imageLinkStore),
 		adminHandler:     NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, appointmentStore, slotService, nil, nil, pool),
@@ -101,6 +109,7 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 		policyApptID:     policyApptID,
 		pastApptID:       pastApptID,
 		recentApptID:     recentApptID,
+		pendingApptID:    pendingApptID,
 	}
 }
 
@@ -261,4 +270,58 @@ func TestAdminHandler_MarkNoShowOthers(t *testing.T) {
 	appt, err := env.appointmentStore.GetByID(context.Background(), env.pastApptID)
 	require.NoError(t, err)
 	assert.Equal(t, models.AppointmentStatusConfirmed, appt.Status)
+}
+
+func TestAppointmentHandler_CancelPendingWithoutReason(t *testing.T) {
+	env := newCancelTestEnv(t)
+
+	req := customerCancelReq(env.pendingApptID, "customer-6", `{}`)
+	rr := httptest.NewRecorder()
+	env.apptHandler.Cancel(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	appt, err := env.appointmentStore.GetByID(context.Background(), env.pendingApptID)
+	require.NoError(t, err)
+	assert.Equal(t, models.AppointmentStatusCancelled, appt.Status)
+	assert.Empty(t, appt.CancellationReason)
+}
+
+func rejectReq(businessID, appointmentID uuid.UUID, userID, body string) *http.Request {
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/admin/business/"+businessID.String()+"/appointments/"+appointmentID.String()+"/reject",
+		bytes.NewBufferString(body),
+	)
+	req = withPathParams(req, map[string]string{"businessID": businessID.String(), "appointmentID": appointmentID.String()})
+	return withUser(req, userID, "approved")
+}
+
+func TestAdminHandler_RejectAppointment_EmployeeRequiresReason(t *testing.T) {
+	env := newCancelTestEnv(t)
+
+	req := rejectReq(env.businessID, env.pendingApptID, "emp-1", `{"reason":""}`)
+	rr := httptest.NewRecorder()
+	env.adminHandler.RejectAppointment(rr, req)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+
+	appt, err := env.appointmentStore.GetByID(context.Background(), env.pendingApptID)
+	require.NoError(t, err)
+	assert.Equal(t, models.AppointmentStatusPending, appt.Status)
+}
+
+func TestAdminHandler_RejectAppointment_OwnerReasonOptional(t *testing.T) {
+	env := newCancelTestEnv(t)
+
+	req := rejectReq(env.businessID, env.pendingApptID, "owner-1", `{"reason":""}`)
+	rr := httptest.NewRecorder()
+	env.adminHandler.RejectAppointment(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	appt, err := env.appointmentStore.GetByID(context.Background(), env.pendingApptID)
+	require.NoError(t, err)
+	assert.Equal(t, models.AppointmentStatusCancelled, appt.Status)
+	assert.Empty(t, appt.CancellationReason)
 }

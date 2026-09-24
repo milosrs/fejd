@@ -189,7 +189,9 @@ export function MyReservationsPage() {
   }
 
   const handleReject = async () => {
-    if (!rejectTarget || !rejectReason.trim()) return
+    if (!rejectTarget) return
+    const reasonRequired = !isOwner || rejectTarget.kind !== "appointment"
+    if (reasonRequired && !rejectReason.trim()) return
     setRejecting(true)
     setMessage("")
     try {
@@ -613,7 +615,11 @@ export function MyReservationsPage() {
             <h3 className="text-lg font-semibold text-foreground">{t("reservations.reject")}</h3>
             <p className="mt-2 text-sm text-muted-foreground">{rejectTarget.label}</p>
             <div className="mt-4 space-y-1">
-              <Label>{t("reservations.reasonRequired")}</Label>
+              <Label>
+                {rejectTarget.kind === "appointment" && isOwner
+                  ? t("reservations.reasonOptional")
+                  : t("reservations.reasonRequired")}
+              </Label>
               <Textarea
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
@@ -627,7 +633,10 @@ export function MyReservationsPage() {
               <Button
                 variant="destructive"
                 onClick={handleReject}
-                isDisabled={rejecting || !rejectReason.trim()}
+                isDisabled={
+                  rejecting ||
+                  (!(rejectTarget.kind === "appointment" && isOwner) && !rejectReason.trim())
+                }
               >
                 {rejecting ? t("reservations.rejecting") : t("reservations.reject")}
               </Button>

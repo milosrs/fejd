@@ -1089,14 +1089,14 @@ func (h *AdminHandler) RejectAppointment(w http.ResponseWriter, r *http.Request)
 	}
 
 	reason := strings.TrimSpace(body.Reason)
-	if reason == "" {
-		writeError(w, http.StatusBadRequest, "reason is required")
-		return
-	}
 
 	if err := h.slotService.RejectAppointment(r.Context(), businessID, userID, appointmentID, reason); err != nil {
 		if errors.Is(err, service.ErrForbidden) {
 			writeError(w, http.StatusForbidden, "not allowed to reject this appointment")
+			return
+		}
+		if errors.Is(err, service.ErrReasonRequired) {
+			writeError(w, http.StatusBadRequest, "reason is required")
 			return
 		}
 		if errors.Is(err, service.ErrAppointmentNotFound) {
