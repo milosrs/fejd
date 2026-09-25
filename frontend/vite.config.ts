@@ -40,19 +40,23 @@ if (!isStorybook) {
       }]
     },
     workbox: {
-      globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-      runtimeCaching: [{
-        urlPattern: /^https?:\/\/.*\/api\/.*/i,
-        handler: 'NetworkFirst',
-        options: {
-          cacheName: 'api-cache',
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 300
-          }
-        }
-      }]
-    }
+      globPatterns: ['**/*.{js,css,svg,png,woff2}'],
+      runtimeCaching: [
+        {
+          urlPattern: /^https?:.*\/api\/.*$/i,
+          handler: 'NetworkFirst',
+          method: 'GET',
+          options: {
+            networkTimeoutSeconds: 10,
+            cacheName: 'api-cache',
+            expiration: {
+              maxEntries: 20,
+              maxAgeSeconds: 300,
+            },
+          },
+        },
+      ],
+    },
   }));
 }
 export default defineConfig({
@@ -74,11 +78,11 @@ export default defineConfig({
     projects: [{
       extends: true,
       plugins: [
-      // The plugin will run tests for the stories defined in your Storybook config
-      // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
-      storybookTest({
-        configDir: path.join(dirname, '.storybook')
-      })],
+        // The plugin will run tests for the stories defined in your Storybook config
+        // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
+        storybookTest({
+          configDir: path.join(dirname, '.storybook')
+        })],
       test: {
         name: 'storybook',
         browser: {
