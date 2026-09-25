@@ -42,7 +42,7 @@ services:
     environment:
       PORT: "8080"
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
-      KEYCLOAK_URL: http://keycloak:8080
+      KEYCLOAK_URL: http://auth.fejd.fyi
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-fejd}
       KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-https://auth.fejd.fyi/realms/fejd}
       KEYCLOAK_CLIENT_ID: fejd-backend
