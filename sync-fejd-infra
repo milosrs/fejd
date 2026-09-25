@@ -68,5 +68,9 @@ rsync -a \
     "$FEJD_DIR/keycloak/startup.production.sh" \
     "$DEST/keycloak/startup.production.sh"
 
+rsync -a \
+    "$FEJD_DIR/keycloak/apply-realm-config.sh" \
+    "$DEST/keycloak/apply-realm-config.sh"
+
 echo "==> Done. Review the diff in fejd-infra, commit it, then run:"
 echo "    cd $FEJD_INFRA_DIR && ansible-playbook -i ansible/inventory/production.ini ansible/playbooks/deploy.yml --ask-vault-pass"

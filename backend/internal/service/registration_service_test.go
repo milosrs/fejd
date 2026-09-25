@@ -25,19 +25,44 @@ func (r *recordingRoleManager) UpdateUserAttributes(ctx context.Context, userID 
 }
 
 func TestRegistrationService_ClaimRegistrationRole(t *testing.T) {
-	for _, role := range []string{"Customer", "Employee", "Owner"} {
-		t.Run(role, func(t *testing.T) {
-			m := &recordingRoleManager{}
-			s := NewRegistrationService(m)
+	t.Run("Customer is approved automatically", func(t *testing.T) {
+		m := &recordingRoleManager{}
+		s := NewRegistrationService(m)
 
-			require.NoError(t, s.ClaimRegistrationRole(context.Background(), "user-1", role))
+		require.NoError(t, s.ClaimRegistrationRole(context.Background(), "user-1", "Customer"))
 
-			assert.Equal(t, []string{role}, m.roles)
-			require.Len(t, m.attrs, 1)
-			_, cleared := m.attrs[0]["registration_role"]
-			assert.True(t, cleared)
-		})
-	}
+		assert.Equal(t, []string{"Customer"}, m.roles)
+		require.Len(t, m.attrs, 1)
+		assert.Equal(t, []string{"approved"}, m.attrs[0]["approval_status"])
+		_, cleared := m.attrs[0]["registration_role"]
+		assert.True(t, cleared)
+	})
+
+	t.Run("Employee is approved automatically", func(t *testing.T) {
+		m := &recordingRoleManager{}
+		s := NewRegistrationService(m)
+
+		require.NoError(t, s.ClaimRegistrationRole(context.Background(), "user-1", "Employee"))
+
+		assert.Equal(t, []string{"Employee"}, m.roles)
+		require.Len(t, m.attrs, 1)
+		assert.Equal(t, []string{"approved"}, m.attrs[0]["approval_status"])
+		_, cleared := m.attrs[0]["registration_role"]
+		assert.True(t, cleared)
+	})
+
+	t.Run("Owner stays pending for admin verification", func(t *testing.T) {
+		m := &recordingRoleManager{}
+		s := NewRegistrationService(m)
+
+		require.NoError(t, s.ClaimRegistrationRole(context.Background(), "user-1", "Owner"))
+
+		assert.Equal(t, []string{"Owner"}, m.roles)
+		require.Len(t, m.attrs, 1)
+		assert.NotContains(t, m.attrs[0], "approval_status")
+		_, cleared := m.attrs[0]["registration_role"]
+		assert.True(t, cleared)
+	})
 }
 
 func TestRegistrationService_ClaimRegistrationRole_RejectsInvalid(t *testing.T) {

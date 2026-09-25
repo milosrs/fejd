@@ -36,8 +36,9 @@ func NewRegistrationService(users RegistrationRoleManager) *RegistrationService 
 
 // ClaimRegistrationRole grants the realm role recorded at registration and
 // clears the registration_role attribute so it disappears from future tokens.
-// It is idempotent. role must be Customer, Employee, or Owner; any other value
-// is rejected.
+// Customers and employees are approved automatically; owners stay pending so
+// an admin must verify them. It is idempotent. role must be Customer, Employee,
+// or Owner; any other value is rejected.
 func (s *RegistrationService) ClaimRegistrationRole(ctx context.Context, userID, role string) error {
 	if _, ok := validRegistrationRoles[role]; !ok {
 		return fmt.Errorf("invalid registration role: %s", role)
@@ -47,8 +48,13 @@ func (s *RegistrationService) ClaimRegistrationRole(ctx context.Context, userID,
 		return fmt.Errorf("failed to grant %s role: %w", role, err)
 	}
 
-	if err := s.users.UpdateUserAttributes(ctx, userID, map[string][]string{"registration_role": {}}); err != nil {
-		return fmt.Errorf("failed to clear registration role: %w", err)
+	attrs := map[string][]string{"registration_role": {}}
+	if role != "Owner" {
+		attrs["approval_status"] = []string{"approved"}
+	}
+
+	if err := s.users.UpdateUserAttributes(ctx, userID, attrs); err != nil {
+		return fmt.Errorf("failed to finalize registration: %w", err)
 	}
 
 	return nil
