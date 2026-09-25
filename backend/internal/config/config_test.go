@@ -62,8 +62,17 @@ func TestLoadKeycloakDefaults(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "http://localhost:9090", cfg.Keycloak.AdminURL)
 	assert.Equal(t, "fejd", cfg.Keycloak.Realm)
+	assert.Empty(t, cfg.Keycloak.IssuerURL)
 	assert.Equal(t, []string{"salon-mobile", "fejd-frontend"}, cfg.Keycloak.Audiences)
 	assert.Equal(t, "fejd-admin", cfg.Keycloak.AdminClientID)
+}
+
+func TestLoadKeycloakIssuerURL(t *testing.T) {
+	t.Setenv("KEYCLOAK_ISSUER_URL", "https://auth.fejd.fyi/realms/fejd")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.Equal(t, "https://auth.fejd.fyi/realms/fejd", cfg.Keycloak.IssuerURL)
 }
 
 func TestLoadKeycloakAudiencesParsing(t *testing.T) {

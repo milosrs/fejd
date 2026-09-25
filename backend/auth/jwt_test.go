@@ -7,6 +7,25 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestIssuer(t *testing.T) {
+	cases := []struct {
+		name     string
+		realmURL string
+		issuer   string
+		want     string
+	}{
+		{"fallback to realm URL", "http://keycloak:8080/realms/fejd", "", "http://keycloak:8080/realms/fejd"},
+		{"explicit issuer wins", "http://keycloak:8080/realms/fejd", "https://auth.fejd.fyi/realms/fejd", "https://auth.fejd.fyi/realms/fejd"},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			k := &JWKSClient{config: KeycloakConfig{RealmURL: tc.realmURL, IssuerURL: tc.issuer}}
+			assert.Equal(t, tc.want, k.issuer())
+		})
+	}
+}
+
 func TestAudienceAllowed(t *testing.T) {
 	cases := []struct {
 		name    string

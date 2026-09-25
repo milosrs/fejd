@@ -44,6 +44,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL in .env.production}
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM:-fejd}
+      KEYCLOAK_ISSUER_URL: ${KEYCLOAK_ISSUER_URL:-https://auth.fejd.fyi/realms/fejd}
       KEYCLOAK_CLIENT_ID: fejd-backend
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET in .env.production}
       KEYCLOAK_AUDIENCES: ${KEYCLOAK_AUDIENCES:-salon-mobile,fejd-frontend}

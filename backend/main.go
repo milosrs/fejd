@@ -57,6 +57,7 @@ func main() {
 
 	keycloakConfig := auth.KeycloakConfig{
 		RealmURL:  fmt.Sprintf("%s/realms/%s", cfg.Keycloak.AdminURL, cfg.Keycloak.Realm),
+		IssuerURL: cfg.Keycloak.IssuerURL,
 		Audiences: cfg.Keycloak.Audiences,
 	}
 

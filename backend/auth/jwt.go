@@ -17,15 +17,15 @@ import (
 
 type Claims struct {
 	jwt.RegisteredClaims
-	RealmAccess    map[string][]string `json:"realm_access"`
-	ResourceAccess map[string]any      `json:"resource_access"`
-	Email          string              `json:"email"`
-	EmailVerified  bool                `json:"email_verified"`
-	Name           string              `json:"name"`
-	GivenName      string              `json:"given_name"`
-	FamilyName     string              `json:"family_name"`
-	ApprovalStatus string              `json:"approval_status"`
-	RegistrationRole string            `json:"registration_role"`
+	RealmAccess      map[string][]string `json:"realm_access"`
+	ResourceAccess   map[string]any      `json:"resource_access"`
+	Email            string              `json:"email"`
+	EmailVerified    bool                `json:"email_verified"`
+	Name             string              `json:"name"`
+	GivenName        string              `json:"given_name"`
+	FamilyName       string              `json:"family_name"`
+	ApprovalStatus   string              `json:"approval_status"`
+	RegistrationRole string              `json:"registration_role"`
 }
 
 // DisplayName derives a human-readable name from the identity claims, falling
@@ -94,7 +94,10 @@ const (
 )
 
 type KeycloakConfig struct {
-	RealmURL     string
+	RealmURL string
+	// IssuerURL is the expected JWT "iss" claim value. Empty falls back to
+	// RealmURL, which is correct when Keycloak is reached directly (local dev).
+	IssuerURL    string
 	Audiences    []string
 	RequiredRole string
 }
@@ -125,12 +128,22 @@ func NewJWKSClient(config KeycloakConfig) (*JWKSClient, error) {
 	return &JWKSClient{jwks: jwks, config: config}, nil
 }
 
+// issuer returns the expected JWT "iss" claim. When IssuerURL is configured
+// (Keycloak behind a public hostname) it wins; otherwise RealmURL is used,
+// matching tokens minted when Keycloak is reached directly.
+func (k *JWKSClient) issuer() string {
+	if k.config.IssuerURL != "" {
+		return k.config.IssuerURL
+	}
+	return k.config.RealmURL
+}
+
 func (k *JWKSClient) ValidateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(
 		tokenString,
 		&Claims{},
 		k.jwks.Keyfunc,
-		jwt.WithIssuer(k.config.RealmURL),
+		jwt.WithIssuer(k.issuer()),
 		jwt.WithExpirationRequired(),
 	)
 	if err != nil {

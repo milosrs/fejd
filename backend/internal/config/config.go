@@ -50,8 +50,13 @@ type StorageConfig struct {
 
 // KeycloakConfig holds connection and admin settings for Keycloak.
 type KeycloakConfig struct {
-	AdminURL          string
-	Realm             string
+	AdminURL string
+	Realm    string
+	// IssuerURL is the realm issuer used to validate the JWT "iss" claim. It
+	// must match the public hostname Keycloak uses to mint tokens (e.g.
+	// https://auth.fejd.fyi/realms/fejd), which can differ from AdminURL when
+	// Keycloak sits behind a proxy. Empty falls back to AdminURL-derived URL.
+	IssuerURL         string
 	Audiences         []string
 	AdminClientID     string
 	AdminClientSecret string
@@ -128,6 +133,7 @@ func Load() (*Config, error) {
 		Keycloak: KeycloakConfig{
 			AdminURL:          getEnv("KEYCLOAK_URL", "http://localhost:9090"),
 			Realm:             getEnv("KEYCLOAK_REALM", "fejd"),
+			IssuerURL:         getEnv("KEYCLOAK_ISSUER_URL", ""),
 			Audiences:         splitCSV(getEnv("KEYCLOAK_AUDIENCES", "salon-mobile,fejd-frontend")),
 			AdminClientID:     getEnv("KEYCLOAK_ADMIN_CLIENT_ID", "fejd-admin"),
 			AdminClientSecret: getEnv("KEYCLOAK_ADMIN_CLIENT_SECRET", ""),
