@@ -9,7 +9,11 @@ fejd.fyi {
 }
 
 auth.fejd.fyi {
-    reverse_proxy keycloak:8080
+    reverse_proxy keycloak:8080 {
+        header_up X-Forwarded-Proto https
+        header_up X-Forwarded-For {remote_host}
+        header_up X-Forwarded-Host {host}
+    }
 }
 
 www.fejd.fyi {

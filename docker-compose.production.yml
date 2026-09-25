@@ -121,15 +121,15 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env.production}
       FEJD_ADMIN_CLIENT_SECRET: ${FEJD_ADMIN_CLIENT_SECRET:?Set FEJD_ADMIN_CLIENT_SECRET in .env.production}
       FEJD_BACKEND_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET in .env.production}
+      KC_PROXY_HEADERS: x-forwarded-for
+      KC_HTTP_ENABLED: "false"
+      KC_HOSTNAME: https://auth.fejd.fyi
+      KC_HTTP_MANAGEMENT_PORT: "9000"
+      KC_HEALTH_ENABLED: "true"
       SMTP_HOST: smtp
       SMTP_PORT: "25"
       SMTP_FROM: ${SMTP_FROM:?Set SMTP_FROM in .env.production}
       FEJD_APP_URL: https://fejd.fyi
-      KC_HOSTNAME: https://auth.fejd.fyi
-      KC_PROXY_HEADERS: xforwarded
-      KC_HTTP_ENABLED: "true"
-      KC_HTTP_MANAGEMENT_PORT: "9000"
-      KC_HEALTH_ENABLED: "true"
     depends_on:
       postgres:
         condition: service_healthy

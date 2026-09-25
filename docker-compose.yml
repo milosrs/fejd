@@ -83,6 +83,7 @@ services:
       KC_DB_SCHEMA: keycloak
       KC_DB_USERNAME: postgres
       KC_DB_PASSWORD: postgres
+      KC_PROXY_HEADERS: x-forwarded-for
       KEYCLOAK_ADMIN: admin
       KEYCLOAK_ADMIN_PASSWORD: admin
       FEJD_ADMIN_CLIENT_SECRET: H6vKp9sQ2wXrT4yL8mN1cB3dV5fG7jZ0
