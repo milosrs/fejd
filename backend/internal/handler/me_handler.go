@@ -44,11 +44,12 @@ type MeHandler struct {
 	userStore          *store.UserStore
 	businessHoursStore *store.BusinessHoursStore
 	registration       *service.RegistrationService
+	salonDomain        *service.SalonDomainService
 	pool               *pgxpool.Pool
 }
 
-func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUserStore, userStore *store.UserStore, businessHoursStore *store.BusinessHoursStore, registration *service.RegistrationService, pool *pgxpool.Pool) *MeHandler {
-	return &MeHandler{businessStore: businessStore, buStore: buStore, userStore: userStore, businessHoursStore: businessHoursStore, registration: registration, pool: pool}
+func NewMeHandler(businessStore *store.BusinessStore, buStore *store.BusinessUserStore, userStore *store.UserStore, businessHoursStore *store.BusinessHoursStore, registration *service.RegistrationService, salonDomain *service.SalonDomainService, pool *pgxpool.Pool) *MeHandler {
+	return &MeHandler{businessStore: businessStore, buStore: buStore, userStore: userStore, businessHoursStore: businessHoursStore, registration: registration, salonDomain: salonDomain, pool: pool}
 }
 
 // GetMe godoc
@@ -182,6 +183,13 @@ func (h *MeHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {
 	slug, err := availableSlug(r.Context(), h.businessStore, h.pool, name)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to generate slug")
+		return
+	}
+
+	// Register the salon subdomain on Keycloak before creating the business so a
+	// salon is never persisted without a working <slug>.<domain> login.
+	if err := h.salonDomain.RegisterSalon(r.Context(), slug); err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to register salon domain")
 		return
 	}
 

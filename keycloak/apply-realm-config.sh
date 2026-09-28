@@ -79,6 +79,29 @@ for CLIENT in fejd-frontend salon-mobile; do
   fi
 done
 
+echo "==> Granting client-management roles to fejd-admin service account"
+ADMIN_CLIENT_ID="$(curl -sf "$BASE/admin/realms/$REALM/clients?clientId=fejd-admin" "${AUTH[@]}" | jq -r '.[0].id')"
+[ "$ADMIN_CLIENT_ID" != "null" ] || { echo "fejd-admin client not found" >&2; exit 1; }
+SA_USER_ID="$(curl -sf "$BASE/admin/realms/$REALM/clients/$ADMIN_CLIENT_ID/service-account-user" "${AUTH[@]}" | jq -r '.id')"
+[ "$SA_USER_ID" != "null" ] || { echo "fejd-admin service account not found" >&2; exit 1; }
+RM_CLIENT_ID="$(curl -sf "$BASE/admin/realms/$REALM/clients?clientId=realm-management" "${AUTH[@]}" | jq -r '.[0].id')"
+[ "$RM_CLIENT_ID" != "null" ] || { echo "realm-management client not found" >&2; exit 1; }
+
+for ROLE in manage-clients view-clients query-clients; do
+  ROLE_ID="$(curl -sf "$BASE/admin/realms/$REALM/clients/$RM_CLIENT_ID/roles/$ROLE" "${AUTH[@]}" | jq -r '.id')"
+  [ "$ROLE_ID" != "null" ] || { echo "role $ROLE not found" >&2; exit 1; }
+
+  STATUS="$(curl -s -o /dev/null -w '%{http_code}' -X POST \
+    "$BASE/admin/realms/$REALM/users/$SA_USER_ID/role-mappings/clients/$RM_CLIENT_ID" \
+    "${AUTH[@]}" -H "Content-Type: application/json" \
+    -d "[{\"id\":\"$ROLE_ID\",\"name\":\"$ROLE\"}]")"
+  if [ "$STATUS" != "204" ] && [ "$STATUS" != "409" ]; then
+    echo "failed to grant realm-management/$ROLE (HTTP $STATUS)" >&2
+    exit 1
+  fi
+  echo "    + fejd-admin: realm-management/$ROLE"
+done
+
 echo "==> Enabling user profile unmanaged attributes"
 UP_COMPONENT="$(curl -sf "$BASE/admin/realms/$REALM/components?type=org.keycloak.userprofile.UserProfileProvider" "${AUTH[@]}")"
 UP_ID="$(echo "$UP_COMPONENT" | jq -r '.[] | select(.providerId == "declarative-user-profile") | .id' | head -n1)"

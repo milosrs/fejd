@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -26,7 +27,33 @@ func newTestMeHandler(t *testing.T) (*MeHandler, *store.BusinessStore, *store.Bu
 	userStore := store.NewUserStore(pool)
 	businessHoursStore := store.NewBusinessHoursStore(pool)
 	registration := service.NewRegistrationService(&noopInvitationUsers{})
-	return NewMeHandler(businessStore, buStore, userStore, businessHoursStore, registration, pool), businessStore, buStore, pool
+	salonDomain := service.NewSalonDomainService(&noopClientRedirect{}, "")
+	return NewMeHandler(businessStore, buStore, userStore, businessHoursStore, registration, salonDomain, pool), businessStore, buStore, pool
+}
+
+// noopClientRedirect satisfies service.ClientRedirectManager for tests that do
+// not exercise salon domain registration.
+type noopClientRedirect struct{}
+
+func (noopClientRedirect) EnsureClientRedirect(context.Context, string, string, string) error {
+	return nil
+}
+
+// recordingClientRedirect records EnsureClientRedirect calls for assertions.
+type recordingClientRedirect struct {
+	calls []clientRedirectCall
+	err   error
+}
+
+type clientRedirectCall struct {
+	clientID    string
+	redirectURI string
+	webOrigin   string
+}
+
+func (r *recordingClientRedirect) EnsureClientRedirect(_ context.Context, clientID, redirectURI, webOrigin string) error {
+	r.calls = append(r.calls, clientRedirectCall{clientID: clientID, redirectURI: redirectURI, webOrigin: webOrigin})
+	return r.err
 }
 
 func withUser(r *http.Request, userID, approvalStatus string) *http.Request {
@@ -124,7 +151,7 @@ func TestMeHandler_ClaimRole_GrantsRole(t *testing.T) {
 	userStore := store.NewUserStore(pool)
 	businessHoursStore := store.NewBusinessHoursStore(pool)
 	users := &recordingUsers{}
-	h := NewMeHandler(businessStore, buStore, userStore, businessHoursStore, service.NewRegistrationService(users), pool)
+	h := NewMeHandler(businessStore, buStore, userStore, businessHoursStore, service.NewRegistrationService(users), service.NewSalonDomainService(&noopClientRedirect{}, ""), pool)
 
 	req := httptest.NewRequest(http.MethodPost, "/api/me/claim-role", nil)
 	ctx := context.WithValue(req.Context(), auth.ContextKeyUserID, "user-1")
@@ -327,4 +354,47 @@ func TestMeHandler_CreateBusiness_ReservedSlug(t *testing.T) {
 	var b dto.Business
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &b))
 	assert.Equal(t, "www-2", b.Slug)
+}
+
+func TestMeHandler_CreateBusiness_RegistersSalonDomain(t *testing.T) {
+	pool := setupHandlerTestDB(t)
+	businessStore := store.NewBusinessStore(pool)
+	buStore := store.NewBusinessUserStore(pool)
+	userStore := store.NewUserStore(pool)
+	businessHoursStore := store.NewBusinessHoursStore(pool)
+	clients := &recordingClientRedirect{}
+	h := NewMeHandler(businessStore, buStore, userStore, businessHoursStore, service.NewRegistrationService(&noopInvitationUsers{}), service.NewSalonDomainService(clients, "fejd.fyi"), pool)
+
+	body := `{"name":"My Salon"}`
+	req := withRoles(withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "user-1", "approved"), auth.RoleOwner)
+	rr := httptest.NewRecorder()
+
+	h.CreateBusiness(rr, req)
+
+	require.Equal(t, http.StatusCreated, rr.Code)
+	var b dto.Business
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &b))
+	assert.Equal(t, "my-salon", b.Slug)
+	require.Len(t, clients.calls, 1)
+	assert.Equal(t, "fejd-frontend", clients.calls[0].clientID)
+	assert.Equal(t, "https://my-salon.fejd.fyi/*", clients.calls[0].redirectURI)
+	assert.Equal(t, "https://my-salon.fejd.fyi", clients.calls[0].webOrigin)
+}
+
+func TestMeHandler_CreateBusiness_DomainRegistrationFails(t *testing.T) {
+	pool := setupHandlerTestDB(t)
+	businessStore := store.NewBusinessStore(pool)
+	buStore := store.NewBusinessUserStore(pool)
+	userStore := store.NewUserStore(pool)
+	businessHoursStore := store.NewBusinessHoursStore(pool)
+	clients := &recordingClientRedirect{err: errors.New("keycloak admin unavailable")}
+	h := NewMeHandler(businessStore, buStore, userStore, businessHoursStore, service.NewRegistrationService(&noopInvitationUsers{}), service.NewSalonDomainService(clients, "fejd.fyi"), pool)
+
+	body := `{"name":"My Salon"}`
+	req := withRoles(withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "user-1", "approved"), auth.RoleOwner)
+	rr := httptest.NewRecorder()
+
+	h.CreateBusiness(rr, req)
+
+	require.Equal(t, http.StatusInternalServerError, rr.Code)
 }

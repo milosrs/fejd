@@ -130,7 +130,9 @@ func main() {
 
 	imageHandler := handler.NewImageHandler(imageService, serviceStore, buStore)
 
-	meHandler := handler.NewMeHandler(businessStore, buStore, userStore, businessHoursStore, service.NewRegistrationService(keycloakAdmin), pool)
+	salonDomainService := service.NewSalonDomainService(keycloakAdmin, cfg.AppDomain)
+
+	meHandler := handler.NewMeHandler(businessStore, buStore, userStore, businessHoursStore, service.NewRegistrationService(keycloakAdmin), salonDomainService, pool)
 
 	i18nHandler := handler.NewI18nHandler(translationStore)
 

@@ -2761,8 +2761,11 @@
       "serviceAccountClientId": "fejd-admin",
       "clientRoles": {
         "realm-management": [
+          "manage-clients",
           "manage-users",
+          "query-clients",
           "query-users",
+          "view-clients",
           "view-users"
         ]
       }
