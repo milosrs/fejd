@@ -21,13 +21,13 @@ func NewBusinessClosureStore(pool *pgxpool.Pool) *BusinessClosureStore {
 	return &BusinessClosureStore{pool: pool}
 }
 
-// ListByBusiness returns every closure for a business ordered by date.
+// ListByBusiness returns every non-working-day rule for a business.
 func (s *BusinessClosureStore) ListByBusiness(ctx context.Context, businessID uuid.UUID) ([]models.BusinessClosure, error) {
 	sql, args, err := psql.
-		Select("id", "business_id", "closure_date::text", "COALESCE(reason, '')").
+		Select("id", "business_id", "closure_type", "start_date::text", "end_date::text", "day_of_week", "month", "day", "COALESCE(reason, '')").
 		From("business_closures").
 		Where(sq.Eq{"business_id": businessID}).
-		OrderBy("closure_date").
+		OrderBy("closure_type", "start_date", "day_of_week", "month", "day").
 		ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
@@ -50,7 +50,7 @@ func (s *BusinessClosureStore) ListByBusiness(ctx context.Context, businessID uu
 	return closures, nil
 }
 
-// ReplaceByBusiness atomically replaces the salon's non-working days.
+// ReplaceByBusiness atomically replaces the salon's non-working-day rules.
 func (s *BusinessClosureStore) ReplaceByBusiness(ctx context.Context, businessID uuid.UUID, closures []models.BusinessClosure) error {
 	return db.WithTx(ctx, s.pool, func(tx pgx.Tx) error {
 		delSQL, delArgs, err := psql.
@@ -67,8 +67,8 @@ func (s *BusinessClosureStore) ReplaceByBusiness(ctx context.Context, businessID
 		for _, c := range closures {
 			insSQL, insArgs, err := psql.
 				Insert("business_closures").
-				Columns("business_id", "closure_date", "reason").
-				Values(businessID, c.ClosureDate.Format(time.DateOnly), nullableString(c.Reason)).
+				Columns("business_id", "closure_type", "start_date", "end_date", "day_of_week", "month", "day", "reason").
+				Values(businessID, c.ClosureType, nullableDate(c.StartDate), nullableDate(c.EndDate), c.DayOfWeek, c.Month, c.Day, nullableString(c.Reason)).
 				ToSql()
 			if err != nil {
 				return fmt.Errorf("failed to build insert query: %w", err)
@@ -82,12 +82,24 @@ func (s *BusinessClosureStore) ReplaceByBusiness(ctx context.Context, businessID
 	})
 }
 
-// IsClosed reports whether the business is closed on the given date.
+// IsClosed reports whether the business is closed on the given date according
+// to any of its non-working-day rules.
 func (s *BusinessClosureStore) IsClosed(ctx context.Context, businessID uuid.UUID, date time.Time) (bool, error) {
+	dateStr := date.Format(time.DateOnly)
+	weekday := int(date.Weekday())
+	month := int(date.Month())
+	day := date.Day()
+
 	sql, args, err := psql.
 		Select("1").
 		From("business_closures").
-		Where(sq.Eq{"business_id": businessID, "closure_date": date.Format(time.DateOnly)}).
+		Where(sq.Eq{"business_id": businessID}).
+		Where(sq.Or{
+			sq.And{sq.Eq{"closure_type": "single"}, sq.Eq{"start_date": dateStr}},
+			sq.And{sq.Eq{"closure_type": "range"}, sq.LtOrEq{"start_date": dateStr}, sq.GtOrEq{"end_date": dateStr}},
+			sq.And{sq.Eq{"closure_type": "weekly"}, sq.Eq{"day_of_week": weekday}},
+			sq.And{sq.Eq{"closure_type": "yearly"}, sq.Eq{"month": month}, sq.Eq{"day": day}},
+		}).
 		Prefix("SELECT EXISTS (").
 		Suffix(")").
 		ToSql()
@@ -104,14 +116,31 @@ func (s *BusinessClosureStore) IsClosed(ctx context.Context, businessID uuid.UUI
 
 func scanClosure(row rowScanner) (*models.BusinessClosure, error) {
 	var c models.BusinessClosure
-	var dateStr string
-	if err := row.Scan(&c.ID, &c.BusinessID, &dateStr, &c.Reason); err != nil {
+	var startStr, endStr *string
+	if err := row.Scan(&c.ID, &c.BusinessID, &c.ClosureType, &startStr, &endStr, &c.DayOfWeek, &c.Month, &c.Day, &c.Reason); err != nil {
 		return nil, fmt.Errorf("closure not found: %w", err)
 	}
 
-	var err error
-	if c.ClosureDate, err = time.Parse(time.DateOnly, dateStr); err != nil {
-		return nil, fmt.Errorf("failed to parse closure date: %w", err)
+	if startStr != nil {
+		t, err := time.Parse(time.DateOnly, *startStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse closure start date: %w", err)
+		}
+		c.StartDate = &t
+	}
+	if endStr != nil {
+		t, err := time.Parse(time.DateOnly, *endStr)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse closure end date: %w", err)
+		}
+		c.EndDate = &t
 	}
 	return &c, nil
+}
+
+func nullableDate(t *time.Time) any {
+	if t == nil {
+		return nil
+	}
+	return t.Format(time.DateOnly)
 }

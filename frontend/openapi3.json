@@ -4665,20 +4665,35 @@
                 "type": "object",
                 "required": [
                     "business_id",
-                    "closure_date",
-                    "id"
+                    "id",
+                    "type"
                 ],
                 "properties": {
                     "business_id": {
                         "type": "string"
                     },
-                    "closure_date": {
+                    "day": {
+                        "type": "integer"
+                    },
+                    "day_of_week": {
+                        "type": "integer"
+                    },
+                    "end_date": {
                         "type": "string"
                     },
                     "id": {
                         "type": "string"
                     },
+                    "month": {
+                        "type": "integer"
+                    },
                     "reason": {
+                        "type": "string"
+                    },
+                    "start_date": {
+                        "type": "string"
+                    },
+                    "type": {
                         "type": "string"
                     }
                 }
@@ -5089,16 +5104,36 @@
             "handler.BusinessClosureInput": {
                 "type": "object",
                 "required": [
-                    "closure_date"
+                    "type"
                 ],
                 "properties": {
-                    "closure_date": {
+                    "day": {
+                        "type": "integer",
+                        "example": 25
+                    },
+                    "day_of_week": {
+                        "type": "integer",
+                        "example": 6
+                    },
+                    "end_date": {
                         "type": "string",
-                        "example": "2024-12-25"
+                        "example": "2024-12-31"
+                    },
+                    "month": {
+                        "type": "integer",
+                        "example": 12
                     },
                     "reason": {
                         "type": "string",
                         "example": "Christmas"
+                    },
+                    "start_date": {
+                        "type": "string",
+                        "example": "2024-12-25"
+                    },
+                    "type": {
+                        "type": "string",
+                        "example": "single"
                     }
                 }
             },

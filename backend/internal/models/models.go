@@ -116,12 +116,32 @@ type WorkingHoursOverride struct {
 	Reason         string
 }
 
-// BusinessClosure marks a whole salon day as closed (a non-working day), so no
-// appointments are offered for any employee on that UTC date.
+// BusinessClosureType discriminates the kinds of salon non-working-day rules.
+type BusinessClosureType string
+
+const (
+	BusinessClosureSingle BusinessClosureType = "single"
+	BusinessClosureRange  BusinessClosureType = "range"
+	BusinessClosureWeekly BusinessClosureType = "weekly"
+	BusinessClosureYearly BusinessClosureType = "yearly"
+)
+
+// BusinessClosure marks when the salon is closed (a non-working-day rule), so
+// no appointments are offered for any employee on matching days. Exactly one
+// set of fields is populated per ClosureType:
+//   - single: StartDate
+//   - range:  StartDate + EndDate
+//   - weekly: DayOfWeek (0=Sun .. 6=Sat)
+//   - yearly: Month + Day
 type BusinessClosure struct {
 	ID          uuid.UUID
 	BusinessID  uuid.UUID
-	ClosureDate time.Time
+	ClosureType BusinessClosureType
+	StartDate   *time.Time
+	EndDate     *time.Time
+	DayOfWeek   *int
+	Month       *int
+	Day         *int
 	Reason      string
 }
 

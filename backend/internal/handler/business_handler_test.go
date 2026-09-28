@@ -174,7 +174,12 @@ func TestBusinessHandler_GetClosures(t *testing.T) {
 	require.NoError(t, businessStore.Create(ctx, pool, b))
 
 	_, err := pool.Exec(ctx,
-		`INSERT INTO business_closures (business_id, closure_date, reason) VALUES ($1, '2026-12-25', 'Christmas'), ($1, '2027-01-01', '')`,
+		`INSERT INTO business_closures (business_id, closure_type, start_date, reason) VALUES ($1, 'single', '2026-12-25', 'Christmas')`,
+		b.ID,
+	)
+	require.NoError(t, err)
+	_, err = pool.Exec(ctx,
+		`INSERT INTO business_closures (business_id, closure_type, day_of_week) VALUES ($1, 'weekly', 6)`,
 		b.ID,
 	)
 	require.NoError(t, err)
@@ -188,10 +193,12 @@ func TestBusinessHandler_GetClosures(t *testing.T) {
 	var closures []dto.BusinessClosure
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &closures))
 	require.Len(t, closures, 2)
-	assert.Equal(t, "2026-12-25", closures[0].ClosureDate)
+	assert.Equal(t, "single", closures[0].Type)
+	assert.Equal(t, "2026-12-25", closures[0].StartDate)
 	assert.Equal(t, "Christmas", closures[0].Reason)
-	assert.Equal(t, "2027-01-01", closures[1].ClosureDate)
-	assert.Empty(t, closures[1].Reason)
+	assert.Equal(t, "weekly", closures[1].Type)
+	require.NotNil(t, closures[1].DayOfWeek)
+	assert.Equal(t, 6, *closures[1].DayOfWeek)
 }
 
 func TestBusinessHandler_GetClosures_Empty(t *testing.T) {

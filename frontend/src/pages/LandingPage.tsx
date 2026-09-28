@@ -11,6 +11,7 @@ import { uploadBusinessImage } from "../hooks/useApi"
 import { dataUrlToFile, fileToDataUrl } from "../lib/images"
 import { useSalonDraftStore, type DraftImagePurpose } from "../stores/salonDraftStore"
 import { Button } from "../components/ui/button"
+import { ConfirmDialog } from "../components/ui/confirm-dialog"
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react"
 
 function AddSectionPicker({ onPick }: { onPick: (type: string) => void }) {
@@ -81,6 +82,7 @@ export function LandingPage() {
   const queryClient = useQueryClient()
 
   const [editingSection, setEditingSection] = useState<Section | null>(null)
+  const [deletingSection, setDeletingSection] = useState<Section | null>(null)
   const [showAddPicker, setShowAddPicker] = useState(false)
   const [saving, setSaving] = useState(false)
 
@@ -142,10 +144,13 @@ export function LandingPage() {
     }
   }
 
-  const handleDelete = () => {
-    if (!editingSection || isNew) return
-    remove.mutate(editingSection.id)
-    setEditingSection(null)
+  const confirmDelete = () => {
+    if (!deletingSection) return
+    remove.mutate(deletingSection.id)
+    if (editingSection?.id === deletingSection.id) {
+      setEditingSection(null)
+    }
+    setDeletingSection(null)
   }
 
   const closeEditor = () => {
@@ -211,7 +216,7 @@ export function LandingPage() {
                     variant="ghost"
                     size="icon-xs"
                     className="text-destructive"
-                    onClick={() => remove.mutate(section.id)}
+                    onClick={() => setDeletingSection(section)}
                   >
                     <Trash2 />
                   </Button>
@@ -240,11 +245,29 @@ export function LandingPage() {
           section={editingSection}
           onClose={closeEditor}
           onSave={handleSave}
-          onDelete={isNew ? undefined : handleDelete}
+          onDelete={isNew ? undefined : () => setDeletingSection(editingSection)}
           saving={saving}
           onUploadImage={handleUploadImage}
         />
       )}
+
+      <ConfirmDialog
+        open={deletingSection != null}
+        title={t("landing.deleteSection")}
+        description={
+          deletingSection
+            ? t("common.deleteConfirm", {
+                name: isSectionType(deletingSection.type)
+                  ? t(`sections.${deletingSection.type}`)
+                  : deletingSection.type,
+              })
+            : undefined
+        }
+        confirmLabel={t("common.yes")}
+        cancelLabel={t("common.no")}
+        onConfirm={confirmDelete}
+        onCancel={() => setDeletingSection(null)}
+      />
     </section>
   )
 }

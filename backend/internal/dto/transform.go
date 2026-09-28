@@ -140,12 +140,22 @@ func WorkingHoursOverrideFromModel(m models.WorkingHoursOverride) WorkingHoursOv
 }
 
 func BusinessClosureFromModel(m models.BusinessClosure) BusinessClosure {
-	return BusinessClosure{
-		ID:          m.ID,
-		BusinessID:  m.BusinessID,
-		ClosureDate: m.ClosureDate.Format("2006-01-02"),
-		Reason:      m.Reason,
+	c := BusinessClosure{
+		ID:         m.ID,
+		BusinessID: m.BusinessID,
+		Type:       string(m.ClosureType),
+		DayOfWeek:  m.DayOfWeek,
+		Month:      m.Month,
+		Day:        m.Day,
+		Reason:     m.Reason,
 	}
+	if m.StartDate != nil {
+		c.StartDate = m.StartDate.Format("2006-01-02")
+	}
+	if m.EndDate != nil {
+		c.EndDate = m.EndDate.Format("2006-01-02")
+	}
+	return c
 }
 
 func BusinessClosuresFromModels(ms []models.BusinessClosure) []BusinessClosure {

@@ -176,10 +176,10 @@ export function ServicesPage() {
         title={t("services.deleteTitle")}
         description={
           deleteError ||
-          (deleting ? t("services.deleteConfirm", { name: deleting.name }) : undefined)
+          (deleting ? t("common.deleteConfirm", { name: deleting.name }) : undefined)
         }
-        confirmLabel={t("common.delete")}
-        cancelLabel={t("common.cancel")}
+        confirmLabel={t("common.yes")}
+        cancelLabel={t("common.no")}
         onConfirm={handleDelete}
         onCancel={() => {
           setDeleting(null)

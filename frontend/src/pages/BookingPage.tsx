@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { Navigate, useNavigate, useSearchParams } from "react-router-dom"
 import { format } from "date-fns"
-import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
+import { parseDate, getLocalTimeZone, today, type DateValue } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useSalonContext } from "../context/SalonContext"
 import { useServices, useServiceEmployees, useBusinessClosures, createAppointment } from "../hooks/useApi"
@@ -68,7 +68,25 @@ export function BookingPage() {
     effectiveServiceId ?? "",
   )
   const { data: closures } = useBusinessClosures(slug)
-  const closedDates = new Set((closures ?? []).map((c) => c.closure_date))
+
+  const isDateUnavailable = (date: DateValue) => {
+    const iso = date.toString()
+    const weekday = new Date(Date.UTC(date.year, date.month - 1, date.day)).getUTCDay()
+    return (closures ?? []).some((c) => {
+      switch (c.type) {
+        case "single":
+          return c.start_date === iso
+        case "range":
+          return !!c.start_date && !!c.end_date && iso >= c.start_date && iso <= c.end_date
+        case "weekly":
+          return c.day_of_week === weekday
+        case "yearly":
+          return c.month === date.month && c.day === date.day
+        default:
+          return false
+      }
+    })
+  }
 
   const [booking, setBooking] = useState(false)
   const [error, setError] = useState("")
@@ -217,7 +235,7 @@ export function BookingPage() {
                   value={selectedDate ? parseDate(selectedDate) : undefined}
                   onChange={(date) => date && setDate(date.toString())}
                   minValue={today(getLocalTimeZone())}
-                  isDateUnavailable={(date) => closedDates.has(date.toString())}
+                  isDateUnavailable={isDateUnavailable}
                   className="mx-auto"
                 />
               </CardContent>

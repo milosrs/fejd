@@ -185,7 +185,7 @@ func TestAdminHandler_SalonPolicy(t *testing.T) {
 	assert.Equal(t, 30, policy.SlotIntervalMinutes)
 
 	putReq := withPathParams(
-		httptest.NewRequest(http.MethodPut, "/api/admin/business/"+env.businessID.String()+"/policy", bytes.NewBufferString(`{"cancellation_lead_hours":24,"no_show_after_hours":4,"slot_interval_minutes":45,"working_hours":[{"day_of_week":1,"start_time":"09:00","end_time":"17:00"}],"closures":[{"closure_date":"2026-12-25","reason":"Christmas"}]}`)),
+		httptest.NewRequest(http.MethodPut, "/api/admin/business/"+env.businessID.String()+"/policy", bytes.NewBufferString(`{"cancellation_lead_hours":24,"no_show_after_hours":4,"slot_interval_minutes":45,"working_hours":[{"day_of_week":1,"start_time":"09:00","end_time":"17:00"}],"closures":[{"type":"single","start_date":"2026-12-25","reason":"Christmas"},{"type":"weekly","day_of_week":6}]}`)),
 		map[string]string{"businessID": env.businessID.String()},
 	)
 	putReq = withUser(putReq, "owner-1", "approved")
@@ -198,9 +198,11 @@ func TestAdminHandler_SalonPolicy(t *testing.T) {
 	assert.Equal(t, 45, policy.SlotIntervalMinutes)
 	assert.Len(t, policy.WorkingHours, 1)
 	assert.Equal(t, "09:00", policy.WorkingHours[0].StartTime)
-	require.Len(t, policy.Closures, 1)
-	assert.Equal(t, "2026-12-25", policy.Closures[0].ClosureDate)
+	require.Len(t, policy.Closures, 2)
+	assert.Equal(t, "single", policy.Closures[0].Type)
+	assert.Equal(t, "2026-12-25", policy.Closures[0].StartDate)
 	assert.Equal(t, "Christmas", policy.Closures[0].Reason)
+	assert.Equal(t, "weekly", policy.Closures[1].Type)
 
 	// A 5-hour-away appointment is now inside the 24-hour window.
 	req := customerCancelReq(env.policyApptID, "customer-3", `{"cancellation_reason":"too late now"}`)

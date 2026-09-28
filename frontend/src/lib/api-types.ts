@@ -4291,9 +4291,14 @@ export interface components {
         };
         "dto.BusinessClosure": {
             business_id: string;
-            closure_date: string;
+            day?: number;
+            day_of_week?: number;
+            end_date?: string;
             id: string;
+            month?: number;
             reason?: string;
+            start_date?: string;
+            type: string;
         };
         "dto.BusinessHours": {
             day_of_week: number;
@@ -4405,10 +4410,20 @@ export interface components {
             start_time?: string;
         };
         "handler.BusinessClosureInput": {
-            /** @example 2024-12-25 */
-            closure_date: string;
+            /** @example 25 */
+            day?: number;
+            /** @example 6 */
+            day_of_week?: number;
+            /** @example 2024-12-31 */
+            end_date?: string;
+            /** @example 12 */
+            month?: number;
             /** @example Christmas */
             reason?: string;
+            /** @example 2024-12-25 */
+            start_date?: string;
+            /** @example single */
+            type: string;
         };
         "handler.BusinessCreateInput": {
             /** @example My Salon */

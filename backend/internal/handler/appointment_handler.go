@@ -115,7 +115,7 @@ func (h *AppointmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.slotService.BookAppointment(r.Context(), appointment); err != nil {
-		writeError(w, http.StatusConflict, err.Error())
+		writeBookingError(w, err)
 		return
 	}
 
@@ -140,7 +140,7 @@ func (h *AppointmentHandler) ListMyAppointments(w http.ResponseWriter, r *http.R
 
 	appointments, err := h.appointments.ListByCustomer(r.Context(), userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -220,7 +220,7 @@ func (h *AppointmentHandler) Cancel(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "appointment not found")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 

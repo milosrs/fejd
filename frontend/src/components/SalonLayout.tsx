@@ -1,9 +1,8 @@
-import { Link, NavLink, Outlet } from "react-router-dom"
+import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"
 import { useState } from "react"
 import { Menu as MenuIcon } from "lucide-react"
 import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonContext"
 import { Button } from "./ui/button"
-import { SalonPolicyDialog } from "./SalonPolicyDialog"
 import { RenameSalonDialog } from "./RenameSalonDialog"
 import { DeleteSalonDialog } from "./DeleteSalonDialog"
 import { salonPath } from "../lib/salonDomain"
@@ -20,9 +19,9 @@ const ownerActionClassName =
 function SalonShell() {
   const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
   const isOwner = useIsOwner()
+  const navigate = useNavigate()
   const { data: sections } = useSections(slug)
   const { pickLocalized, t } = useI18n()
-  const [policyOpen, setPolicyOpen] = useState(false)
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -99,7 +98,7 @@ function SalonShell() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPolicyOpen(true)}
+                onClick={() => navigate(salonPath(slug, "/policy"))}
               >
                 {t("salon.policy")}
               </Button>
@@ -160,7 +159,7 @@ function SalonShell() {
               className={ownerActionClassName}
               onClick={() => {
                 setMenuOpen(false)
-                setPolicyOpen(true)
+                navigate(salonPath(slug, "/policy"))
               }}
             >
               {t("salon.policy")}
@@ -198,14 +197,6 @@ function SalonShell() {
           </div>
         )}
       </SideDrawer>
-
-      {policyOpen && (
-        <SalonPolicyDialog
-          businessId={salon.business.id}
-          slug={slug}
-          onClose={() => setPolicyOpen(false)}
-        />
-      )}
 
       {renameOpen && (
         <RenameSalonDialog

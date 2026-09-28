@@ -8,6 +8,7 @@ import (
 	"os"
 
 	"fejd-backend/internal/config"
+	"fejd-backend/internal/db"
 	"fejd-backend/internal/keycloak"
 )
 
@@ -30,10 +31,22 @@ func main() {
 	switch os.Args[1] {
 	case "invite":
 		invite(os.Args[2:])
+	case "migrate":
+		migrate()
 	default:
 		usage()
 		os.Exit(2)
 	}
+}
+
+// migrate applies pending database migrations. It uses the same
+// golang-migrate path as backend startup, so only not-yet-applied migrations
+// run and existing data is preserved.
+func migrate() {
+	if err := db.RunMigrations(); err != nil {
+		log.Fatalf("migration failed: %v", err)
+	}
+	fmt.Println("migrations applied")
 }
 
 func invite(args []string) {
@@ -111,4 +124,5 @@ func platformRole(role string) (roleName string, approved bool, err error) {
 
 func usage() {
 	fmt.Fprintln(os.Stderr, "usage: fejd-admin invite --email <addr> --role <customer|owner> [--name <n>]")
+	fmt.Fprintln(os.Stderr, "       fejd-admin migrate")
 }

@@ -53,6 +53,11 @@ db:
 build:
     docker compose build
 
+# Apply pending database migrations (forward-only; existing data is preserved).
+# Uses the same golang-migrate path as backend startup.
+migrate:
+    cd backend && go run ./cmd/fejd-admin migrate
+
 # Wipe all data (destroy volumes)
 reset:
     docker compose down -v

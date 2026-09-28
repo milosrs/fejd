@@ -67,7 +67,7 @@ func (h *InvitationHandler) CreateInvitation(w http.ResponseWriter, r *http.Requ
 			writeError(w, status, err.Error())
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -116,7 +116,7 @@ func (h *InvitationHandler) CreatePlatformInvitation(w http.ResponseWriter, r *h
 			writeError(w, status, err.Error())
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -164,7 +164,7 @@ func (h *InvitationHandler) CreateCustomerInvitation(w http.ResponseWriter, r *h
 			writeError(w, status, err.Error())
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -222,7 +222,7 @@ func (h *InvitationHandler) GetInvitation(w http.ResponseWriter, r *http.Request
 			writeError(w, status, err.Error())
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -260,7 +260,7 @@ func (h *InvitationHandler) AcceptInvitation(w http.ResponseWriter, r *http.Requ
 			writeError(w, status, err.Error())
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 

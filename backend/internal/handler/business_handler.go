@@ -3,15 +3,20 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"log"
+	"net/http"
+	"time"
+
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
-	"net/http"
-	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 )
 
 type BusinessHandler struct {
@@ -414,7 +419,7 @@ func (h *BusinessHandler) GetAvailableSlots(w http.ResponseWriter, r *http.Reque
 
 	slots, err := h.slotService.GetAvailableSlots(r.Context(), b.ID, serviceID, employeeID, date)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -436,4 +441,26 @@ func writeJSON(w http.ResponseWriter, status int, data any) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, ErrorResponse{Error: msg})
+}
+
+// writeInternalError logs the real error server-side and returns a generic 500
+// response, so internal details (SQL errors, connection info) never reach the
+// client.
+func writeInternalError(w http.ResponseWriter, err error) {
+	log.Printf("[handler] internal error: %v", err)
+	writeError(w, http.StatusInternalServerError, "internal server error")
+}
+
+// writeBookingError maps a booking error to a 409 Conflict response. Business
+// rule messages (e.g. "time slot is no longer available") are user-safe and
+// returned as-is; any underlying database error is logged and replaced with a
+// generic message so raw SQL never reaches the client.
+func writeBookingError(w http.ResponseWriter, err error) {
+	var pgErr *pgconn.PgError
+	if errors.As(err, &pgErr) || errors.Is(err, pgx.ErrNoRows) {
+		log.Printf("[handler] booking error: %v", err)
+		writeError(w, http.StatusConflict, "unable to complete booking")
+		return
+	}
+	writeError(w, http.StatusConflict, err.Error())
 }

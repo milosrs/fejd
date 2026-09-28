@@ -15,6 +15,7 @@ import { AdminSchedulePage } from "./pages/AdminSchedulePage"
 import { AdminServicesPage } from "./pages/AdminServicesPage"
 import { MySchedulePage } from "./pages/MySchedulePage"
 import { MyReservationsPage } from "./pages/MyReservationsPage"
+import { SalonPolicyPage } from "./pages/SalonPolicyPage"
 import { InvitedCustomersPage } from "./pages/InvitedCustomersPage"
 import { SalonLayout } from "./components/SalonLayout"
 import { Toaster } from "./components/ui/toaster"
@@ -302,6 +303,7 @@ function App() {
                     <Route path="services" element={<ServicesPage />} />
                     <Route path="barbers" element={<BarbersPage />} />
                     <Route path="book" element={<BookingPage />} />
+                    <Route path="policy" element={<SalonPolicyPage />} />
                   </Route>
                 ) : (
                   <>
@@ -311,6 +313,7 @@ function App() {
                       <Route path="services" element={<ServicesPage />} />
                       <Route path="barbers" element={<BarbersPage />} />
                       <Route path="book" element={<BookingPage />} />
+                      <Route path="policy" element={<SalonPolicyPage />} />
                     </Route>
                   </>
                 )}

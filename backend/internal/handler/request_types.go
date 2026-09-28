@@ -96,8 +96,13 @@ type UpdateSalonPolicyRequest struct {
 }
 
 type BusinessClosureInput struct {
-	ClosureDate string `json:"closure_date" validate:"required" example:"2024-12-25"`
-	Reason      string `json:"reason,omitempty" example:"Christmas"`
+	Type      string `json:"type" validate:"required" example:"single"`
+	StartDate string `json:"start_date,omitempty" example:"2024-12-25"`
+	EndDate   string `json:"end_date,omitempty" example:"2024-12-31"`
+	DayOfWeek *int   `json:"day_of_week,omitempty" example:"6"`
+	Month     *int   `json:"month,omitempty" example:"12"`
+	Day       *int   `json:"day,omitempty" example:"25"`
+	Reason    string `json:"reason,omitempty" example:"Christmas"`
 }
 
 type BusinessHoursInput struct {

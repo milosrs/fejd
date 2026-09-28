@@ -74,7 +74,7 @@ func (h *ImageHandler) UploadBusinessImage(w http.ResponseWriter, r *http.Reques
 		img, err = h.images.UploadAndLink(r.Context(), businessID, data, contentType, "business", businessID, purpose, models.VisibilityPublic)
 	}
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -121,12 +121,12 @@ func (h *ImageHandler) UploadServiceImage(w http.ResponseWriter, r *http.Request
 
 	img, err := h.images.UploadAndLink(r.Context(), businessID, data, contentType, "service", serviceID, "picture", models.VisibilityPublic)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
 	if err := h.services.SetPicture(r.Context(), serviceID, businessID, img.ID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -189,7 +189,7 @@ func (h *ImageHandler) UploadEmployeeImage(w http.ResponseWriter, r *http.Reques
 
 	img, err := h.images.UploadAndLink(r.Context(), businessID, data, contentType, "business_user", bu.ID, "avatar", models.VisibilityPublic)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -222,7 +222,7 @@ func (h *ImageHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
 
 	img, err := h.images.UploadUserAvatar(r.Context(), userID, data, contentType)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -274,7 +274,7 @@ func (h *ImageHandler) DeleteImage(w http.ResponseWriter, r *http.Request) {
 
 	if isAdmin, _ := h.businessUser.IsAdmin(r.Context(), businessID, callerID); isAdmin {
 		if err := h.images.Delete(r.Context(), img); err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			writeInternalError(w, err)
 			return
 		}
 		writeJSON(w, http.StatusOK, MessageResponse{Message: "image deleted"})
@@ -283,7 +283,7 @@ func (h *ImageHandler) DeleteImage(w http.ResponseWriter, r *http.Request) {
 
 	if linkID, owns := h.images.OwnsAvatarLink(r.Context(), callerID, links); owns {
 		if err := h.images.DeleteImageScoped(r.Context(), img, linkID); err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
+			writeInternalError(w, err)
 			return
 		}
 		writeJSON(w, http.StatusOK, MessageResponse{Message: "image deleted"})

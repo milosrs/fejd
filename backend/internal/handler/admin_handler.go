@@ -100,7 +100,7 @@ func (h *AdminHandler) GetWorkingHours(w http.ResponseWriter, r *http.Request) {
 
 	hours, err := h.workingHoursService.GetWeeklyHours(r.Context(), businessID, targetUserID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -153,7 +153,7 @@ func (h *AdminHandler) SetWorkingHours(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.workingHoursService.SetWeeklyHours(r.Context(), businessID, targetUserID, hours); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -198,7 +198,7 @@ func (h *AdminHandler) AddOverride(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.workingHoursService.AddOverride(r.Context(), businessID, targetUserID, &override); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -232,7 +232,7 @@ func (h *AdminHandler) DeleteOverride(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.workingHoursService.DeleteOverride(r.Context(), businessID, overrideID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -276,7 +276,7 @@ func (h *AdminHandler) CreateService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.serviceStore.Create(r.Context(), svc); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -328,7 +328,7 @@ func (h *AdminHandler) UpdateService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.serviceStore.Update(r.Context(), svc); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -372,12 +372,12 @@ func (h *AdminHandler) DeleteService(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusConflict, "service has appointments and cannot be deleted")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
 	if err := h.imageService.UnlinkAndMaybeDeleteAll(r.Context(), "service", serviceID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -412,7 +412,7 @@ func (h *AdminHandler) CreateEmployee(w http.ResponseWriter, r *http.Request) {
 
 	bu, err := h.employeeService.Invite(r.Context(), businessID, body.Name, body.Email, body.ServiceIDs)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -439,7 +439,7 @@ func (h *AdminHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 
 	users, err := h.buStore.ListByBusiness(r.Context(), businessID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -482,7 +482,7 @@ func (h *AdminHandler) RemoveEmployee(w http.ResponseWriter, r *http.Request) {
 
 	result, err := h.slotService.RemoveEmployee(r.Context(), businessID, bu.ID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -531,7 +531,7 @@ func (h *AdminHandler) SetEmployeeServices(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.slotService.SetEmployeeServices(r.Context(), businessID, targetUserID, body.ServiceIDs); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -609,7 +609,7 @@ func (h *AdminHandler) SetServiceEmployees(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.slotService.SetServiceEmployees(r.Context(), businessID, serviceID, body.BusinessUserIDs); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -700,7 +700,7 @@ func (h *AdminHandler) DeleteUnavailability(w http.ResponseWriter, r *http.Reque
 	}
 
 	if err := h.slotService.DeleteEmployeeUnavailability(r.Context(), businessID, targetUserID, unavailabilityID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -734,7 +734,7 @@ func (h *AdminHandler) ListMyUnavailability(w http.ResponseWriter, r *http.Reque
 
 	unavail, err := h.slotService.ListEmployeeUnavailability(r.Context(), businessID, userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -840,7 +840,7 @@ func (h *AdminHandler) DeleteMyUnavailability(w http.ResponseWriter, r *http.Req
 	}
 
 	if err := h.slotService.DeleteOwnEmployeeUnavailability(r.Context(), businessID, userID, unavailabilityID); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -881,7 +881,7 @@ func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request
 
 	appointments, err := h.slotService.ListOwnAppointments(r.Context(), businessID, userID, date)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 	if appointments == nil {
@@ -890,7 +890,7 @@ func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request
 
 	serviceNames, servicePrices, servicePictures, err := h.serviceMaps(r.Context(), businessID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -949,7 +949,7 @@ func (h *AdminHandler) CancelMyReservation(w http.ResponseWriter, r *http.Reques
 	}
 
 	if err := h.slotService.CancelOwnAppointment(r.Context(), businessID, userID, appointmentID, reason); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -998,7 +998,7 @@ func (h *AdminHandler) AcceptAppointment(w http.ResponseWriter, r *http.Request)
 			writeError(w, http.StatusNotFound, "appointment not found")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -1043,7 +1043,7 @@ func (h *AdminHandler) AcceptUnavailability(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusForbidden, "only the owner can accept time reservations")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -1106,7 +1106,7 @@ func (h *AdminHandler) RejectAppointment(w http.ResponseWriter, r *http.Request)
 			writeError(w, http.StatusNotFound, "appointment not found")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -1165,7 +1165,7 @@ func (h *AdminHandler) RejectUnavailability(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusForbidden, "only the owner can reject time reservations")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -1193,7 +1193,7 @@ func (h *AdminHandler) ListBusinessAppointments(w http.ResponseWriter, r *http.R
 
 	appointments, err := h.appointmentStore.ListByBusiness(r.Context(), businessID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 	if appointments == nil {
@@ -1202,7 +1202,7 @@ func (h *AdminHandler) ListBusinessAppointments(w http.ResponseWriter, r *http.R
 
 	serviceNames, servicePrices, servicePictures, err := h.serviceMaps(r.Context(), businessID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -1235,7 +1235,7 @@ func (h *AdminHandler) ListBusinessUnavailability(w http.ResponseWriter, r *http
 
 	unavail, err := h.slotService.ListBusinessUnavailability(r.Context(), businessID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 	if unavail == nil {
@@ -1290,13 +1290,13 @@ func (h *AdminHandler) GetSalonPolicy(w http.ResponseWriter, r *http.Request) {
 
 	hours, err := h.businessHoursStore.ListByBusiness(r.Context(), businessID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
 	closures, err := h.businessClosureStore.ListByBusiness(r.Context(), businessID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -1382,28 +1382,28 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 
 	closures := make([]models.BusinessClosure, 0, len(body.Closures))
 	for _, c := range body.Closures {
-		date, err := time.Parse(time.DateOnly, c.ClosureDate)
+		closure, err := closureFromInput(c)
 		if err != nil {
-			writeError(w, http.StatusBadRequest, "invalid closure date format, use YYYY-MM-DD")
+			writeError(w, http.StatusBadRequest, err.Error())
 			return
 		}
-		closures = append(closures, models.BusinessClosure{
-			BusinessID:  businessID,
-			ClosureDate: date,
-			Reason:      strings.TrimSpace(c.Reason),
-		})
+		closure.BusinessID = businessID
+		closures = append(closures, closure)
 	}
 
 	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterHours, body.SlotIntervalMinutes, body.AutoApprove); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		log.Printf("failed to update salon policy settings: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to update salon policy")
 		return
 	}
 	if err := h.businessHoursStore.ReplaceByBusiness(r.Context(), businessID, hours); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		log.Printf("failed to update working hours: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to update working hours")
 		return
 	}
 	if err := h.businessClosureStore.ReplaceByBusiness(r.Context(), businessID, closures); err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		log.Printf("failed to update non-working days: %v", err)
+		writeError(w, http.StatusInternalServerError, "failed to update non-working days")
 		return
 	}
 
@@ -1423,6 +1423,62 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		WorkingHours:          dto.BusinessHoursFromModels(hours),
 		Closures:              dto.BusinessClosuresFromModels(closures),
 	})
+}
+
+// closureFromInput validates a non-working-day rule and converts it into a
+// model. Each closure type requires exactly its own fields; extra fields are
+// ignored and missing ones rejected.
+func closureFromInput(in BusinessClosureInput) (models.BusinessClosure, error) {
+	c := models.BusinessClosure{Reason: strings.TrimSpace(in.Reason)}
+
+	switch in.Type {
+	case string(models.BusinessClosureSingle):
+		d, err := time.Parse(time.DateOnly, in.StartDate)
+		if err != nil {
+			return c, fmt.Errorf("single closure requires a valid start_date (YYYY-MM-DD)")
+		}
+		c.ClosureType = models.BusinessClosureSingle
+		c.StartDate = &d
+
+	case string(models.BusinessClosureRange):
+		start, err := time.Parse(time.DateOnly, in.StartDate)
+		if err != nil {
+			return c, fmt.Errorf("range closure requires a valid start_date (YYYY-MM-DD)")
+		}
+		end, err := time.Parse(time.DateOnly, in.EndDate)
+		if err != nil {
+			return c, fmt.Errorf("range closure requires a valid end_date (YYYY-MM-DD)")
+		}
+		if end.Before(start) {
+			return c, fmt.Errorf("end_date must be on or after start_date")
+		}
+		c.ClosureType = models.BusinessClosureRange
+		c.StartDate = &start
+		c.EndDate = &end
+
+	case string(models.BusinessClosureWeekly):
+		if in.DayOfWeek == nil || *in.DayOfWeek < 0 || *in.DayOfWeek > 6 {
+			return c, fmt.Errorf("weekly closure requires day_of_week between 0 and 6")
+		}
+		c.ClosureType = models.BusinessClosureWeekly
+		c.DayOfWeek = in.DayOfWeek
+
+	case string(models.BusinessClosureYearly):
+		if in.Month == nil || *in.Month < 1 || *in.Month > 12 {
+			return c, fmt.Errorf("yearly closure requires month between 1 and 12")
+		}
+		if in.Day == nil || *in.Day < 1 || *in.Day > 31 {
+			return c, fmt.Errorf("yearly closure requires day between 1 and 31")
+		}
+		c.ClosureType = models.BusinessClosureYearly
+		c.Month = in.Month
+		c.Day = in.Day
+
+	default:
+		return c, fmt.Errorf("closure type must be one of single, range, weekly, yearly")
+	}
+
+	return c, nil
 }
 
 // RenameBusiness godoc
@@ -1612,7 +1668,7 @@ func writeUnavailabilityError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusConflict, "this time range overlaps an existing unavailability period")
 		return
 	}
-	writeError(w, http.StatusInternalServerError, err.Error())
+	writeInternalError(w, err)
 }
 
 // MarkNoShow godoc
@@ -1658,7 +1714,7 @@ func (h *AdminHandler) MarkNoShow(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusNotFound, "appointment not found")
 			return
 		}
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -1692,7 +1748,7 @@ func (h *AdminHandler) ListMyServices(w http.ResponseWriter, r *http.Request) {
 
 	services, err := h.slotService.ListMyServices(r.Context(), businessID, userID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 
@@ -1746,7 +1802,7 @@ func (h *AdminHandler) BookOwnAppointment(w http.ResponseWriter, r *http.Request
 
 	appointment, err := h.slotService.BookOwnAppointment(r.Context(), businessID, userID, body.ServiceID, startTime, body.CustomerUserID)
 	if err != nil {
-		writeError(w, http.StatusConflict, err.Error())
+		writeBookingError(w, err)
 		return
 	}
 
@@ -1774,7 +1830,7 @@ func (h *AdminHandler) ListCustomers(w http.ResponseWriter, r *http.Request) {
 
 	customers, err := h.appointmentStore.ListCustomers(r.Context(), businessID)
 	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
+		writeInternalError(w, err)
 		return
 	}
 	if customers == nil {

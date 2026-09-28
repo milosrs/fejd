@@ -180,6 +180,7 @@ interface SalonProvidersProps {
   sections?: Section[]
   services?: Service[]
   employees?: Employee[]
+  policy?: any
   children: React.ReactNode
 }
 
@@ -192,6 +193,7 @@ export function SalonProviders({
   sections = [],
   services = mockSalon.services,
   employees = mockSalon.employees,
+  policy,
   children,
 }: SalonProvidersProps) {
   const queryClient = useMemo(() => {
@@ -203,11 +205,14 @@ export function SalonProviders({
     qc.setQueryData(["services", slug], services)
     qc.setQueryData(["employees", slug], employees)
     qc.setQueryData(["i18n", "en"], mockI18nEn)
+    if (policy) {
+      qc.setQueryData(["salon-policy", salon.business.id], policy)
+    }
     if (me) {
       qc.setQueryData(["me"], me)
     }
     return qc
-  }, [slug, salon, me, sections, services, employees])
+  }, [slug, salon, me, sections, services, employees, policy])
 
   useLayoutEffect(() => {
     useAuthStore.setState({
