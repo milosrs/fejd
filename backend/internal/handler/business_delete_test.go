@@ -49,13 +49,14 @@ func TestAdminHandler_DeleteBusiness(t *testing.T) {
 	require.NoError(t, buStore.Create(ctx, pool, &models.BusinessUser{BusinessID: b.ID, UserID: "emp-2", Role: "employee"}))
 
 	// Users the business has invited to the platform.
+	inviteExpiry := time.Now().UTC().Add(48 * time.Hour)
 	require.NoError(t, invitationStore.Create(ctx, pool, &models.Invitation{
 		BusinessID: b.ID,
 		TokenHash:  "hash-invite-customer-1",
 		Role:       "customer",
 		CreatedBy:  "owner",
 		MaxUses:    1,
-		ExpiresAt:  time.Now().UTC().Add(48 * time.Hour),
+		ExpiresAt:  &inviteExpiry,
 	}))
 	require.NoError(t, invitationStore.Create(ctx, pool, &models.Invitation{
 		BusinessID: b.ID,
@@ -63,7 +64,7 @@ func TestAdminHandler_DeleteBusiness(t *testing.T) {
 		Role:       "customer",
 		CreatedBy:  "owner",
 		MaxUses:    1,
-		ExpiresAt:  time.Now().UTC().Add(48 * time.Hour),
+		ExpiresAt:  &inviteExpiry,
 	}))
 
 	// A name that doesn't match is rejected before anything is deleted.

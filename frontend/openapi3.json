@@ -4212,6 +4212,55 @@
                 }
             }
         },
+        "/api/me/claim-role": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Grants the realm role recorded in the registration_role token claim (Customer, Employee, or Owner) and clears the attribute. Idempotent; no-op when no role is pending.",
+                "tags": [
+                    "me"
+                ],
+                "summary": "Finalize a self-registration role",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/my/appointments": {
             "get": {
                 "security": [
@@ -5100,7 +5149,6 @@
             "handler.InvitationResponse": {
                 "type": "object",
                 "required": [
-                    "expires_at",
                     "id",
                     "token",
                     "url"
@@ -5135,7 +5183,6 @@
             "handler.PublicInvitationResponse": {
                 "type": "object",
                 "required": [
-                    "expires_at",
                     "role",
                     "salon_name",
                     "salon_slug"

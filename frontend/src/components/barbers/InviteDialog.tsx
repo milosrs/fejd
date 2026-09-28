@@ -114,7 +114,9 @@ export function InviteDialog({
             </div>
 
             <p className="text-xs text-muted-foreground">
-              {t("invite.expires", { date: new Date(invitation.expires_at).toLocaleString() })}
+              {invitation.expires_at
+                ? t("invite.expires", { date: new Date(invitation.expires_at).toLocaleString() })
+                : t("invite.permanent")}
             </p>
           </div>
         ) : null}

@@ -295,7 +295,7 @@ func (h *ImageHandler) DeleteImage(w http.ResponseWriter, r *http.Request) {
 
 // GetImage godoc
 // @Summary      Retrieve an image
-// @Description  Public images are served directly; private images require auth and access (streamed through the API).
+// @Description  All images are streamed through the API. Public images (profile pictures, employee avatars, business images) need no auth; private images require auth and access.
 // @Tags         public
 // @Produce      image/*
 // @Param        imageID path string true "Image UUID"
@@ -318,7 +318,7 @@ func (h *ImageHandler) GetImage(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if h.isPublic(links) || h.images.IsProfilePicture(r.Context(), imageID) {
-		h.servePublic(w, r, img)
+		h.serveProxied(w, r, img)
 		return
 	}
 
@@ -393,14 +393,6 @@ func (h *ImageHandler) isPublic(links []models.ImageLink) bool {
 		}
 	}
 	return false
-}
-
-func (h *ImageHandler) servePublic(w http.ResponseWriter, r *http.Request, img *models.Image) {
-	if url := h.images.PublicURL(r.Context(), img); url != "" {
-		http.Redirect(w, r, url, http.StatusFound)
-		return
-	}
-	h.serveProxied(w, r, img)
 }
 
 func (h *ImageHandler) serveProxied(w http.ResponseWriter, r *http.Request, img *models.Image) {

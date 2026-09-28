@@ -298,7 +298,7 @@ function App() {
 
                 <Route path="/invite/:token" element={<InviteLandingPage />} />
 
-                <Route path="/my/appointments" element={<ProtectedRoute><OnboardingGate><MyAppointmentsPage /></OnboardingGate></ProtectedRoute>} />
+                <Route path="/my/appointments" element={<ProtectedRoute><MyAppointmentsPage /></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/schedule" element={<ProtectedRoute><OnboardingGate><AdminSchedulePage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/services" element={<ProtectedRoute><OnboardingGate><AdminServicesPage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/my-schedule" element={<ProtectedRoute><OnboardingGate><MySchedulePage /></OnboardingGate></ProtectedRoute>} />

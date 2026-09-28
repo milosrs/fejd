@@ -5,23 +5,21 @@ import { hasRole } from "../lib/ownership"
 import { useI18n } from "../lib/i18n"
 import { CreateSalonForm } from "../components/CreateSalonForm"
 import { SalonCard } from "../components/SalonCard"
-import { RealmAdminInvite } from "../components/admin/RealmAdminInvite"
-import { CustomerInvite } from "../components/invite/CustomerInvite"
 
 export function HomePage() {
   const authenticated = useAuthStore((s) => s.authenticated)
   const roles = useAuthStore((s) => s.roles)
-  const isRealmAdmin = useAuthStore((s) => s.isRealmAdmin)
   const { data: me, isLoading: meLoading } = useMe()
   const { data: directory, isLoading: directoryLoading } = useBusinesses()
   const { t } = useI18n()
 
   const isOwner = hasRole(roles, "Owner")
   const hasSalon = me?.has_salon ?? false
-  const businesses = me?.businesses ?? []
-  const visibleBusinesses = isOwner
-    ? businesses.filter((b) => b.role === "admin")
-    : businesses
+  const ownedBusinessIds = new Set(
+    (me?.businesses ?? [])
+      .filter((b) => b.role === "admin")
+      .map((b) => b.id),
+  )
 
   return (
     <div className="min-h-app flex flex-col items-center justify-center gap-4 bg-background p-8">
@@ -33,26 +31,15 @@ export function HomePage() {
           : t("home.intro")}
       </p>
 
-      {authenticated && isRealmAdmin && <RealmAdminInvite />}
-      {authenticated && !isRealmAdmin && <CustomerInvite />}
+      {authenticated && isOwner && !hasSalon && <CreateSalonForm />}
 
-      {!authenticated ? (
-        directoryLoading ? null : (
-          <div className="grid w-full max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {(directory ?? []).map((b) => (
-              <SalonCard key={b.id} business={b} isOwner={false} />
-            ))}
-          </div>
-        )
-      ) : meLoading ? null : isOwner && !hasSalon ? (
-        <CreateSalonForm />
-      ) : visibleBusinesses.length > 0 ? (
+      {directoryLoading || meLoading ? null : (
         <div className="grid w-full max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleBusinesses.map((b) => (
-            <SalonCard key={b.id} business={b} isOwner={b.role === "admin"} />
+          {(directory ?? []).map((b) => (
+            <SalonCard key={b.id} business={b} isOwner={ownedBusinessIds.has(b.id)} />
           ))}
         </div>
-      ) : null}
+      )}
     </div>
   )
 }

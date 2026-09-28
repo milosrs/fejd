@@ -51,17 +51,17 @@ type CreateInvitationRequest struct {
 }
 
 type InvitationResponse struct {
-	ID        uuid.UUID `json:"id" validate:"required"`
-	URL       string    `json:"url" validate:"required"`
-	Token     string    `json:"token" validate:"required"`
-	ExpiresAt time.Time `json:"expires_at" validate:"required"`
+	ID        uuid.UUID  `json:"id" validate:"required"`
+	URL       string     `json:"url" validate:"required"`
+	Token     string     `json:"token" validate:"required"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 }
 
 type PublicInvitationResponse struct {
-	SalonName string    `json:"salon_name" validate:"required"`
-	SalonSlug string    `json:"salon_slug" validate:"required"`
-	Role      string    `json:"role" validate:"required"`
-	ExpiresAt time.Time `json:"expires_at" validate:"required"`
+	SalonName string     `json:"salon_name" validate:"required"`
+	SalonSlug string     `json:"salon_slug" validate:"required"`
+	Role      string     `json:"role" validate:"required"`
+	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 }
 
 type RemoveEmployeeResponse struct {

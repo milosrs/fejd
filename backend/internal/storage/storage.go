@@ -13,5 +13,4 @@ type ImageStorage interface {
 	Put(ctx context.Context, key string, data []byte, contentType string) error
 	Open(ctx context.Context, key string) (io.ReadCloser, string, error)
 	Delete(ctx context.Context, key string) error
-	URL(ctx context.Context, key string) string
 }

@@ -3941,6 +3941,65 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/claim-role": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Finalize a self-registration role
+         * @description Grants the realm role recorded in the registration_role token claim (Customer, Employee, or Owner) and clears the attribute. Idempotent; no-op when no role is pending.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            [key: string]: boolean;
+                        };
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/my/appointments": {
         parameters: {
             query?: never;
@@ -4302,7 +4361,7 @@ export interface components {
             error: string;
         };
         "handler.InvitationResponse": {
-            expires_at: string;
+            expires_at?: string;
             id: string;
             token: string;
             url: string;
@@ -4312,7 +4371,7 @@ export interface components {
             message: string;
         };
         "handler.PublicInvitationResponse": {
-            expires_at: string;
+            expires_at?: string;
             role: string;
             salon_name: string;
             salon_slug: string;

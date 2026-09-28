@@ -40,3 +40,17 @@ func TestRoleMappingSuccess(t *testing.T) {
 		assert.False(t, roleMappingSuccess(code), "status %d should not be treated as success", code)
 	}
 }
+
+func TestFindRoleID(t *testing.T) {
+	roles := []roleRef{
+		{ID: "id-customer", Name: "Customer"},
+		{ID: "id-employee", Name: "Employee"},
+	}
+
+	id, ok := findRoleID(roles, "Customer")
+	assert.True(t, ok)
+	assert.Equal(t, "id-customer", id)
+
+	_, ok = findRoleID(roles, "Owner")
+	assert.False(t, ok)
+}

@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"time"
 
 	"github.com/minio/minio-go/v7"
 	"github.com/minio/minio-go/v7/pkg/credentials"
@@ -51,14 +50,6 @@ func (s *objectStore) Delete(ctx context.Context, key string) error {
 		return fmt.Errorf("failed to remove object: %w", err)
 	}
 	return nil
-}
-
-func (s *objectStore) URL(ctx context.Context, key string) string {
-	u, err := s.client.PresignedGetObject(ctx, s.bucket, key, time.Hour, nil)
-	if err != nil {
-		return ""
-	}
-	return u.String()
 }
 
 type SeaweedfsImageStorage struct {

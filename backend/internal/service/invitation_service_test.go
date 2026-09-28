@@ -51,19 +51,28 @@ func TestInviteURL(t *testing.T) {
 
 func TestValidateInvitation(t *testing.T) {
 	now := time.Now().UTC()
+	exp := func(d time.Duration) *time.Time {
+		v := now.Add(d)
+		return &v
+	}
 
 	t.Run("expired", func(t *testing.T) {
-		inv := &models.Invitation{ExpiresAt: now.Add(-time.Minute), MaxUses: 1, UseCount: 0}
+		inv := &models.Invitation{ExpiresAt: exp(-time.Minute), MaxUses: 1, UseCount: 0}
 		assert.ErrorIs(t, validateInvitation(inv), ErrInvitationExpired)
 	})
 
 	t.Run("used", func(t *testing.T) {
-		inv := &models.Invitation{ExpiresAt: now.Add(time.Hour), MaxUses: 1, UseCount: 1}
+		inv := &models.Invitation{ExpiresAt: exp(time.Hour), MaxUses: 1, UseCount: 1}
 		assert.ErrorIs(t, validateInvitation(inv), ErrInvitationUsed)
 	})
 
 	t.Run("valid", func(t *testing.T) {
-		inv := &models.Invitation{ExpiresAt: now.Add(time.Hour), MaxUses: 1, UseCount: 0}
+		inv := &models.Invitation{ExpiresAt: exp(time.Hour), MaxUses: 1, UseCount: 0}
+		assert.NoError(t, validateInvitation(inv))
+	})
+
+	t.Run("permanent", func(t *testing.T) {
+		inv := &models.Invitation{ExpiresAt: nil, MaxUses: 1, UseCount: 0}
 		assert.NoError(t, validateInvitation(inv))
 	})
 }

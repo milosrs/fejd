@@ -30,13 +30,15 @@ func invitationColumns() []string {
 func scanInvitation(row pgx.Row) (*models.Invitation, error) {
 	var inv models.Invitation
 	var businessID pgtype.UUID
-	err := row.Scan(&inv.ID, &businessID, &inv.TokenHash, &inv.Role, &inv.CreatedBy, &inv.MaxUses, &inv.UseCount, &inv.ExpiresAt, &inv.CreatedAt)
+	var expiresAt *time.Time
+	err := row.Scan(&inv.ID, &businessID, &inv.TokenHash, &inv.Role, &inv.CreatedBy, &inv.MaxUses, &inv.UseCount, &expiresAt, &inv.CreatedAt)
 	if err != nil {
 		return nil, fmt.Errorf("failed to scan invitation: %w", err)
 	}
 	if businessID.Valid {
 		inv.BusinessID, _ = uuid.FromBytes(businessID.Bytes[:])
 	}
+	inv.ExpiresAt = expiresAt
 	return &inv, nil
 }
 
@@ -61,7 +63,7 @@ func (s *InvitationStore) Create(ctx context.Context, q Querier, inv *models.Inv
 	sql, args, err := psql.
 		Insert("invitations").
 		Columns("id", "business_id", "token_hash", "role", "created_by", "max_uses", "use_count", "expires_at").
-		Values(inv.ID, businessID, inv.TokenHash, inv.Role, inv.CreatedBy, inv.MaxUses, inv.UseCount, inv.ExpiresAt).
+		Values(inv.ID, businessID, inv.TokenHash, inv.Role, inv.CreatedBy, inv.MaxUses, inv.UseCount, nullableExpiry(inv.ExpiresAt)).
 		Suffix("RETURNING created_at").
 		ToSql()
 	if err != nil {
@@ -117,9 +119,11 @@ func (s *InvitationStore) ListByBusiness(ctx context.Context, businessID uuid.UU
 	var invitations []models.Invitation
 	for rows.Next() {
 		var inv models.Invitation
-		if err := rows.Scan(&inv.ID, &inv.BusinessID, &inv.TokenHash, &inv.Role, &inv.CreatedBy, &inv.MaxUses, &inv.UseCount, &inv.ExpiresAt, &inv.CreatedAt); err != nil {
+		var expiresAt *time.Time
+		if err := rows.Scan(&inv.ID, &inv.BusinessID, &inv.TokenHash, &inv.Role, &inv.CreatedBy, &inv.MaxUses, &inv.UseCount, &expiresAt, &inv.CreatedAt); err != nil {
 			return nil, fmt.Errorf("failed to scan invitation: %w", err)
 		}
+		inv.ExpiresAt = expiresAt
 		invitations = append(invitations, inv)
 	}
 	return invitations, nil
@@ -135,7 +139,7 @@ func (s *InvitationStore) TryConsume(ctx context.Context, q Querier, id uuid.UUI
 		Set("use_count", sq.Expr("use_count + 1")).
 		Where(sq.Eq{"id": id}).
 		Where(sq.Expr("use_count < max_uses")).
-		Where(sq.Expr("expires_at > ?", time.Now().UTC())).
+		Where(sq.Expr("(expires_at IS NULL OR expires_at > ?)", time.Now().UTC())).
 		Suffix("RETURNING id").
 		ToSql()
 	if err != nil {
@@ -164,4 +168,12 @@ func (s *InvitationStore) Delete(ctx context.Context, q Querier, id uuid.UUID) e
 
 	_, err = q.Exec(ctx, sql, args...)
 	return err
+}
+
+// nullableExpiry maps a nil expiry (permanent invite) to SQL NULL.
+func nullableExpiry(t *time.Time) any {
+	if t == nil {
+		return nil
+	}
+	return *t
 }

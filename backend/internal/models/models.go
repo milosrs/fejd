@@ -219,7 +219,8 @@ type EmployeeUnavailability struct {
 
 // Invitation is a shareable link/QR invite that links a user to a business as
 // an employee or customer. The raw token is never stored; only its hash is
-// persisted.
+// persisted. A nil ExpiresAt means the invitation never expires (used for
+// customer QR codes that owners print and stick up).
 type Invitation struct {
 	ID         uuid.UUID
 	BusinessID uuid.UUID
@@ -228,6 +229,6 @@ type Invitation struct {
 	CreatedBy  string
 	MaxUses    int
 	UseCount   int
-	ExpiresAt  time.Time
+	ExpiresAt  *time.Time
 	CreatedAt  time.Time
 }

@@ -91,7 +91,7 @@ type InvitationOut struct {
 	ID        uuid.UUID
 	Token     string
 	URL       string
-	ExpiresAt time.Time
+	ExpiresAt *time.Time
 }
 
 // InvitationPublic is the non-secret view of an invitation exposed to the
@@ -100,7 +100,7 @@ type InvitationPublic struct {
 	SalonName string
 	SalonSlug string
 	Role      string
-	ExpiresAt time.Time
+	ExpiresAt *time.Time
 }
 
 // CreateInvitation mints a single-use, expiring invite for the business and
@@ -123,10 +123,6 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, businessID uui
 		}
 	}
 
-	if ttl <= 0 {
-		ttl = 48 * time.Hour
-	}
-
 	raw, hash, err := newInviteToken()
 	if err != nil {
 		return nil, err
@@ -138,7 +134,7 @@ func (s *InvitationService) CreateInvitation(ctx context.Context, businessID uui
 		Role:       role,
 		CreatedBy:  createdBy,
 		MaxUses:    1,
-		ExpiresAt:  time.Now().UTC().Add(ttl),
+		ExpiresAt:  inviteExpiry(role, ttl),
 	}
 	if err := s.invitations.Create(ctx, s.pool, inv); err != nil {
 		return nil, fmt.Errorf("failed to create invitation: %w", err)
@@ -175,10 +171,6 @@ func (s *InvitationService) CreateCustomerInvitation(ctx context.Context, create
 }
 
 func (s *InvitationService) mintPlatformInvite(ctx context.Context, createdBy, role string, ttl time.Duration) (*InvitationOut, error) {
-	if ttl <= 0 {
-		ttl = 48 * time.Hour
-	}
-
 	raw, hash, err := newInviteToken()
 	if err != nil {
 		return nil, err
@@ -189,7 +181,7 @@ func (s *InvitationService) mintPlatformInvite(ctx context.Context, createdBy, r
 		Role:      role,
 		CreatedBy: createdBy,
 		MaxUses:   1,
-		ExpiresAt: time.Now().UTC().Add(ttl),
+		ExpiresAt: inviteExpiry(role, ttl),
 	}
 	if err := s.invitations.Create(ctx, s.pool, inv); err != nil {
 		return nil, fmt.Errorf("failed to create invitation: %w", err)
@@ -254,7 +246,7 @@ func (s *InvitationService) AcceptInvitation(ctx context.Context, rawToken, user
 		}
 		return nil, err
 	}
-	if time.Now().UTC().After(inv.ExpiresAt) {
+	if inv.ExpiresAt != nil && time.Now().UTC().After(*inv.ExpiresAt) {
 		return nil, ErrInvitationExpired
 	}
 
@@ -442,7 +434,7 @@ func (s *InvitationService) grantRealmAdmin(ctx context.Context, userID string) 
 }
 
 func validateInvitation(inv *models.Invitation) error {
-	if time.Now().UTC().After(inv.ExpiresAt) {
+	if inv.ExpiresAt != nil && time.Now().UTC().After(*inv.ExpiresAt) {
 		return ErrInvitationExpired
 	}
 	if inv.UseCount >= inv.MaxUses {
@@ -471,4 +463,18 @@ func newInviteToken() (raw, hash string, err error) {
 func hashToken(raw string) string {
 	sum := sha256.Sum256([]byte(raw))
 	return hex.EncodeToString(sum[:])
+}
+
+// inviteExpiry returns the expiry for an invitation of the given role. Customer
+// invites are permanent (nil) so owners can print their QR code and stick it up;
+// every other role expires after ttl (falling back to the 48-hour default).
+func inviteExpiry(role string, ttl time.Duration) *time.Time {
+	if role == inviteRoleCustomer {
+		return nil
+	}
+	if ttl <= 0 {
+		ttl = 48 * time.Hour
+	}
+	expires := time.Now().UTC().Add(ttl)
+	return &expires
 }

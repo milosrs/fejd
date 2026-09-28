@@ -114,7 +114,7 @@ func TestInvitationHandler_CreateInvitation_AsEmployee_CustomerOnly(t *testing.T
 	assert.NotEmpty(t, resp.Token)
 	assert.NotEmpty(t, resp.URL)
 	assert.Contains(t, resp.URL, "/invite/"+resp.Token)
-	assert.False(t, resp.ExpiresAt.IsZero())
+	assert.Nil(t, resp.ExpiresAt, "customer invites are permanent")
 	assert.NotEqual(t, "", resp.ID.String())
 }
 
@@ -163,7 +163,8 @@ func TestInvitationHandler_CreateInvitation_CustomExpiry(t *testing.T) {
 	require.Equal(t, http.StatusCreated, rr.Code)
 	var resp InvitationResponse
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
-	assert.WithinDuration(t, time.Now().UTC().Add(72*time.Hour), resp.ExpiresAt, time.Minute)
+	require.NotNil(t, resp.ExpiresAt, "employee invites expire")
+	assert.WithinDuration(t, time.Now().UTC().Add(72*time.Hour), *resp.ExpiresAt, time.Minute)
 }
 
 func TestInvitationHandler_CreateInvitation_InvalidBusinessID(t *testing.T) {

@@ -25,7 +25,7 @@ func TestInvitationStore_CreateAndGet(t *testing.T) {
 		BusinessID: businessID,
 		TokenHash:  "hash-1",
 		CreatedBy:  "owner-sub-1",
-		ExpiresAt:  time.Now().UTC().Add(48 * time.Hour),
+		ExpiresAt:  expiresIn(48 * time.Hour),
 	}
 
 	err := store.Create(ctx, db.pool, inv)
@@ -64,13 +64,12 @@ func TestInvitationStore_ListByBusiness(t *testing.T) {
 	businessA := insertBusinessHelper(t, ctx, db, "Biz A", "biz-a")
 	businessB := insertBusinessHelper(t, ctx, db, "Biz B", "biz-b")
 
-	now := time.Now().UTC()
 	for i, bh := range []string{"hash-a1", "hash-a2"} {
 		inv := &models.Invitation{
 			BusinessID: businessA,
 			TokenHash:  bh,
 			CreatedBy:  "owner-a",
-			ExpiresAt:  now.Add(time.Duration(i+1) * time.Hour),
+			ExpiresAt:  expiresIn(time.Duration(i+1) * time.Hour),
 		}
 		require.NoError(t, store.Create(ctx, db.pool, inv))
 		time.Sleep(time.Millisecond) // ensure distinct created_at ordering
@@ -80,7 +79,7 @@ func TestInvitationStore_ListByBusiness(t *testing.T) {
 		BusinessID: businessB,
 		TokenHash:  "hash-b1",
 		CreatedBy:  "owner-b",
-		ExpiresAt:  now.Add(time.Hour),
+		ExpiresAt:  expiresIn(time.Hour),
 	}
 	require.NoError(t, store.Create(ctx, db.pool, invB))
 
@@ -121,7 +120,7 @@ func TestInvitationStore_TryConsume_SingleUse(t *testing.T) {
 		BusinessID: businessID,
 		TokenHash:  "hash-consume",
 		CreatedBy:  "owner-c",
-		ExpiresAt:  time.Now().UTC().Add(time.Hour),
+		ExpiresAt:  expiresIn(time.Hour),
 	}
 	require.NoError(t, store.Create(ctx, db.pool, inv))
 
@@ -151,7 +150,7 @@ func TestInvitationStore_TryConsume_Expired(t *testing.T) {
 		BusinessID: businessID,
 		TokenHash:  "hash-expired",
 		CreatedBy:  "owner-d",
-		ExpiresAt:  time.Now().UTC().Add(-time.Hour),
+		ExpiresAt:  expiresIn(-time.Hour),
 	}
 	require.NoError(t, store.Create(ctx, db.pool, inv))
 
@@ -185,7 +184,7 @@ func TestInvitationStore_Delete(t *testing.T) {
 		BusinessID: businessID,
 		TokenHash:  "hash-delete",
 		CreatedBy:  "owner-e",
-		ExpiresAt:  time.Now().UTC().Add(time.Hour),
+		ExpiresAt:  expiresIn(time.Hour),
 	}
 	require.NoError(t, store.Create(ctx, db.pool, inv))
 
@@ -193,6 +192,32 @@ func TestInvitationStore_Delete(t *testing.T) {
 
 	_, err := store.GetByID(ctx, inv.ID)
 	require.Error(t, err)
+}
+
+func TestInvitationStore_TryConsume_Permanent(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.teardown()
+
+	ctx := context.Background()
+	store := NewInvitationStore(db.pool)
+
+	businessID := insertBusinessHelper(t, ctx, db, "Biz P", "biz-p")
+
+	inv := &models.Invitation{
+		BusinessID: businessID,
+		TokenHash:  "hash-permanent",
+		CreatedBy:  "owner-p",
+		ExpiresAt:  nil,
+	}
+	require.NoError(t, store.Create(ctx, db.pool, inv))
+
+	ok, err := store.TryConsume(ctx, db.pool, inv.ID)
+	require.NoError(t, err)
+	assert.True(t, ok, "permanent invite must be consumable")
+
+	ok, err = store.TryConsume(ctx, db.pool, inv.ID)
+	require.NoError(t, err)
+	assert.False(t, ok, "single-use permanent invite must not be consumable twice")
 }
 
 func insertBusinessHelper(t *testing.T, ctx context.Context, db *testDB, name, slug string) uuid.UUID {
@@ -204,4 +229,9 @@ func insertBusinessHelper(t *testing.T, ctx context.Context, db *testDB, name, s
 	)
 	require.NoError(t, err)
 	return businessID
+}
+
+func expiresIn(d time.Duration) *time.Time {
+	v := time.Now().UTC().Add(d)
+	return &v
 }

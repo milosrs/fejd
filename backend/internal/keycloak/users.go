@@ -81,11 +81,52 @@ func (c *Client) GetUserByEmail(ctx context.Context, email string) (*User, error
 	return &users[0], nil
 }
 
+// roleRef is the minimal role representation returned by the roles list
+// endpoints, containing the fields needed to reference a role in a mapping.
+type roleRef struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// findRoleID returns the ID of the role with the exact given name, or false
+// when no such role is present. Pure so it can be unit-tested.
+func findRoleID(roles []roleRef, name string) (string, bool) {
+	for _, r := range roles {
+		if r.Name == name {
+			return r.ID, true
+		}
+	}
+	return "", false
+}
+
+// getRealmRoleID resolves a realm role's internal ID by exact name. Keycloak
+// 26 rejects name-only role mappings ("Role not found" when the request body
+// omits the role ID), so the ID must be resolved first and sent alongside the
+// name.
+func (c *Client) getRealmRoleID(ctx context.Context, roleName string) (string, error) {
+	params := url.Values{}
+	params.Set("search", roleName)
+
+	var roles []roleRef
+	if err := c.do(ctx, "GET", "/admin/realms/"+c.realm+"/roles?"+params.Encode(), nil, &roles); err != nil {
+		return "", err
+	}
+	if id, ok := findRoleID(roles, roleName); ok {
+		return id, nil
+	}
+	return "", fmt.Errorf("keycloak realm role not found: %s", roleName)
+}
+
 // AddRealmRole grants a realm role to a user by role name. It is idempotent:
 // granting a role the user already holds is treated as success.
 func (c *Client) AddRealmRole(ctx context.Context, userID, roleName string) error {
+	roleID, err := c.getRealmRoleID(ctx, roleName)
+	if err != nil {
+		return err
+	}
+
 	path := "/admin/realms/" + c.realm + "/users/" + userID + "/role-mappings/realm"
-	body := []map[string]string{{"name": roleName}}
+	body := []map[string]string{{"id": roleID, "name": roleName}}
 
 	resp, err := c.request(ctx, "POST", path, body)
 	if err != nil {
@@ -103,8 +144,13 @@ func (c *Client) AddRealmRole(ctx context.Context, userID, roleName string) erro
 // RemoveRealmRole revokes a realm role from a user by role name. It is
 // idempotent: removing a role the user does not hold is treated as success.
 func (c *Client) RemoveRealmRole(ctx context.Context, userID, roleName string) error {
+	roleID, err := c.getRealmRoleID(ctx, roleName)
+	if err != nil {
+		return err
+	}
+
 	path := "/admin/realms/" + c.realm + "/users/" + userID + "/role-mappings/realm"
-	body := []map[string]string{{"name": roleName}}
+	body := []map[string]string{{"id": roleID, "name": roleName}}
 
 	resp, err := c.request(ctx, "DELETE", path, body)
 	if err != nil {

@@ -10,10 +10,11 @@ import {
   Section,
   Separator,
 } from "react-aria-components"
-import { Check, ImagePlus, LogOut, Monitor, Moon, Sun } from "lucide-react"
+import { Check, ImagePlus, LogOut, Monitor, Moon, QrCode, Sun } from "lucide-react"
 
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
+import { useInvites } from "../hooks/useInvites"
 import { uploadAvatar } from "../hooks/useApi"
 import { useTheme } from "./theme-provider"
 import { useI18n } from "../lib/i18n"
@@ -21,6 +22,7 @@ import { resolveImageUrl } from "../lib/images"
 import { pickImage } from "../lib/imagePicker"
 import { ProfileAvatar } from "./ProfileAvatar"
 import { SideDrawer } from "./ui/drawer"
+import { InviteDialog } from "./barbers/InviteDialog"
 import { useIsMobile } from "../hooks/useIsMobile"
 
 const menuItemClassName =
@@ -91,6 +93,7 @@ export function UserMenu() {
   const userInfo = useAuthStore((s) => s.userInfo)
   const logout = useAuthStore((s) => s.logout)
   const { data: me } = useMe()
+  const invites = useInvites()
   const { locale, setLocale, t } = useI18n()
   const { theme, setTheme } = useTheme()
 
@@ -142,8 +145,32 @@ export function UserMenu() {
         setLocale("rs")
         close()
         break
+      case "invite-employee":
+        invites.start("employee")
+        break
+      case "invite-customer":
+        invites.start("customer")
+        break
+      case "invite-owner":
+        invites.start("owner")
+        break
+      case "invite-realm-admin":
+        invites.start("realm-admin")
+        break
     }
   }
+
+  const inviteDialog = (
+    <InviteDialog
+      open={invites.open}
+      onClose={invites.close}
+      invitation={invites.invitation}
+      loading={invites.loading}
+      error={invites.error ? t("invite.friendError") : null}
+      filename={invites.filename}
+      role={invites.kind}
+    />
+  )
 
   const trigger = (
     <RACButton
@@ -178,6 +205,25 @@ export function UserMenu() {
               <ImagePlus className="size-5" />
               {t("app.changePicture")}
             </DrawerItem>
+            {invites.options.length > 0 && (
+              <>
+                <div className="mt-2 px-3 text-xs font-medium text-muted-foreground">
+                  {t("invite.menu.section")}
+                </div>
+                {invites.options.map((o) => (
+                  <DrawerItem
+                    key={o.kind}
+                    onClick={() => {
+                      close()
+                      invites.start(o.kind)
+                    }}
+                  >
+                    <QrCode className="size-5" />
+                    {t(o.labelKey)}
+                  </DrawerItem>
+                ))}
+              </>
+            )}
             <div className="mt-2 px-3 text-xs font-medium text-muted-foreground">
               {t("app.theme")}
             </div>
@@ -216,28 +262,44 @@ export function UserMenu() {
             </DrawerItem>
           </div>
         </SideDrawer>
+        {inviteDialog}
       </>
     )
   }
 
   return (
-    <MenuTrigger>
-      {trigger}
-      <Popover
-        placement="bottom end"
-        className="min-w-56 rounded-xl bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/5 dark:ring-foreground/10"
-      >
-        <Menu className="outline-none" onAction={(key) => handleAction(String(key))}>
-          <Section className="px-1">
-            <Header className={sectionHeaderClassName}>
-              {t("app.welcome", { name })}
-            </Header>
-            <MenuItem id="change-picture" className={menuItemClassName}>
-              <ImagePlus className="size-4" />
-              {t("app.changePicture")}
-            </MenuItem>
-          </Section>
-          <Separator className="my-1 h-px bg-border" />
+    <>
+      <MenuTrigger>
+        {trigger}
+        <Popover
+          placement="bottom end"
+          className="min-w-56 rounded-xl bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/5 dark:ring-foreground/10"
+        >
+          <Menu className="outline-none" onAction={(key) => handleAction(String(key))}>
+            <Section className="px-1">
+              <Header className={sectionHeaderClassName}>
+                {t("app.welcome", { name })}
+              </Header>
+              <MenuItem id="change-picture" className={menuItemClassName}>
+                <ImagePlus className="size-4" />
+                {t("app.changePicture")}
+              </MenuItem>
+            </Section>
+            <Separator className="my-1 h-px bg-border" />
+            {invites.options.length > 0 && (
+              <>
+                <Section className="px-1">
+                  <Header className={sectionHeaderClassName}>{t("invite.menu.section")}</Header>
+                  {invites.options.map((o) => (
+                    <MenuItem id={`invite-${o.kind}`} className={menuItemClassName}>
+                      <QrCode className="size-4" />
+                      {t(o.labelKey)}
+                    </MenuItem>
+                  ))}
+                </Section>
+                <Separator className="my-1 h-px bg-border" />
+              </>
+            )}
           <Section className="px-1">
             <Header className={sectionHeaderClassName}>{t("app.theme")}</Header>
             <MenuItem id="theme-light" className={menuItemClassName}>
@@ -279,6 +341,8 @@ export function UserMenu() {
           </Section>
         </Menu>
       </Popover>
-    </MenuTrigger>
+      </MenuTrigger>
+      {inviteDialog}
+    </>
   )
 }

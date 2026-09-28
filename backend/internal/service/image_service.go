@@ -272,15 +272,6 @@ func (s *ImageService) Serve(ctx context.Context, img *models.Image) (io.ReadClo
 	return s.storage.Open(ctx, img.ObjectKey)
 }
 
-// PublicURL returns a presigned URL for public object-store images, or "" when
-// the image must be streamed through the API (postgres backend or no storage).
-func (s *ImageService) PublicURL(ctx context.Context, img *models.Image) string {
-	if img.Storage == string(config.BackendPostgres) || s.storage == nil {
-		return ""
-	}
-	return s.storage.URL(ctx, img.ObjectKey)
-}
-
 // UserCanAccess reports whether the user may view a private image: the
 // business admin always can, and the employee may view their own avatar.
 func (s *ImageService) UserCanAccess(ctx context.Context, userID string, img *models.Image, links []models.ImageLink) bool {
