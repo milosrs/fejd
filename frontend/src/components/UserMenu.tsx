@@ -15,6 +15,8 @@ import { Check, ImagePlus, LogOut, Monitor, Moon, QrCode, Sun } from "lucide-rea
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
 import { useInvites } from "../hooks/useInvites"
+import { useCanWrite } from "../hooks/useCanWrite"
+import { useDisabledReason } from "../hooks/useDisabledReason"
 import { uploadAvatar } from "../hooks/useApi"
 import { useTheme } from "./theme-provider"
 import { useI18n } from "../lib/i18n"
@@ -22,6 +24,7 @@ import { resolveImageUrl } from "../lib/images"
 import { pickImage } from "../lib/imagePicker"
 import { ProfileAvatar } from "./ProfileAvatar"
 import { SideDrawer } from "./ui/drawer"
+import { DisabledTooltip } from "./ui/disabled-tooltip"
 import { InviteDialog } from "./barbers/InviteDialog"
 import { useIsMobile } from "../hooks/useIsMobile"
 
@@ -67,21 +70,42 @@ function DrawerItem({
   onClick,
   children,
   destructive,
+  disabled,
 }: {
   onClick: () => void
   children: React.ReactNode
   destructive?: boolean
+  disabled?: boolean
 }) {
-  return (
+  const reason = useDisabledReason()
+  const button = (
     <button
       type="button"
       onClick={onClick}
-      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted ${
+      disabled={disabled}
+      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm transition-colors hover:bg-muted disabled:opacity-50 disabled:pointer-events-none ${
         destructive ? "text-destructive" : "text-foreground"
       }`}
     >
       {children}
     </button>
+  )
+  if (disabled && reason) return <DisabledTooltip reason={reason} className="w-full">{button}</DisabledTooltip>
+  return button
+}
+
+function MenuItemContent({
+  reason,
+  children,
+}: {
+  reason?: string
+  children: React.ReactNode
+}) {
+  if (!reason) return <>{children}</>
+  return (
+    <DisabledTooltip reason={reason} className="w-full">
+      <span className="flex w-full items-center gap-2">{children}</span>
+    </DisabledTooltip>
   )
 }
 
@@ -92,6 +116,8 @@ export function UserMenu() {
 
   const userInfo = useAuthStore((s) => s.userInfo)
   const logout = useAuthStore((s) => s.logout)
+  const canWrite = useCanWrite()
+  const disabledReason = useDisabledReason()
   const { data: me } = useMe()
   const invites = useInvites()
   const { locale, setLocale, t } = useI18n()
@@ -204,7 +230,7 @@ export function UserMenu() {
             </div>
           </div>
           <div className="flex flex-col gap-1 p-2">
-            <DrawerItem onClick={handleChangePicture}>
+            <DrawerItem onClick={handleChangePicture} disabled={!canWrite}>
               <ImagePlus className="size-5" />
               {t("app.changePicture")}
             </DrawerItem>
@@ -216,6 +242,7 @@ export function UserMenu() {
                 {invites.options.map((o) => (
                   <DrawerItem
                     key={o.kind}
+                    disabled={!canWrite}
                     onClick={() => {
                       close()
                       invites.start(o.kind)
@@ -283,9 +310,11 @@ export function UserMenu() {
               <Header className={sectionHeaderClassName}>
                 {t("app.welcome", { name })}
               </Header>
-              <MenuItem id="change-picture" className={menuItemClassName}>
-                <ImagePlus className="size-4" />
-                {t("app.changePicture")}
+              <MenuItem id="change-picture" className={menuItemClassName} isDisabled={!canWrite}>
+                <MenuItemContent reason={disabledReason}>
+                  <ImagePlus className="size-4" />
+                  {t("app.changePicture")}
+                </MenuItemContent>
               </MenuItem>
             </Section>
             <Separator className="my-1 h-px bg-border" />
@@ -294,9 +323,11 @@ export function UserMenu() {
                 <Section className="px-1">
                   <Header className={sectionHeaderClassName}>{t("invite.menu.section")}</Header>
                   {invites.options.map((o) => (
-                    <MenuItem id={`invite-${o.kind}`} className={menuItemClassName}>
-                      <QrCode className="size-4" />
-                      {t(o.labelKey)}
+                    <MenuItem id={`invite-${o.kind}`} className={menuItemClassName} isDisabled={!canWrite}>
+                      <MenuItemContent reason={disabledReason}>
+                        <QrCode className="size-4" />
+                        {t(o.labelKey)}
+                      </MenuItemContent>
                     </MenuItem>
                   ))}
                 </Section>

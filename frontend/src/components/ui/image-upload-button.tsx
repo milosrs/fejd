@@ -8,10 +8,12 @@ export function ImageUploadButton({
   onPicked,
   label,
   uploading,
+  disabled = false,
 }: {
   onPicked: (file: File) => void
   label?: string
   uploading?: boolean
+  disabled?: boolean
 }) {
   const native = Capacitor.isNativePlatform()
   const [picking, setPicking] = useState(false)
@@ -33,7 +35,7 @@ export function ImageUploadButton({
       <Button
         variant="outline"
         size="sm"
-        isDisabled={uploading || picking}
+        isDisabled={uploading || picking || disabled}
         onClick={() => handlePick("library")}
       >
         {uploading || picking ? t("upload.working") : resolvedLabel}
@@ -42,7 +44,7 @@ export function ImageUploadButton({
         <Button
           variant="outline"
           size="sm"
-          isDisabled={uploading || picking}
+          isDisabled={uploading || picking || disabled}
           onClick={() => handlePick("camera")}
         >
           {t("upload.camera")}

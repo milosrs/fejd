@@ -4,6 +4,7 @@ import { format } from "date-fns"
 import { useQueryClient } from "@tanstack/react-query"
 import { useAuthStore } from "../stores/authStore"
 import { useMyUnavailability, reserveOwnSlot, deleteOwnSlot } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
@@ -19,6 +20,7 @@ export function MySchedulePage() {
   const navigate = useNavigate()
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
+  const canWrite = useCanWrite()
   const queryClient = useQueryClient()
   const { t } = useI18n()
 
@@ -133,7 +135,7 @@ export function MySchedulePage() {
                 {message}
               </p>
             )}
-            <Button onClick={handleReserve} isDisabled={saving} className="w-full">
+            <Button onClick={handleReserve} isDisabled={saving || !canWrite} className="w-full">
               {saving ? t("schedule.reserving") : t("schedule.reserveSlot")}
             </Button>
           </CardContent>
@@ -165,7 +167,7 @@ export function MySchedulePage() {
                       </span>
                     )}
                   </div>
-                  <Button variant="destructive" size="sm" onClick={() => handleRemove(b.id)}>
+                  <Button variant="destructive" size="sm" onClick={() => handleRemove(b.id)} isDisabled={!canWrite}>
                     {t("common.remove")}
                   </Button>
                 </div>

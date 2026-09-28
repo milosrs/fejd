@@ -35,11 +35,13 @@ export function HeroSectionForm({
   onChange,
   onUploadImage,
   uploading,
+  disabled = false,
 }: {
   value: HeroContent
   onChange: (value: HeroContent) => void
   onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
   uploading?: boolean
+  disabled?: boolean
 }) {
   const { t } = useI18n()
   return (
@@ -69,6 +71,7 @@ export function HeroSectionForm({
               label={t("sections.form.uploadLogo")}
               onPicked={(file) => onUploadImage(file, "logo")}
               uploading={uploading}
+              disabled={disabled}
             />
           </Field>
           <Field label={t("sections.form.background")}>
@@ -76,6 +79,7 @@ export function HeroSectionForm({
               label={t("sections.form.uploadBackground")}
               onPicked={(file) => onUploadImage(file, "background")}
               uploading={uploading}
+              disabled={disabled}
             />
           </Field>
         </>
@@ -115,11 +119,13 @@ export function GallerySectionForm({
   onChange,
   onUploadImage,
   uploading,
+  disabled = false,
 }: {
   value: GalleryContent
   onChange: (value: GalleryContent) => void
   onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
   uploading?: boolean
+  disabled?: boolean
 }) {
   const { t } = useI18n()
   const images = value.image_urls ?? []
@@ -170,6 +176,7 @@ export function GallerySectionForm({
               label={t("sections.form.addImage")}
               onPicked={addImage}
               uploading={uploading}
+              disabled={disabled}
             />
           )}
         </div>
@@ -257,12 +264,14 @@ export function SectionForm({
   onChange,
   onUploadImage,
   uploading,
+  disabled = false,
 }: {
   type: SectionType
   value: SectionContent
   onChange: (value: SectionContent) => void
   onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
   uploading?: boolean
+  disabled?: boolean
 }) {
   switch (type) {
     case "hero":
@@ -272,6 +281,7 @@ export function SectionForm({
           onChange={onChange}
           onUploadImage={onUploadImage}
           uploading={uploading}
+          disabled={disabled}
         />
       )
     case "about":
@@ -283,6 +293,7 @@ export function SectionForm({
           onChange={onChange}
           onUploadImage={onUploadImage}
           uploading={uploading}
+          disabled={disabled}
         />
       )
     case "contact":

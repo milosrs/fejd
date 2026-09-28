@@ -4,6 +4,7 @@ import { useSalonContext, useIsOwner } from "../context/SalonContext"
 import { useServices, useAdminEmployees, useServiceEmployeesAdmin, type Service } from "../hooks/useApi"
 import { useServiceMutations } from "../hooks/useServiceMutations"
 import { useBookingStore } from "../stores/bookingStore"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { useI18n } from "../lib/i18n"
 import { salonPath } from "../lib/salonDomain"
 import { ServiceCard, ServiceCardSkeleton } from "../components/services/ServiceCard"
@@ -20,6 +21,7 @@ export function ServicesPage() {
   const navigate = useNavigate()
   const setService = useBookingStore((s) => s.setService)
   const reset = useBookingStore((s) => s.reset)
+  const canWrite = useCanWrite()
   const { t } = useI18n()
 
   const businessId = salon?.business.id ?? ""
@@ -119,7 +121,7 @@ export function ServicesPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">{t("services.title")}</h2>
         {editingOn && (
-          <Button size="sm" onClick={() => openForm({ mode: "create" })}>
+          <Button size="sm" onClick={() => openForm({ mode: "create" })} isDisabled={!canWrite}>
             <Plus className="size-3" /> {t("services.add")}
           </Button>
         )}
@@ -146,6 +148,7 @@ export function ServicesPage() {
               key={service.id}
               service={service}
               onBook={handleBook}
+              disabled={!canWrite}
               onEdit={editingOn ? () => openForm({ mode: "edit", service }) : undefined}
               onDelete={editingOn ? () => setDeleting(service) : undefined}
             />
@@ -168,6 +171,7 @@ export function ServicesPage() {
             setEmployees.isPending
           }
           error={formError}
+          disabled={!canWrite}
         />
       )}
 
@@ -180,6 +184,7 @@ export function ServicesPage() {
         }
         confirmLabel={t("common.yes")}
         cancelLabel={t("common.no")}
+        confirmDisabled={!canWrite}
         onConfirm={handleDelete}
         onCancel={() => {
           setDeleting(null)

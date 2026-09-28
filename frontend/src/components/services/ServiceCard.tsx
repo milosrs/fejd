@@ -12,6 +12,7 @@ export function ServiceCard({
   note,
   onEdit,
   onDelete,
+  disabled = false,
 }: {
   service: Service
   imageOverride?: string
@@ -19,6 +20,7 @@ export function ServiceCard({
   note?: string
   onEdit?: () => void
   onDelete?: () => void
+  disabled?: boolean
 }) {
   const { t } = useI18n()
   const imageUrl =
@@ -52,10 +54,10 @@ export function ServiceCard({
       <CardFooter className="flex-col items-stretch gap-2">
         {editing ? (
           <div className="flex gap-2">
-            <Button variant="outline" className="flex-1" onClick={onEdit}>
+            <Button variant="outline" className="flex-1" onClick={onEdit} isDisabled={disabled}>
               <Pencil className="size-3" /> {t("common.edit")}
             </Button>
-            <Button variant="destructive" className="flex-1" onClick={onDelete}>
+            <Button variant="destructive" className="flex-1" onClick={onDelete} isDisabled={disabled}>
               <Trash2 className="size-3" /> {t("common.delete")}
             </Button>
           </div>

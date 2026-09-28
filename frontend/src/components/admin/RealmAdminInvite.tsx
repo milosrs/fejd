@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useMutation } from "@tanstack/react-query"
 import { QrCode } from "lucide-react"
 import { createPlatformInvitation } from "../../hooks/useApi"
+import { useCanWrite } from "../../hooks/useCanWrite"
 import { InviteDialog } from "../barbers/InviteDialog"
 import { Button } from "../ui/button"
 import { useI18n } from "../../lib/i18n"
@@ -11,6 +12,7 @@ type PlatformRole = "customer" | "owner" | "realm-admin"
 
 export function RealmAdminInvite() {
   const { t } = useI18n()
+  const canWrite = useCanWrite()
   const [open, setOpen] = useState(false)
   const [role, setRole] = useState<PlatformRole>("owner")
 
@@ -27,13 +29,13 @@ export function RealmAdminInvite() {
   return (
     <>
       <div className="flex items-center gap-2">
-        <Button size="sm" variant="outline" onClick={() => start("owner")}>
+        <Button size="sm" variant="outline" onClick={() => start("owner")} isDisabled={!canWrite}>
           <QrCode className="size-3" /> {t("admin.inviteOwner")}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => start("customer")}>
+        <Button size="sm" variant="outline" onClick={() => start("customer")} isDisabled={!canWrite}>
           <QrCode className="size-3" /> {t("admin.inviteCustomer")}
         </Button>
-        <Button size="sm" variant="outline" onClick={() => start("realm-admin")}>
+        <Button size="sm" variant="outline" onClick={() => start("realm-admin")} isDisabled={!canWrite}>
           <QrCode className="size-3" /> {t("admin.inviteRealmAdmin")}
         </Button>
       </div>

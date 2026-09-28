@@ -2,6 +2,7 @@ import { useState } from "react"
 import { format } from "date-fns"
 import { useQueryClient } from "@tanstack/react-query"
 import { cancelAppointment, type Appointment } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { useI18n } from "../lib/i18n"
 import { formatCancellationReason } from "../lib/cancellation"
 import { resolveImageUrl } from "../lib/images"
@@ -56,6 +57,7 @@ export function MyAppointmentsList({
 }) {
   const queryClient = useQueryClient()
   const { t } = useI18n()
+  const canWrite = useCanWrite()
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
   const [reason, setReason] = useState("")
   const [cancelling, setCancelling] = useState(false)
@@ -131,6 +133,7 @@ export function MyAppointmentsList({
                         <Button
                           variant="destructive"
                           size="sm"
+                          isDisabled={!canWrite}
                           onClick={() => {
                             setCancelTarget(apt)
                             setReason("")
@@ -185,7 +188,7 @@ export function MyAppointmentsList({
               <Button variant="outline" onClick={() => setCancelTarget(null)}>
                 {t("common.back")}
               </Button>
-              <Button variant="destructive" onClick={handleCancel} isDisabled={cancelling}>
+              <Button variant="destructive" onClick={handleCancel} isDisabled={cancelling || !canWrite}>
                 {cancelling ? t("appointments.cancelling") : t("appointments.cancelTitle")}
               </Button>
             </div>

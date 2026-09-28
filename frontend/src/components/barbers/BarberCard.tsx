@@ -7,9 +7,11 @@ import type { Employee } from "../../hooks/useApi"
 export function BarberCard({
   employee,
   onRemove,
+  disabled = false,
 }: {
   employee: Employee
   onRemove?: () => void
+  disabled?: boolean
 }) {
   const avatar = resolveImageUrl(employee.avatar)
   const name = employee.display_name || employee.user_id
@@ -22,6 +24,7 @@ export function BarberCard({
           size="icon-xs"
           className="absolute right-2 top-2 z-10 text-destructive"
           onClick={onRemove}
+          isDisabled={disabled}
         >
           <Trash2 />
         </Button>

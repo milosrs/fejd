@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query"
 import { Clock } from "lucide-react"
 import { useAuthStore } from "../stores/authStore"
 import { useMe } from "../hooks/useMe"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { useReservationsStream } from "../hooks/useReservationsStream"
 import {
   useMyReservationsMonth,
@@ -94,6 +95,7 @@ export function MyReservationsPage() {
   const navigate = useNavigate()
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
+  const canWrite = useCanWrite()
   const queryClient = useQueryClient()
 
   const todayDate = today(getLocalTimeZone())
@@ -334,12 +336,13 @@ export function MyReservationsPage() {
           <StatusBadge status={r.status} />
           {r.status === "pending" && (
             <>
-              <Button variant="success" size="sm" onClick={() => handleAccept(r)}>
+              <Button variant="success" size="sm" onClick={() => handleAccept(r)} isDisabled={!canWrite}>
                 {t("reservations.accept")}
               </Button>
               <Button
                 variant="danger"
                 size="sm"
+                isDisabled={!canWrite}
                 onClick={() =>
                   setRejectTarget({
                     kind: "appointment",
@@ -356,6 +359,7 @@ export function MyReservationsPage() {
             <Button
               variant="destructive"
               size="sm"
+              isDisabled={!canWrite}
               onClick={() => {
                 setCancelTarget(r)
                 setReason("")
@@ -365,7 +369,7 @@ export function MyReservationsPage() {
             </Button>
           )}
           {canMarkNoShow(r) && (
-            <Button variant="outline" size="sm" onClick={() => setNoShowTarget(r)}>
+            <Button variant="outline" size="sm" onClick={() => setNoShowTarget(r)} isDisabled={!canWrite}>
               {t("reservations.noShow")}
             </Button>
           )}
@@ -386,12 +390,13 @@ export function MyReservationsPage() {
           </span>
           {viewingEmployee && u.status === "pending" && (
             <>
-              <Button variant="success" size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
+              <Button variant="success" size="sm" onClick={() => handleAcceptUnavailability(u.id)} isDisabled={!canWrite}>
                 {t("reservations.accept")}
               </Button>
               <Button
                 variant="danger"
                 size="sm"
+                isDisabled={!canWrite}
                 onClick={() =>
                   setRejectTarget({
                     kind: "unavailability",
@@ -416,7 +421,7 @@ export function MyReservationsPage() {
       <header className="border-b border-border">
         <div className="max-w-6xl mx-auto px-4 py-4 flex gap-4 items-center">
           <h1 className="text-xl font-semibold text-foreground">{t("reservations.title")}</h1>
-          <Button onClick={() => setAddOpen(true)}>{t("reservations.addAppointment")}</Button>
+          <Button onClick={() => setAddOpen(true)} isDisabled={!canWrite}>{t("reservations.addAppointment")}</Button>
           <Button
             variant="outline"
             size="sm"
@@ -548,12 +553,13 @@ export function MyReservationsPage() {
                               </div>
                             </div>
                             <div className="flex shrink-0 flex-col gap-2">
-                              <Button variant="success" size="sm" onClick={() => handleAccept(a)}>
+                              <Button variant="success" size="sm" onClick={() => handleAccept(a)} isDisabled={!canWrite}>
                                 {t("reservations.accept")}
                               </Button>
                               <Button
                                 variant="danger"
                                 size="sm"
+                                isDisabled={!canWrite}
                                 onClick={() =>
                                   setRejectTarget({
                                     kind: "appointment",
@@ -583,12 +589,13 @@ export function MyReservationsPage() {
                             </div>
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <Button variant="success" size="sm" onClick={() => handleAcceptUnavailability(u.id)}>
+                            <Button variant="success" size="sm" onClick={() => handleAcceptUnavailability(u.id)} isDisabled={!canWrite}>
                               {t("reservations.accept")}
                             </Button>
                             <Button
                               variant="danger"
                               size="sm"
+                              isDisabled={!canWrite}
                               onClick={() =>
                                 setRejectTarget({
                                   kind: "unavailability",
@@ -648,7 +655,7 @@ export function MyReservationsPage() {
               <Button
                 variant="destructive"
                 onClick={handleCancel}
-                isDisabled={cancelling || !reason.trim()}
+                isDisabled={cancelling || !reason.trim() || !canWrite}
               >
                 {cancelling ? t("reservations.cancelling") : t("reservations.cancelReservation")}
               </Button>
@@ -689,6 +696,7 @@ export function MyReservationsPage() {
                 onClick={handleReject}
                 isDisabled={
                   rejecting ||
+                  !canWrite ||
                   (!(rejectTarget.kind === "appointment" && isOwner) && !rejectReason.trim())
                 }
               >

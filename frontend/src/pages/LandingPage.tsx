@@ -8,18 +8,19 @@ import { SectionRenderer } from "../components/sections/SectionRenderer"
 import { SectionEditor } from "../components/sections/editor/SectionEditor"
 import { useSectionMutations } from "../hooks/useSectionMutations"
 import { uploadBusinessImage } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { dataUrlToFile, fileToDataUrl } from "../lib/images"
 import { useSalonDraftStore, type DraftImagePurpose } from "../stores/salonDraftStore"
 import { Button } from "../components/ui/button"
 import { ConfirmDialog } from "../components/ui/confirm-dialog"
 import { ChevronDown, ChevronUp, Pencil, Plus, Trash2 } from "lucide-react"
 
-function AddSectionPicker({ onPick }: { onPick: (type: string) => void }) {
+function AddSectionPicker({ onPick, disabled }: { onPick: (type: string) => void; disabled?: boolean }) {
   const { t } = useI18n()
   return (
     <div className="flex flex-wrap justify-center gap-2 rounded-xl border border-dashed border-border p-4">
       {KNOWN_SECTION_TYPES.map((type) => (
-        <Button key={type} variant="outline" size="sm" onClick={() => onPick(type)}>
+        <Button key={type} variant="outline" size="sm" onClick={() => onPick(type)} isDisabled={disabled}>
           <Plus className="size-3" /> {t(`sections.${type}`)}
         </Button>
       ))}
@@ -75,6 +76,7 @@ export function LandingPage() {
   const { slug, salon, editing } = useSalonContext()
   const isOwner = useIsOwner()
   const { t, ready } = useI18n()
+  const canWrite = useCanWrite()
   const { data: sections, isLoading } = useSections(slug)
 
   const businessId = salon?.business.id ?? ""
@@ -176,11 +178,12 @@ export function LandingPage() {
               size="sm"
               className="mt-2"
               onClick={() => setShowAddPicker((v) => !v)}
+              isDisabled={!canWrite}
             >
               <Plus className="size-3" /> {t("landing.addSection")}
             </Button>
           )}
-          {editingOn && showAddPicker && <AddSectionPicker onPick={addSection} />}
+          {editingOn && showAddPicker && <AddSectionPicker onPick={addSection} disabled={!canWrite} />}
         </div>
       ) : (
         <>
@@ -193,7 +196,7 @@ export function LandingPage() {
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => move(index, -1)}
-                    isDisabled={index === 0}
+                    isDisabled={index === 0 || !canWrite}
                   >
                     <ChevronUp />
                   </Button>
@@ -201,7 +204,7 @@ export function LandingPage() {
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => move(index, 1)}
-                    isDisabled={index === list.length - 1}
+                    isDisabled={index === list.length - 1 || !canWrite}
                   >
                     <ChevronDown />
                   </Button>
@@ -209,6 +212,7 @@ export function LandingPage() {
                     variant="ghost"
                     size="icon-xs"
                     onClick={() => setEditingSection(section)}
+                    isDisabled={!canWrite}
                   >
                     <Pencil />
                   </Button>
@@ -217,6 +221,7 @@ export function LandingPage() {
                     size="icon-xs"
                     className="text-destructive"
                     onClick={() => setDeletingSection(section)}
+                    isDisabled={!canWrite}
                   >
                     <Trash2 />
                   </Button>
@@ -231,10 +236,11 @@ export function LandingPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setShowAddPicker((v) => !v)}
+                isDisabled={!canWrite}
               >
                 <Plus className="size-3" /> {t("landing.addSection")}
               </Button>
-              {showAddPicker && <AddSectionPicker onPick={addSection} />}
+              {showAddPicker && <AddSectionPicker onPick={addSection} disabled={!canWrite} />}
             </div>
           )}
         </>
@@ -248,6 +254,7 @@ export function LandingPage() {
           onDelete={isNew ? undefined : () => setDeletingSection(editingSection)}
           saving={saving}
           onUploadImage={handleUploadImage}
+          disabled={!canWrite}
         />
       )}
 
@@ -265,6 +272,7 @@ export function LandingPage() {
         }
         confirmLabel={t("common.yes")}
         cancelLabel={t("common.no")}
+        confirmDisabled={!canWrite}
         onConfirm={confirmDelete}
         onCancel={() => setDeletingSection(null)}
       />

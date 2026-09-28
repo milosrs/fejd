@@ -5,6 +5,7 @@ import { parseDate, getLocalTimeZone, today, Time } from "@internationalized/dat
 import { ArrowLeft } from "lucide-react"
 import { useSalonContext, useIsOwner } from "../context/SalonContext"
 import { useSalonPolicy, updateSalonPolicy } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { useI18n } from "../lib/i18n"
 import { salonPath } from "../lib/salonDomain"
 import { WEEKDAY_ORDER } from "../lib/calendar"
@@ -94,6 +95,7 @@ export function SalonPolicyPage() {
   const isOwner = useIsOwner()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const canWrite = useCanWrite()
   const { t } = useI18n()
 
   const businessId = salon?.business.id ?? ""
@@ -300,7 +302,7 @@ export function SalonPolicyPage() {
           <ArrowLeft className="size-4" /> {t("common.back")}
         </Button>
         <h1 className="text-lg font-semibold text-foreground">{t("policy.title")}</h1>
-        <Button size="sm" onClick={handleSave} isDisabled={saving}>
+        <Button size="sm" onClick={handleSave} isDisabled={saving || !canWrite}>
           {saving ? t("common.saving") : t("common.save")}
         </Button>
       </div>
@@ -420,7 +422,7 @@ export function SalonPolicyPage() {
                 <span className="font-medium">{describeClosure(c, days, t)}</span>
                 {c.reason && <span className="text-muted-foreground ml-2">({c.reason})</span>}
               </div>
-              <Button variant="outline" size="sm" onClick={() => removeClosure(c.key)}>
+              <Button variant="outline" size="sm" onClick={() => removeClosure(c.key)} isDisabled={!canWrite}>
                 {t("common.remove")}
               </Button>
             </div>
@@ -470,7 +472,7 @@ export function SalonPolicyPage() {
                   value={singleReason}
                   onChange={(e) => setSingleReason(e.target.value)}
                 />
-                <Button variant="outline" size="sm" onClick={addSingleClosure}>
+                <Button variant="outline" size="sm" onClick={addSingleClosure} isDisabled={!canWrite}>
                   {t("policy.addNonWorkingDay")}
                 </Button>
               </div>
@@ -513,7 +515,7 @@ export function SalonPolicyPage() {
                   value={rangeReason}
                   onChange={(e) => setRangeReason(e.target.value)}
                 />
-                <Button variant="outline" size="sm" onClick={addRangeClosure}>
+                <Button variant="outline" size="sm" onClick={addRangeClosure} isDisabled={!canWrite}>
                   {t("policy.addNonWorkingRange")}
                 </Button>
               </div>
@@ -525,7 +527,7 @@ export function SalonPolicyPage() {
       {error && <p className="text-sm text-red-500">{error}</p>}
 
       <div className="flex justify-end">
-        <Button onClick={handleSave} isDisabled={saving}>
+        <Button onClick={handleSave} isDisabled={saving || !canWrite}>
           {saving ? t("common.saving") : t("common.save")}
         </Button>
       </div>

@@ -6,12 +6,15 @@ import { Button } from "./ui/button"
 import { RenameSalonDialog } from "./RenameSalonDialog"
 import { DeleteSalonDialog } from "./DeleteSalonDialog"
 import { salonPath } from "../lib/salonDomain"
+import { useCanWrite } from "../hooks/useCanWrite"
+import { useDisabledReason } from "../hooks/useDisabledReason"
 import { useHeaderHeightMeasure } from "../hooks/useHeaderHeightMeasure"
 import { useSections } from "../hooks/useSections"
 import { useI18n } from "../lib/i18n"
 import type { HeroContent } from "../lib/sections"
 import { Loader } from "./Loader"
 import { SideDrawer } from "./ui/drawer"
+import { DisabledTooltip } from "./ui/disabled-tooltip"
 
 const ownerActionClassName =
   "w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted"
@@ -20,6 +23,8 @@ function SalonShell() {
   const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
   const isOwner = useIsOwner()
   const navigate = useNavigate()
+  const canWrite = useCanWrite()
+  const disabledReason = useDisabledReason()
   const { data: sections } = useSections(slug)
   const { pickLocalized, t } = useI18n()
   const [renameOpen, setRenameOpen] = useState(false)
@@ -106,6 +111,7 @@ function SalonShell() {
                 variant="outline"
                 size="sm"
                 onClick={() => setRenameOpen(true)}
+                isDisabled={!canWrite}
               >
                 {t("salon.rename")}
               </Button>
@@ -113,6 +119,7 @@ function SalonShell() {
                 variant="destructive"
                 size="sm"
                 onClick={() => setDeleteOpen(true)}
+                isDisabled={!canWrite}
               >
                 {t("salon.delete")}
               </Button>
@@ -164,26 +171,38 @@ function SalonShell() {
             >
               {t("salon.policy")}
             </button>
-            <button
-              type="button"
-              className={ownerActionClassName}
-              onClick={() => {
-                setMenuOpen(false)
-                setRenameOpen(true)
-              }}
-            >
-              {t("salon.rename")}
-            </button>
-            <button
-              type="button"
-              className={`${ownerActionClassName} text-destructive`}
-              onClick={() => {
-                setMenuOpen(false)
-                setDeleteOpen(true)
-              }}
-            >
-              {t("salon.delete")}
-            </button>
+            {(() => {
+              const btn = (
+                <button
+                  type="button"
+                  className={`${ownerActionClassName} disabled:opacity-50`}
+                  disabled={!canWrite}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setRenameOpen(true)
+                  }}
+                >
+                  {t("salon.rename")}
+                </button>
+              )
+              return disabledReason ? <DisabledTooltip reason={disabledReason} className="w-full">{btn}</DisabledTooltip> : btn
+            })()}
+            {(() => {
+              const btn = (
+                <button
+                  type="button"
+                  className={`${ownerActionClassName} text-destructive disabled:opacity-50`}
+                  disabled={!canWrite}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setDeleteOpen(true)
+                  }}
+                >
+                  {t("salon.delete")}
+                </button>
+              )
+              return disabledReason ? <DisabledTooltip reason={disabledReason} className="w-full">{btn}</DisabledTooltip> : btn
+            })()}
             <button
               type="button"
               className={ownerActionClassName}

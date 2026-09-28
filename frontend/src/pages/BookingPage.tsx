@@ -8,6 +8,7 @@ import { useServices, useServiceEmployees, useBusinessClosures, createAppointmen
 import { useBookingStore } from "../stores/bookingStore"
 import { useTimeSlotStream } from "../hooks/useTimeSlotStream"
 import { useAuthStore } from "../stores/authStore"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { useI18n } from "../lib/i18n"
 import { salonPath } from "../lib/salonDomain"
 import { resolveImageUrl } from "../lib/images"
@@ -36,6 +37,7 @@ export function BookingPage() {
   const { slug, salon } = useSalonContext()
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
+  const canWrite = useCanWrite()
   const { t, ready } = useI18n()
   const queryClient = useQueryClient()
 
@@ -284,7 +286,7 @@ export function BookingPage() {
                     )}
                   </dl>
                   {error && <p className="text-sm text-destructive">{error}</p>}
-                  <Button onClick={handleBook} isDisabled={booking || !ready} className="w-full">
+                  <Button onClick={handleBook} isDisabled={booking || !ready || !canWrite} className="w-full">
                     {!authenticated
                       ? t("booking.loginToComplete")
                       : booking

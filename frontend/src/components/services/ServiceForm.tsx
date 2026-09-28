@@ -36,6 +36,7 @@ export function ServiceForm({
   onSubmit,
   saving,
   error,
+  disabled = false,
 }: {
   initial?: Service
   staff?: Employee[]
@@ -44,6 +45,7 @@ export function ServiceForm({
   onSubmit: (values: ServiceFormValues) => void
   saving?: boolean
   error?: string
+  disabled?: boolean
 }) {
   const [name, setName] = useState(initial?.name ?? "")
   const [description, setDescription] = useState(initial?.description ?? "")
@@ -210,6 +212,7 @@ export function ServiceForm({
                 <ImageUploadButton
                   label={previewUrl || existingImage ? t("services.replaceImage") : t("services.addImage")}
                   onPicked={setImageFile}
+                  disabled={disabled}
                 />
               </div>
             </Field>
@@ -237,7 +240,7 @@ export function ServiceForm({
             <Button variant="outline" onClick={onClose}>
               {t("common.cancel")}
             </Button>
-            <Button isDisabled={saving || !name.trim()} onClick={handleSubmit}>
+            <Button isDisabled={saving || !name.trim() || disabled} onClick={handleSubmit}>
               {saving ? t("common.saving") : t("common.save")}
             </Button>
           </div>

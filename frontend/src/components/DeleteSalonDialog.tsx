@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { deleteBusiness } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { openAppHome } from "../lib/salonDomain"
 import { useI18n } from "../lib/i18n"
 import { Button } from "./ui/button"
@@ -21,6 +22,7 @@ export function DeleteSalonDialog({
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const canWrite = useCanWrite()
   const { t } = useI18n()
   const [name, setName] = useState("")
   const [deleting, setDeleting] = useState(false)
@@ -87,7 +89,7 @@ export function DeleteSalonDialog({
           <Button
             variant="destructive"
             onClick={handleDelete}
-            isDisabled={deleting || !confirmed}
+            isDisabled={deleting || !confirmed || !canWrite}
           >
             {deleting ? t("deleteSalon.deleting") : t("salon.delete")}
           </Button>

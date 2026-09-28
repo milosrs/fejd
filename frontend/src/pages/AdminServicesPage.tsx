@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useAuthStore } from "../stores/authStore"
 import { useServices, createService, updateService, deleteService } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
@@ -13,6 +14,7 @@ export function AdminServicesPage() {
   const navigate = useNavigate()
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
+  const canWrite = useCanWrite()
   const { data: services, refetch } = useServices(businessId!)
   const { t } = useI18n()
 
@@ -113,7 +115,7 @@ export function AdminServicesPage() {
               <Input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} placeholder="25.00" />
             </div>
             {message && <p className={`text-sm ${message.includes("Failed") ? "text-red-500" : "text-green-600"}`}>{message}</p>}
-            <Button onClick={handleAdd} isDisabled={adding} className="w-full">
+            <Button onClick={handleAdd} isDisabled={adding || !canWrite} className="w-full">
               {adding ? t("admin.services.adding") : t("admin.services.add")}
             </Button>
           </CardContent>
@@ -136,7 +138,7 @@ export function AdminServicesPage() {
                         <Input type="number" value={editDuration} onChange={(e) => setEditDuration(e.target.value)} placeholder={t("services.fields.duration")} />
                         <Input type="number" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} placeholder={t("services.fields.price")} />
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleUpdate(svc.id)}>{t("common.save")}</Button>
+                          <Button size="sm" onClick={() => handleUpdate(svc.id)} isDisabled={!canWrite}>{t("common.save")}</Button>
                           <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>{t("common.cancel")}</Button>
                         </div>
                       </div>
@@ -152,6 +154,7 @@ export function AdminServicesPage() {
                           <Button
                             size="sm"
                             variant="outline"
+                            isDisabled={!canWrite}
                             onClick={() => {
                               setEditingId(svc.id)
                               setEditName(svc.name)
@@ -161,7 +164,7 @@ export function AdminServicesPage() {
                           >
                             {t("common.edit")}
                           </Button>
-                          <Button size="sm" variant="destructive" onClick={() => handleDelete(svc.id)}>
+                          <Button size="sm" variant="destructive" onClick={() => handleDelete(svc.id)} isDisabled={!canWrite}>
                             {t("common.delete")}
                           </Button>
                         </div>

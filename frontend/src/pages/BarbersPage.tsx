@@ -3,6 +3,7 @@ import { useSalonContext, useIsOwner, useIsMember } from "../context/SalonContex
 import { useEmployees, useServices, type Employee } from "../hooks/useApi"
 import { useBarberMutations, type EmployeeRemoval } from "../hooks/useBarberMutations"
 import { useInvitations } from "../hooks/useInvitations"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { BarberCard, BarberCardSkeleton } from "../components/barbers/BarberCard"
 import { BarberForm, type BarberFormValues } from "../components/barbers/BarberForm"
 import { InviteDialog } from "../components/barbers/InviteDialog"
@@ -38,6 +39,7 @@ export function BarbersPage() {
   const isMember = useIsMember()
   const { data, isLoading, isError } = useEmployees(slug)
   const { data: servicesData } = useServices(slug)
+  const canWrite = useCanWrite()
   const { t } = useI18n()
 
   const businessId = salon?.business.id ?? ""
@@ -100,16 +102,16 @@ export function BarbersPage() {
         <div className="flex items-center gap-2">
           {isMember && (
             <>
-              <Button size="sm" variant="outline" onClick={() => handleInviteClick("employee")}>
+              <Button size="sm" variant="outline" onClick={() => handleInviteClick("employee")} isDisabled={!canWrite}>
                 <QrCode className="size-3" /> {t("barbers.invite")}
               </Button>
-              <Button size="sm" variant="outline" onClick={() => handleInviteClick("customer")}>
+              <Button size="sm" variant="outline" onClick={() => handleInviteClick("customer")} isDisabled={!canWrite}>
                 <QrCode className="size-3" /> {t("barbers.inviteCustomer")}
               </Button>
             </>
           )}
           {editingOn && (
-            <Button size="sm" onClick={() => setForm({ mode: "create" })}>
+            <Button size="sm" onClick={() => setForm({ mode: "create" })} isDisabled={!canWrite}>
               <Plus className="size-3" /> {t("barbers.add")}
             </Button>
           )}
@@ -142,6 +144,7 @@ export function BarbersPage() {
             <BarberCard
               key={employee.id}
               employee={employee}
+              disabled={!canWrite}
               onRemove={
                 editingOn && employee.role !== "admin"
                   ? () => setPendingRemoval(employee)
@@ -162,6 +165,7 @@ export function BarbersPage() {
           onUploadAvatar={form.mode === "edit" ? handleUploadAvatar : undefined}
           uploading={uploadAvatar.isPending}
           saving={invite.isPending}
+          disabled={!canWrite}
         />
       )}
 
@@ -177,6 +181,7 @@ export function BarbersPage() {
         }
         confirmLabel={t("common.remove")}
         cancelLabel={t("common.cancel")}
+        confirmDisabled={!canWrite}
         onConfirm={handleRemove}
         onCancel={() => setPendingRemoval(null)}
       />

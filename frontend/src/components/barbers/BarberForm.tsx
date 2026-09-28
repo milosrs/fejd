@@ -40,6 +40,7 @@ export function BarberForm({
   onUploadAvatar,
   uploading,
   saving,
+  disabled = false,
 }: {
   initial?: Employee
   services: Service[]
@@ -48,6 +49,7 @@ export function BarberForm({
   onUploadAvatar?: (file: File) => void
   uploading?: boolean
   saving?: boolean
+  disabled?: boolean
 }) {
   const { t } = useI18n()
   const [name, setName] = useState(initial?.display_name ?? "")
@@ -105,6 +107,7 @@ export function BarberForm({
                   onPicked={onUploadAvatar}
                   label={t("barberForm.uploadAvatar")}
                   uploading={uploading}
+                  disabled={disabled}
                 />
               </Field>
             )}
@@ -153,7 +156,7 @@ export function BarberForm({
               <Button variant="outline" onClick={onClose}>
                 {t("common.cancel")}
               </Button>
-              <Button isDisabled={saving} onClick={handleSubmit}>
+              <Button isDisabled={saving || disabled} onClick={handleSubmit}>
                 {saving ? t("barberForm.inviting") : t("barbers.invite")}
               </Button>
             </div>

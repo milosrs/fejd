@@ -8,6 +8,7 @@ export function ConfirmDialog({
   cancelLabel = "Cancel",
   onConfirm,
   onCancel,
+  confirmDisabled = false,
 }: {
   open: boolean
   title: string
@@ -16,6 +17,7 @@ export function ConfirmDialog({
   cancelLabel?: string
   onConfirm: () => void
   onCancel: () => void
+  confirmDisabled?: boolean
 }) {
   if (!open) return null
 
@@ -36,7 +38,7 @@ export function ConfirmDialog({
           <Button variant="outline" onClick={onCancel}>
             {cancelLabel}
           </Button>
-          <Button variant="destructive" onClick={onConfirm}>
+          <Button variant="destructive" onClick={onConfirm} isDisabled={confirmDisabled}>
             {confirmLabel}
           </Button>
         </div>

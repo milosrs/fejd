@@ -2,6 +2,7 @@ import { useState, useEffect } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { useAuthStore } from "../stores/authStore"
 import { useAdminEmployees, useAdminWorkingHours, updateWorkingHours, addOverride, deleteOverride } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
@@ -21,6 +22,7 @@ export function AdminSchedulePage() {
   const navigate = useNavigate()
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
+  const canWrite = useCanWrite()
   const { t } = useI18n()
 
   const days = [
@@ -176,7 +178,7 @@ export function AdminSchedulePage() {
                     {message}
                   </p>
                 )}
-                <Button onClick={handleSave} isDisabled={saving} className="w-full">
+                <Button onClick={handleSave} isDisabled={saving || !canWrite} className="w-full">
                   {saving ? t("admin.schedule.saving") : t("admin.schedule.saveHours")}
                 </Button>
               </CardContent>
@@ -205,6 +207,7 @@ export function AdminSchedulePage() {
                         <Button
                           variant="destructive"
                           size="sm"
+                          isDisabled={!canWrite}
                           onClick={async () => {
                             try {
                               await deleteOverride(businessId!, selectedUserId, o.id)
@@ -220,7 +223,7 @@ export function AdminSchedulePage() {
                     ))}
                   </div>
                 )}
-                <Button variant="outline" onClick={handleAddOverride} className="w-full">
+                <Button variant="outline" onClick={handleAddOverride} isDisabled={!canWrite} className="w-full">
                   {t("admin.schedule.addOverride")}
                 </Button>
               </CardContent>

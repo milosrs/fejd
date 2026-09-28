@@ -19,6 +19,7 @@ export function SectionEditor({
   saving,
   onUploadImage,
   uploading,
+  disabled = false,
 }: {
   section: Section
   onClose: () => void
@@ -27,6 +28,7 @@ export function SectionEditor({
   saving?: boolean
   onUploadImage?: (file: File, purpose: string) => Promise<string | undefined>
   uploading?: boolean
+  disabled?: boolean
 }) {
   const type = isSectionType(section.type) ? section.type : "hero"
   const { t } = useI18n()
@@ -67,6 +69,7 @@ export function SectionEditor({
               onChange={setContent}
               onUploadImage={onUploadImage}
               uploading={uploading}
+              disabled={disabled}
             />
           </div>
           <div className="rounded-xl border border-dashed border-border p-4">
@@ -79,7 +82,7 @@ export function SectionEditor({
 
         <div className="mt-6 flex items-center justify-between">
           {onDelete ? (
-            <Button variant="destructive" size="sm" onClick={onDelete}>
+            <Button variant="destructive" size="sm" onClick={onDelete} isDisabled={disabled}>
               {t("common.delete")}
             </Button>
           ) : (
@@ -90,7 +93,7 @@ export function SectionEditor({
               {t("common.cancel")}
             </Button>
             <Button
-              isDisabled={saving}
+              isDisabled={saving || disabled}
               onClick={() =>
                 onSave(setLocalizedContent(section.content, DEFAULT_LOCALE, content))
               }

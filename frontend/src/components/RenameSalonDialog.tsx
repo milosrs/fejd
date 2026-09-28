@@ -2,6 +2,7 @@ import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
 import { renameBusiness } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { salonPath } from "../lib/salonDomain"
 import { useI18n } from "../lib/i18n"
 import { Button } from "./ui/button"
@@ -21,6 +22,7 @@ export function RenameSalonDialog({
 }) {
   const queryClient = useQueryClient()
   const navigate = useNavigate()
+  const canWrite = useCanWrite()
   const { t } = useI18n()
   const [name, setName] = useState(currentName)
   const [saving, setSaving] = useState(false)
@@ -79,7 +81,7 @@ export function RenameSalonDialog({
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleSave} isDisabled={saving || !name.trim()}>
+          <Button onClick={handleSave} isDisabled={saving || !name.trim() || !canWrite}>
             {saving ? t("common.saving") : t("rename.saveName")}
           </Button>
         </div>

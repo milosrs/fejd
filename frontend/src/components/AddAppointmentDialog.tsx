@@ -2,6 +2,7 @@ import { useState } from "react"
 import { format } from "date-fns"
 import { useQueryClient } from "@tanstack/react-query"
 import { useMyServices, useCustomers, bookOwnAppointment } from "../hooks/useApi"
+import { useCanWrite } from "../hooks/useCanWrite"
 import { useI18n } from "../lib/i18n"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -15,6 +16,7 @@ export function AddAppointmentDialog({
   onClose: () => void
 }) {
   const queryClient = useQueryClient()
+  const canWrite = useCanWrite()
   const { data: services } = useMyServices(businessId)
   const { data: customers } = useCustomers(businessId)
   const { t } = useI18n()
@@ -109,7 +111,7 @@ export function AddAppointmentDialog({
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
           </Button>
-          <Button onClick={handleSave} isDisabled={saving}>
+          <Button onClick={handleSave} isDisabled={saving || !canWrite}>
             {saving ? t("addAppointment.adding") : t("addAppointment.title")}
           </Button>
         </div>
