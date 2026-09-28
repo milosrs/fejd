@@ -9,6 +9,7 @@ import (
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/store"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/google/uuid"
@@ -148,18 +149,12 @@ func (s *SlotService) GetAvailableSlots(
 	dayStart := time.Date(date.Year(), date.Month(), date.Day(), startTime.Hour(), startTime.Minute(), startTime.Second(), 0, date.Location())
 	dayEnd := time.Date(date.Year(), date.Month(), date.Day(), endTime.Hour(), endTime.Minute(), endTime.Second(), 0, date.Location())
 
-	// The slot grid is divided by the salon's configurable slot interval, so
-	// customers can start a booking on a fixed cadence. Booking still uses the
-	// selected service's actual duration.
-	b, err := s.business.GetByID(ctx, businessID)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get business: %w", err)
-	}
-	slotInterval := b.SlotIntervalMinutes
-	if slotInterval <= 0 {
-		slotInterval = 30
-	}
-	duration := time.Duration(slotInterval) * time.Minute
+	// Time slots are computed dynamically from the selected service's actual
+	// duration and the employee's existing reservations and unavailability, so
+	// the service is squeezed into the day's free windows. The salon's slot
+	// interval no longer drives the grid; it is only a UI default for new
+	// service durations.
+	serviceDuration := time.Duration(svc.DurationMinutes) * time.Minute
 
 	existing, err := s.appointments.GetConflictingAppointments(ctx, businessID, businessUserID, dayStart, dayEnd)
 	if err != nil {
@@ -179,7 +174,7 @@ func (s *SlotService) GetAvailableSlots(
 		busySlots = append(busySlots, models.TimeSlot{StartTime: u.StartTime, EndTime: u.EndTime})
 	}
 
-	slots := computeSlots(dayStart, dayEnd, duration, busySlots)
+	slots := computeSlots(dayStart, dayEnd, serviceDuration, busySlots)
 	return slots, nil
 }
 
@@ -859,27 +854,69 @@ func (s *SlotService) RejectUnavailability(ctx context.Context, businessID uuid.
 	return nil
 }
 
-func computeSlots(dayStart, dayEnd time.Time, slotDuration time.Duration, busySlots []models.TimeSlot) []models.TimeSlot {
+func computeSlots(dayStart, dayEnd time.Time, serviceDuration time.Duration, busySlots []models.TimeSlot) []models.TimeSlot {
+	if serviceDuration <= 0 {
+		return nil
+	}
+
+	type interval struct{ start, end time.Time }
+
+	// Clip busy intervals to the working day and drop empty ones.
+	busy := make([]interval, 0, len(busySlots))
+	for _, b := range busySlots {
+		start, end := b.StartTime, b.EndTime
+		if start.Before(dayStart) {
+			start = dayStart
+		}
+		if end.After(dayEnd) {
+			end = dayEnd
+		}
+		if !start.Before(end) {
+			continue
+		}
+		busy = append(busy, interval{start: start, end: end})
+	}
+
+	sort.Slice(busy, func(i, j int) bool { return busy[i].start.Before(busy[j].start) })
+
+	// Merge overlapping and adjacent busy intervals.
+	var merged []interval
+	for _, b := range busy {
+		if len(merged) == 0 {
+			merged = append(merged, b)
+			continue
+		}
+		last := &merged[len(merged)-1]
+		if !b.start.After(last.end) {
+			if b.end.After(last.end) {
+				last.end = b.end
+			}
+		} else {
+			merged = append(merged, b)
+		}
+	}
+
+	now := time.Now()
 	var slots []models.TimeSlot
-	current := dayStart
 
-	for current.Add(slotDuration).Compare(dayEnd) <= 0 {
-		slotEnd := current.Add(slotDuration)
-
-		conflict := false
-		for _, busy := range busySlots {
-			if current.Before(busy.EndTime) && slotEnd.After(busy.StartTime) {
-				conflict = true
-				break
+	// Emit service-sized slots packed into a free window, skipping any that
+	// start in the past.
+	appendWindow := func(from, to time.Time) {
+		for t := from; !t.Add(serviceDuration).After(to); t = t.Add(serviceDuration) {
+			if t.After(now) {
+				slots = append(slots, models.TimeSlot{StartTime: t, EndTime: t.Add(serviceDuration)})
 			}
 		}
-
-		if !conflict && current.After(time.Now()) {
-			slots = append(slots, models.TimeSlot{StartTime: current, EndTime: slotEnd})
-		}
-
-		current = slotEnd
 	}
+
+	cursor := dayStart
+	for _, b := range merged {
+		appendWindow(cursor, b.start)
+		if b.end.After(cursor) {
+			cursor = b.end
+		}
+	}
+	appendWindow(cursor, dayEnd)
 
 	return slots
 }
