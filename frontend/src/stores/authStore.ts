@@ -8,6 +8,7 @@ interface AuthState {
   userInfo: AuthUserInfo | null
   roles: string[]
   isRealmAdmin: boolean
+  emailVerified: boolean
   pendingInviteToken: string | null
   init: () => Promise<void>
   login: () => Promise<void>
@@ -22,6 +23,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   userInfo: null,
   roles: [],
   isRealmAdmin: false,
+  emailVerified: false,
   pendingInviteToken: null,
 
   init: async () => {
@@ -33,6 +35,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         userInfo: auth.getUserInfo(),
         roles: auth.getRoles(),
         isRealmAdmin: auth.isRealmAdmin(),
+        emailVerified: auth.isEmailVerified(),
       })
     })
 
@@ -49,6 +52,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         userInfo: authenticated ? auth.getUserInfo() : null,
         roles: authenticated ? auth.getRoles() : [],
         isRealmAdmin: authenticated ? auth.isRealmAdmin() : false,
+        emailVerified: authenticated ? auth.isEmailVerified() : false,
       })
     } catch (err) {
       console.error("[auth] init failed:", err)
@@ -71,6 +75,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       userInfo: null,
       roles: [],
       isRealmAdmin: false,
+      emailVerified: false,
       pendingInviteToken: null,
     })
   },

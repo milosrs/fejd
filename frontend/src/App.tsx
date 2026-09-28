@@ -26,6 +26,7 @@ import { OnboardingGate } from "#components/OnboardingGate"
 import { Loader } from "#components/Loader"
 import { UserMenu } from "./components/UserMenu"
 import { LanguageToggle } from "./components/LanguageToggle"
+import { EmailVerificationBanner } from "./components/EmailVerificationBanner"
 import { SideDrawer } from "./components/ui/drawer"
 import { InviteLandingPage } from "./components/invite/InviteLandingPage"
 import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
@@ -44,6 +45,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
   const initialized = useAuthStore((s) => s.initialized)
   const authenticated = useAuthStore((s) => s.authenticated)
   const isRealmAdmin = useAuthStore((s) => s.isRealmAdmin)
+  const emailVerified = useAuthStore((s) => s.emailVerified)
   const login = useAuthStore((s) => s.login)
   const register = useAuthStore((s) => s.register)
   const navigate = useNavigate()
@@ -198,6 +200,8 @@ function AppInit({ children }: { children: React.ReactNode }) {
           </div>
         </div>
       </header>
+
+      {authenticated && !emailVerified && <EmailVerificationBanner />}
 
       {authenticated && (
         <SideDrawer

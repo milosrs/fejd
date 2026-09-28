@@ -152,6 +152,7 @@ func main() {
 	r := newRouter(
 		cfg,
 		authMiddleware.Authenticate,
+		authMiddleware.AuthenticateUnverified,
 		authMiddleware.OptionalAuthenticate,
 		authMiddleware.RequireApproved,
 		authMiddleware.RequireRole(auth.RoleOwner),

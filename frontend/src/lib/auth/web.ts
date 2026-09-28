@@ -2,6 +2,8 @@ import keycloak from "../keycloak"
 import type { AuthAdapter, AuthUserInfo } from "./types"
 
 function parsedToken(): Record<string, any> | undefined {
+  console.log("parsedToken() called")
+  console.log(keycloak.tokenParsed)
   return keycloak.tokenParsed as Record<string, any> | undefined
 }
 
@@ -118,6 +120,10 @@ export const webAdapter: AuthAdapter = {
     return rmRoles.includes("realm-admin")
   },
 
+  isEmailVerified() {
+    return parsedToken()?.email_verified === true
+  },
+
   onAuthChange(listener: () => void) {
     listeners.add(listener)
     return () => {
@@ -128,6 +134,6 @@ export const webAdapter: AuthAdapter = {
   // Web captures invites via the /invite/:token route, not deep links, so this
   // registry is never fired. Kept for interface symmetry with the native adapter.
   onInviteLink(_listener: (token: string) => void) {
-    return () => {}
+    return () => { }
   },
 }

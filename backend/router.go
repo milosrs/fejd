@@ -18,7 +18,7 @@ import (
 // functions so routing can be tested without a live Keycloak JWKS.
 func newRouter(
 	cfg *config.Config,
-	authenticate, optionalAuthenticate, requireApproved, requireOwner, requireRealmAdmin func(http.Handler) http.Handler,
+	authenticate, authenticateUnverified, optionalAuthenticate, requireApproved, requireOwner, requireRealmAdmin func(http.Handler) http.Handler,
 	businessHandler *handler.BusinessHandler,
 	appointmentHandler *handler.AppointmentHandler,
 	adminHandler *handler.AdminHandler,
@@ -85,13 +85,18 @@ func newRouter(
 
 			r.Get("/", meHandler.GetMe)
 			r.Post("/avatar", imageHandler.UploadAvatar)
-			r.Post("/claim-role", meHandler.ClaimRole)
 
 			r.Group(func(r chi.Router) {
 				r.Use(requireApproved)
 				r.Post("/business", meHandler.CreateBusiness)
 			})
 		})
+
+		// Finalize self-registration. A freshly-registered user's email is
+		// still unverified, so this route authenticates without the
+		// email-verification check.
+		r.With(authenticateUnverified, customMiddleware.SyncUser(userStore)).
+			Post("/me/claim-role", meHandler.ClaimRole)
 
 		// Customer-facing booking routes: authenticated but NOT approval-gated,
 		// so a self-registered customer can book right after registering (the

@@ -52,3 +52,45 @@ func TestRequireApprovedMissingClaims(t *testing.T) {
 
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
+
+func TestRequireVerifiedEmail(t *testing.T) {
+	cases := []struct {
+		name       string
+		verified   bool
+		method     string
+		wantStatus int
+	}{
+		{"verified user may write", true, http.MethodPost, http.StatusOK},
+		{"verified user may read", true, http.MethodGet, http.StatusOK},
+		{"unverified user may read", false, http.MethodGet, http.StatusOK},
+		{"unverified user may head", false, http.MethodHead, http.StatusOK},
+		{"unverified user may not write", false, http.MethodPost, http.StatusForbidden},
+		{"unverified user may not put", false, http.MethodPut, http.StatusForbidden},
+		{"unverified user may not delete", false, http.MethodDelete, http.StatusForbidden},
+		{"unverified user may not patch", false, http.MethodPatch, http.StatusForbidden},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), ContextKeyClaims, &Claims{EmailVerified: tc.verified})
+			req := httptest.NewRequest(tc.method, "/", nil).WithContext(ctx)
+			rr := httptest.NewRecorder()
+
+			allowed := requireVerifiedEmail(rr, req)
+			if tc.wantStatus == http.StatusOK {
+				assert.True(t, allowed)
+				assert.Equal(t, http.StatusOK, rr.Code)
+			} else {
+				assert.False(t, allowed)
+				assert.Equal(t, http.StatusForbidden, rr.Code)
+			}
+		})
+	}
+}
+
+func TestRequireVerifiedEmailMissingClaims(t *testing.T) {
+	req := httptest.NewRequest(http.MethodPost, "/", nil)
+	rr := httptest.NewRecorder()
+
+	assert.True(t, requireVerifiedEmail(rr, req))
+}

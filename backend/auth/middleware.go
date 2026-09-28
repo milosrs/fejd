@@ -20,6 +20,18 @@ func NewMiddleware(config KeycloakConfig) (*Middleware, error) {
 }
 
 func (m *Middleware) Authenticate(next http.Handler) http.Handler {
+	return m.authenticate(next, true)
+}
+
+// AuthenticateUnverified authenticates like Authenticate but skips the
+// email-verification check. It is used by registration-finalization routes
+// (claim-role) that must run immediately after self-registration, when the
+// user's email is necessarily still unverified.
+func (m *Middleware) AuthenticateUnverified(next http.Handler) http.Handler {
+	return m.authenticate(next, false)
+}
+
+func (m *Middleware) authenticate(next http.Handler, requireVerified bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tokenString, err := ExtractBearerToken(r)
 		if err != nil {
@@ -48,8 +60,35 @@ func (m *Middleware) Authenticate(next http.Handler) http.Handler {
 
 		log.Printf("[auth] authenticated user=%q path=%s roles=%v", claims.Subject, r.URL.Path, roles)
 
+		// Unverified emails may only read; every write (POST/PUT/DELETE/PATCH)
+		// is blocked until the user confirms their address.
+		if requireVerified && !requireVerifiedEmail(w, r) {
+			return
+		}
+
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
+}
+
+// requireVerifiedEmail enforces read-only access for unverified emails and
+// writes the 403 response when blocked. It returns true when the request may
+// proceed. Callers must run Authenticate first so claims are in the context.
+func requireVerifiedEmail(w http.ResponseWriter, r *http.Request) bool {
+	claims := GetClaimsFromRequest(r)
+	if claims == nil || claims.EmailVerified || isReadOnly(r.Method) {
+		return true
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusForbidden)
+	w.Write([]byte(`{"error":"email not verified"}`))
+	return false
+}
+
+// isReadOnly reports whether an HTTP method is a safe, read-only method that
+// an unverified user is still allowed to perform.
+func isReadOnly(method string) bool {
+	return method == http.MethodGet || method == http.MethodHead
 }
 
 // OptionalAuthenticate validates the bearer token when present but never

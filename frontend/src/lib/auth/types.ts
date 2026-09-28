@@ -29,6 +29,8 @@ export interface AuthAdapter {
   getRegistrationRole(): string | undefined
   /** Whether the current token identifies a Keycloak realm administrator. */
   isRealmAdmin(): boolean
+  /** Whether the current user's email address has been verified. */
+  isEmailVerified(): boolean
   /** Subscribe to auth-state changes; returns an unsubscribe function. */
   onAuthChange(listener: () => void): () => void
   /**

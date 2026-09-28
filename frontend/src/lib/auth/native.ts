@@ -328,6 +328,11 @@ export const nativeAdapter: AuthAdapter = {
     return rmRoles.includes("realm-admin")
   },
 
+  isEmailVerified() {
+    if (!accessToken) return false
+    return decodeJwt(accessToken).email_verified === true
+  },
+
   onAuthChange(listener: () => void) {
     changeListeners.add(listener)
     return () => changeListeners.delete(listener)

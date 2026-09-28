@@ -87,7 +87,7 @@ SA_USER_ID="$(curl -sf "$BASE/admin/realms/$REALM/clients/$ADMIN_CLIENT_ID/servi
 RM_CLIENT_ID="$(curl -sf "$BASE/admin/realms/$REALM/clients?clientId=realm-management" "${AUTH[@]}" | jq -r '.[0].id')"
 [ "$RM_CLIENT_ID" != "null" ] || { echo "realm-management client not found" >&2; exit 1; }
 
-for ROLE in manage-clients view-clients query-clients; do
+for ROLE in manage-clients view-clients query-clients view-realm; do
   ROLE_ID="$(curl -sf "$BASE/admin/realms/$REALM/clients/$RM_CLIENT_ID/roles/$ROLE" "${AUTH[@]}" | jq -r '.id')"
   [ "$ROLE_ID" != "null" ] || { echo "role $ROLE not found" >&2; exit 1; }
 
@@ -102,17 +102,36 @@ for ROLE in manage-clients view-clients query-clients; do
   echo "    + fejd-admin: realm-management/$ROLE"
 done
 
-echo "==> Enabling user profile unmanaged attributes"
+echo "==> Updating user profile (unmanaged attributes + registration_role)"
 UP_COMPONENT="$(curl -sf "$BASE/admin/realms/$REALM/components?type=org.keycloak.userprofile.UserProfileProvider" "${AUTH[@]}")"
 UP_ID="$(echo "$UP_COMPONENT" | jq -r '.[] | select(.providerId == "declarative-user-profile") | .id' | head -n1)"
 if [ -n "$UP_ID" ] && [ "$UP_ID" != "null" ]; then
   curl -sf "$BASE/admin/realms/$REALM/components/$UP_ID" "${AUTH[@]}" \
-    | jq '.config["kc.user.profile.config"] = [ (.config["kc.user.profile.config"][0] | fromjson | .unmanagedAttributePolicy = "ENABLED" | tojson) ]' \
+    | jq '
+        .config["kc.user.profile.config"] = [
+          (
+            .config["kc.user.profile.config"][0]
+            | fromjson
+            | .unmanagedAttributePolicy = "ENABLED"
+            | .attributes = (
+                [ .attributes[] | select(.name != "registration_role") ]
+                + [ {
+                    name: "registration_role",
+                    displayName: "Registration role",
+                    validations: { length: { max: 64 } },
+                    permissions: { view: ["admin", "user"], edit: ["admin", "user"] },
+                    multivalued: false
+                  } ]
+              )
+            | tojson
+          )
+        ]
+      ' \
     > /tmp/fejd-user-profile.json
   curl -sf -X PUT "$BASE/admin/realms/$REALM/components/$UP_ID" "${AUTH[@]}" \
     -H "Content-Type: application/json" \
     --data-binary @/tmp/fejd-user-profile.json > /dev/null
-  echo "    user profile unmanagedAttributePolicy = ENABLED"
+  echo "    user profile: unmanagedAttributePolicy = ENABLED, registration_role declared"
 else
   echo "    ! declarative-user-profile component not found (skipping)"
 fi
