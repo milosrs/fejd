@@ -20,6 +20,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	_ "time/tzdata" // embed the IANA tz database so LoadLocation works without host tzdata
 
 	"fejd-backend/auth"
 	_ "fejd-backend/docs"
