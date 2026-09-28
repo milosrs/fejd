@@ -2,7 +2,7 @@ import { CalendarDate, type DateValue } from "@internationalized/date"
 import { ChevronLeftIcon, ChevronRightIcon } from "lucide-react"
 
 import { cn } from "#lib/utils"
-import { buildMonthGrid } from "#lib/calendar"
+import { buildMonthGrid, WEEKDAY_ORDER } from "#lib/calendar"
 import { useI18n } from "../../lib/i18n"
 import { Button } from "#components/ui/button"
 import {
@@ -145,12 +145,12 @@ export function CalendarGrid({
       </header>
 
       <div className="grid grid-cols-7 gap-1.5">
-        {weekdays.map((day) => (
+        {WEEKDAY_ORDER.map((dow) => (
           <div
-            key={day}
+            key={dow}
             className="px-1 text-center text-[11px] font-medium uppercase tracking-wide text-muted-foreground"
           >
-            {day}
+            {weekdays[dow]}
           </div>
         ))}
       </div>

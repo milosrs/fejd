@@ -22,7 +22,12 @@ export function getMonthDays(year: number, month: number): CalendarDate[] {
   return days
 }
 
-// buildMonthGrid returns a Sunday-first month grid padded with overflow days
+// WEEKDAY_ORDER lists day_of_week values in Monday-first display order. The
+// day_of_week value itself keeps the app-wide convention 0 = Sunday .. 6 =
+// Saturday (matching JS Date#getDay and the DB column).
+export const WEEKDAY_ORDER: number[] = [1, 2, 3, 4, 5, 6, 0]
+
+// buildMonthGrid returns a Monday-first month grid padded with overflow days
 // from the neighbouring months so the grid always covers whole weeks.
 export function buildMonthGrid(year: number, month: number): MonthCell[] {
   const first = new CalendarDate(year, month, 1)
@@ -30,7 +35,8 @@ export function buildMonthGrid(year: number, month: number): MonthCell[] {
   const cells: MonthCell[] = []
 
   const firstWeekday = getDayOfWeek(first, "en-US")
-  for (let i = firstWeekday; i > 0; i--) {
+  const mondayOffset = (firstWeekday + 6) % 7
+  for (let i = mondayOffset; i > 0; i--) {
     cells.push({ date: first.subtract({ days: i }), inMonth: false })
   }
 

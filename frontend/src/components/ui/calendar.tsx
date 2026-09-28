@@ -79,6 +79,7 @@ function Calendar<
 ) {
   return (
     <AriaCalendar
+      firstDayOfWeek="mon"
       {...props}
       data-slot="calendar"
       visibleDuration={{ months: props.numberOfMonths || 1 }}
@@ -108,6 +109,7 @@ function RangeCalendar<T extends DateValue>(
 ) {
   return (
     <AriaRangeCalendar
+      firstDayOfWeek="mon"
       {...props}
       data-slot="calendar"
       visibleDuration={{ months: props.numberOfMonths || 1 }}

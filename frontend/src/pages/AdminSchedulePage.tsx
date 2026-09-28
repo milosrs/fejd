@@ -8,6 +8,7 @@ import { Label } from "../components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { Select } from "../components/ui/select"
 import { useI18n } from "../lib/i18n"
+import { WEEKDAY_ORDER } from "../lib/calendar"
 
 interface HourRow {
   day_of_week: number
@@ -152,21 +153,21 @@ export function AdminSchedulePage() {
                 <CardTitle>{t("admin.schedule.weeklyHours")}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                {days.map((day, i) => (
-                  <div key={day} className="flex items-center gap-3">
-                    <Label className="w-24">{day}</Label>
+                {WEEKDAY_ORDER.map((dow) => (
+                  <div key={dow} className="flex items-center gap-3">
+                    <Label className="w-24">{days[dow]}</Label>
                     <Input
                       type="time"
                       className="w-32"
-                      value={hours[i]?.start_time || ""}
-                      onChange={(e) => updateRow(i, "start_time", e.target.value)}
+                      value={hours[dow]?.start_time || ""}
+                      onChange={(e) => updateRow(dow, "start_time", e.target.value)}
                     />
                     <span className="text-muted-foreground">{t("admin.schedule.to")}</span>
                     <Input
                       type="time"
                       className="w-32"
-                      value={hours[i]?.end_time || ""}
-                      onChange={(e) => updateRow(i, "end_time", e.target.value)}
+                      value={hours[dow]?.end_time || ""}
+                      onChange={(e) => updateRow(dow, "end_time", e.target.value)}
                     />
                   </div>
                 ))}

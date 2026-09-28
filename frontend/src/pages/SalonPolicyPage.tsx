@@ -7,6 +7,7 @@ import { useSalonContext, useIsOwner } from "../context/SalonContext"
 import { useSalonPolicy, updateSalonPolicy } from "../hooks/useApi"
 import { useI18n } from "../lib/i18n"
 import { salonPath } from "../lib/salonDomain"
+import { WEEKDAY_ORDER } from "../lib/calendar"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
@@ -310,29 +311,29 @@ export function SalonPolicyPage() {
           <CardDescription>{t("policy.workingHoursHelp")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-2">
-          {days.map((day, i) => (
-            <div key={day} className="flex flex-wrap items-center gap-2">
-              <span className="w-24 text-sm text-muted-foreground">{day}</span>
+          {WEEKDAY_ORDER.map((dow) => (
+            <div key={dow} className="flex flex-wrap items-center gap-2">
+              <span className="w-24 text-sm text-muted-foreground">{days[dow]}</span>
               <Input
                 type="time"
                 className="w-28"
-                value={schedule[i]?.start_time || ""}
-                disabled={schedule[i]?.non_working}
-                onChange={(e) => updateSchedule(i, { start_time: e.target.value })}
+                value={schedule[dow]?.start_time || ""}
+                disabled={schedule[dow]?.non_working}
+                onChange={(e) => updateSchedule(dow, { start_time: e.target.value })}
               />
               <span className="text-muted-foreground">{t("admin.schedule.to")}</span>
               <Input
                 type="time"
                 className="w-28"
-                value={schedule[i]?.end_time || ""}
-                disabled={schedule[i]?.non_working}
-                onChange={(e) => updateSchedule(i, { end_time: e.target.value })}
+                value={schedule[dow]?.end_time || ""}
+                disabled={schedule[dow]?.non_working}
+                onChange={(e) => updateSchedule(dow, { end_time: e.target.value })}
               />
               <label className="ml-auto flex items-center gap-1.5 text-sm text-muted-foreground">
                 <input
                   type="checkbox"
-                  checked={schedule[i]?.non_working || false}
-                  onChange={(e) => updateSchedule(i, { non_working: e.target.checked })}
+                  checked={schedule[dow]?.non_working || false}
+                  onChange={(e) => updateSchedule(dow, { non_working: e.target.checked })}
                 />
                 {t("policy.workingHoursNonWorking")}
               </label>

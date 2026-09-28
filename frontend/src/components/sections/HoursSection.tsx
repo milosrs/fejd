@@ -2,8 +2,10 @@ import { useI18n } from "../../lib/i18n"
 import { useSalonContext } from "../../context/SalonContext"
 import { useBusinessWorkingHours, useBusinessClosures } from "../../hooks/useApi"
 import { isSalonOpenNow, localHoursForDay } from "../../lib/salonHours"
+import { WEEKDAY_ORDER } from "../../lib/calendar"
 import type { HoursContent } from "../../lib/sections"
 
+// Indexed by day_of_week (0 = Sunday .. 6 = Saturday).
 const DAY_KEYS = [
   "days.sunday",
   "days.monday",
@@ -38,11 +40,12 @@ export function HoursSection({
         {content.heading || t("sections.hours")}
       </h3>
       <ul className="space-y-2">
-        {DAY_KEYS.map((key, dow) => {
+        {WEEKDAY_ORDER.map((dow) => {
+          const key = DAY_KEYS[dow]
           const range = localHoursForDay(hours, dow)
           const isToday = dow === today
           return (
-            <li key={key} className="flex items-center gap-2">
+            <li key={dow} className="flex items-center gap-2">
               <span
                 className={`w-28 shrink-0 text-sm ${
                   isToday ? "font-semibold text-foreground" : "text-muted-foreground"
