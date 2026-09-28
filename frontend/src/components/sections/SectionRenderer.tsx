@@ -4,6 +4,7 @@ import type {
   ContactContent,
   GalleryContent,
   HeroContent,
+  HoursContent,
   Section,
   SectionContent,
 } from "../../lib/sections"
@@ -13,6 +14,7 @@ import { HeroSection } from "./HeroSection"
 import { AboutSection } from "./AboutSection"
 import { GallerySection } from "./GallerySection"
 import { ContactSection } from "./ContactSection"
+import { HoursSection } from "./HoursSection"
 
 export function SectionRenderer({
   section,
@@ -46,6 +48,8 @@ export function SectionRenderer({
       return <GallerySection content={(content ?? {}) as GalleryContent} contained={contained} />
     case "contact":
       return <ContactSection content={(content ?? {}) as ContactContent} />
+    case "hours":
+      return <HoursSection content={(content ?? {}) as HoursContent} />
     default:
       return null
   }

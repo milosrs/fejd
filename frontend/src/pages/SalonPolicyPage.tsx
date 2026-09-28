@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useQueryClient } from "@tanstack/react-query"
-import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
+import { parseDate, getLocalTimeZone, today, Time } from "@internationalized/date"
 import { ArrowLeft } from "lucide-react"
 import { useSalonContext, useIsOwner } from "../context/SalonContext"
 import { useSalonPolicy, updateSalonPolicy } from "../hooks/useApi"
@@ -12,6 +12,7 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card"
 import { Calendar, RangeCalendar } from "../components/ui/calendar"
+import { TimeField, TimeFieldInput, TimeFieldSegment } from "../components/ui/time-field"
 
 interface DaySchedule {
   day_of_week: number
@@ -87,22 +88,6 @@ function isValidDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value))
 }
 
-// minutesToHHMM renders a total-minute count as an HH:MM time input value.
-function minutesToHHMM(total: number): string {
-  const h = Math.floor(total / 60)
-  const m = total % 60
-  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
-}
-
-// hhmmToMinutes parses an HH:MM time input value into total minutes.
-function hhmmToMinutes(value: string): number {
-  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim())
-  if (!match) return Number.NaN
-  const minutes = Number(match[2])
-  if (minutes > 59) return Number.NaN
-  return Number(match[1]) * 60 + minutes
-}
-
 export function SalonPolicyPage() {
   const { slug, salon } = useSalonContext()
   const isOwner = useIsOwner()
@@ -125,7 +110,7 @@ export function SalonPolicyPage() {
 
   const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule())
   const [leadHours, setLeadHours] = useState("")
-  const [noShowTime, setNoShowTime] = useState("")
+  const [noShowTime, setNoShowTime] = useState<Time | null>(null)
   const [slotInterval, setSlotInterval] = useState("30")
   const [autoApprove, setAutoApprove] = useState(false)
   const [dateClosures, setDateClosures] = useState<ClosureRule[]>([])
@@ -142,7 +127,12 @@ export function SalonPolicyPage() {
   useEffect(() => {
     if (!policy) return
     setLeadHours(String(policy.cancellation_lead_hours))
-    setNoShowTime(minutesToHHMM(policy.no_show_after_minutes))
+    setNoShowTime(
+      new Time(
+        Math.floor(policy.no_show_after_minutes / 60),
+        policy.no_show_after_minutes % 60,
+      ),
+    )
     setSlotInterval(String(policy.slot_interval_minutes))
     setAutoApprove(policy.auto_approve)
 
@@ -259,11 +249,7 @@ export function SalonPolicyPage() {
       setError(t("policy.intervalInvalid"))
       return
     }
-    const noShow = noShowTime.trim() === "" ? 0 : hhmmToMinutes(noShowTime)
-    if (Number.isNaN(noShow) || noShow < 0) {
-      setError(t("policy.noShowInvalid"))
-      return
-    }
+    const noShow = noShowTime ? noShowTime.hour * 60 + noShowTime.minute : 0
     setSaving(true)
     setError("")
     try {
@@ -387,15 +373,19 @@ export function SalonPolicyPage() {
               onChange={(e) => setLeadHours(e.target.value)}
             />
           </div>
-          <div className="space-y-1">
-            <Label htmlFor="no-show-grace">{t("policy.noShowGrace")}</Label>
-            <Input
-              id="no-show-grace"
-              type="time"
-              value={noShowTime}
-              onChange={(e) => setNoShowTime(e.target.value)}
-            />
-          </div>
+          <TimeField
+            value={noShowTime}
+            onChange={setNoShowTime}
+            granularity="minute"
+            hourCycle={24}
+            shouldForceLeadingZeros
+            className="space-y-1"
+          >
+            <Label>{t("policy.noShowGrace")}</Label>
+            <TimeFieldInput>
+              {(segment) => <TimeFieldSegment segment={segment} />}
+            </TimeFieldInput>
+          </TimeField>
           <div className="space-y-1">
             <Label htmlFor="slot-interval">{t("policy.slotInterval")}</Label>
             <Input

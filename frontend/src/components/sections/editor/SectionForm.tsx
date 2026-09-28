@@ -10,6 +10,7 @@ import type {
   ContactContent,
   GalleryContent,
   HeroContent,
+  HoursContent,
   SectionContent,
   SectionType,
 } from "../../../lib/sections"
@@ -230,6 +231,26 @@ export function ContactSectionForm({
   )
 }
 
+export function HoursSectionForm({
+  value,
+  onChange,
+}: {
+  value: HoursContent
+  onChange: (value: HoursContent) => void
+}) {
+  const { t } = useI18n()
+  return (
+    <div className="space-y-4">
+      <Field label={t("sections.form.heading")}>
+        <Input
+          value={value.heading ?? ""}
+          onChange={(e) => onChange({ ...value, heading: e.target.value })}
+        />
+      </Field>
+    </div>
+  )
+}
+
 export function SectionForm({
   type,
   value,
@@ -266,6 +287,8 @@ export function SectionForm({
       )
     case "contact":
       return <ContactSectionForm value={value as ContactContent} onChange={onChange} />
+    case "hours":
+      return <HoursSectionForm value={value as HoursContent} onChange={onChange} />
     default:
       return null
   }

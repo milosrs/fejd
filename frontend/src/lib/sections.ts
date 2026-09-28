@@ -1,4 +1,4 @@
-export type SectionType = "hero" | "about" | "gallery" | "contact"
+export type SectionType = "hero" | "about" | "gallery" | "contact" | "hours"
 
 export interface Section {
   id: string
@@ -33,17 +33,23 @@ export interface ContactContent {
   instagram_url?: string
 }
 
+export interface HoursContent {
+  heading?: string
+}
+
 export type SectionContent =
   | HeroContent
   | AboutContent
   | GalleryContent
   | ContactContent
+  | HoursContent
 
 export const KNOWN_SECTION_TYPES: SectionType[] = [
   "hero",
   "about",
   "gallery",
   "contact",
+  "hours",
 ]
 
 export function isSectionType(value: string): value is SectionType {

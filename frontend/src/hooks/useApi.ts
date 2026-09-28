@@ -10,6 +10,7 @@ const URL_SERVICE_EMPLOYEES = "/api/business/{slug}/services/{serviceID}/employe
 const URL_BUSINESS_EMPLOYEES = "/api/business/{slug}/employees" as const
 const URL_BUSINESS_SLOTS = "/api/business/{slug}/slots" as const
 const URL_BUSINESS_CLOSURES = "/api/business/{slug}/closures" as const
+const URL_BUSINESS_WORKING_HOURS = "/api/business/{slug}/working-hours" as const
 const URL_MY_APPOINTMENTS = "/api/my/appointments" as const
 const URL_MY_APPOINTMENTS_DELETE = "/api/my/appointments/{appointmentID}" as const
 const URL_SALON_POLICY = "/api/admin/business/{businessID}/policy" as const
@@ -141,6 +142,19 @@ export function useBusinessClosures(slug: string) {
         params: { path: { slug } },
       })
       return data ?? []
+    },
+    enabled: !!slug,
+  })
+}
+
+export function useBusinessWorkingHours(slug: string) {
+  return useQuery({
+    queryKey: ["business-working-hours", slug],
+    queryFn: async () => {
+      const { data } = await GET(URL_BUSINESS_WORKING_HOURS, {
+        params: { path: { slug } },
+      })
+      return (data ?? []) as components["schemas"]["dto.BusinessHours"][]
     },
     enabled: !!slug,
   })

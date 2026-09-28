@@ -28,7 +28,8 @@ func newTestBusinessHandler(t *testing.T) (*BusinessHandler, *store.BusinessStor
 	imageLinkStore := store.NewImageLinkStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
 	businessClosureStore := store.NewBusinessClosureStore(pool)
-	h := NewBusinessHandler(businessStore, buStore, nil, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, businessClosureStore, nil)
+	businessHoursStore := store.NewBusinessHoursStore(pool)
+	h := NewBusinessHandler(businessStore, buStore, nil, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, businessClosureStore, businessHoursStore, nil)
 	return h, businessStore, pool
 }
 
@@ -215,4 +216,35 @@ func TestBusinessHandler_GetClosures_Empty(t *testing.T) {
 
 	require.Equal(t, http.StatusOK, rr.Code)
 	assert.JSONEq(t, "[]", rr.Body.String())
+}
+
+func TestBusinessHandler_GetWorkingHours(t *testing.T) {
+	h, businessStore, pool := newTestBusinessHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+
+	_, err := pool.Exec(ctx,
+		`INSERT INTO business_hours (business_id, day_of_week, start_time, end_time) VALUES
+			($1, 1, '09:00:00'::time, '17:00:00'::time),
+			($1, 2, '10:00:00'::time, '18:30:00'::time)`,
+		b.ID,
+	)
+	require.NoError(t, err)
+
+	req := withSlug(httptest.NewRequest(http.MethodGet, "/api/business/salon/working-hours", nil), "salon")
+	rr := httptest.NewRecorder()
+
+	h.GetWorkingHours(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var hours []dto.BusinessHours
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &hours))
+	require.Len(t, hours, 2)
+	assert.Equal(t, 1, hours[0].DayOfWeek)
+	assert.Equal(t, "09:00", hours[0].StartTime)
+	assert.Equal(t, "17:00", hours[0].EndTime)
+	assert.Equal(t, 2, hours[1].DayOfWeek)
+	assert.Equal(t, "18:30", hours[1].EndTime)
 }

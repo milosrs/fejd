@@ -29,6 +29,7 @@ type BusinessHandler struct {
 	imageLinkStore       *store.ImageLinkStore
 	employeeServiceStore *store.EmployeeServiceStore
 	businessClosureStore *store.BusinessClosureStore
+	businessHoursStore   *store.BusinessHoursStore
 	slotService          *service.SlotService
 }
 
@@ -42,6 +43,7 @@ func NewBusinessHandler(
 	imageLinkStore *store.ImageLinkStore,
 	employeeServiceStore *store.EmployeeServiceStore,
 	businessClosureStore *store.BusinessClosureStore,
+	businessHoursStore *store.BusinessHoursStore,
 	slotService *service.SlotService,
 ) *BusinessHandler {
 	return &BusinessHandler{
@@ -54,6 +56,7 @@ func NewBusinessHandler(
 		imageLinkStore:       imageLinkStore,
 		employeeServiceStore: employeeServiceStore,
 		businessClosureStore: businessClosureStore,
+		businessHoursStore:   businessHoursStore,
 		slotService:          slotService,
 	}
 }
@@ -196,6 +199,40 @@ func (h *BusinessHandler) GetClosures(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, dto.BusinessClosuresFromModels(closures))
+}
+
+// GetWorkingHours godoc
+// @Summary      List opening hours
+// @Description  Returns the salon's default weekly opening hours, so the landing page can show when it is open.
+// @Tags         public
+// @Produce      json
+// @Param        slug path string true "Business slug"
+// @Success      200 {array} dto.BusinessHours
+// @Failure      404 {object} ErrorResponse
+// @Router       /api/business/{slug}/working-hours [get]
+func (h *BusinessHandler) GetWorkingHours(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	if h.businessHoursStore == nil {
+		writeJSON(w, http.StatusOK, []dto.BusinessHours{})
+		return
+	}
+
+	hours, err := h.businessHoursStore.ListByBusiness(r.Context(), b.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get working hours")
+		return
+	}
+	if hours == nil {
+		hours = []models.BusinessHours{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.BusinessHoursFromModels(hours))
 }
 
 // GetServices godoc

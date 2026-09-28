@@ -58,6 +58,7 @@ func newRouter(
 			r.Get("/sections", businessHandler.GetSections)
 			r.Get("/slots", businessHandler.GetAvailableSlots)
 			r.Get("/closures", businessHandler.GetClosures)
+			r.Get("/working-hours", businessHandler.GetWorkingHours)
 		})
 
 		r.Get("/i18n/{locale}", i18nHandler.GetTranslations)

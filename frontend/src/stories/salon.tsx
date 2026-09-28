@@ -11,6 +11,7 @@ import type { Salon } from "../hooks/useSalon"
 import type { Me } from "../hooks/useMe"
 import type { Service, Employee } from "../hooks/useApi"
 import type { Section } from "../lib/sections"
+import type { BusinessHours, BusinessClosure } from "../lib/salonHours"
 
 export const mockSalon: Salon = {
   business: {
@@ -143,6 +144,33 @@ export const mockSections: Section[] = [
     },
     position: 3,
   },
+  {
+    id: "eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee",
+    page_id: "99999999-9999-4999-8999-999999999999",
+    type: "hours",
+    content: {
+      en: {
+        heading: "Opening hours",
+      },
+      rs: {
+        heading: "Radno vreme",
+      },
+    },
+    position: 4,
+  },
+]
+
+export const mockWorkingHours: BusinessHours[] = [
+  { day_of_week: 1, start_time: "09:00", end_time: "17:00" },
+  { day_of_week: 2, start_time: "09:00", end_time: "17:00" },
+  { day_of_week: 3, start_time: "09:00", end_time: "17:00" },
+  { day_of_week: 4, start_time: "09:00", end_time: "17:00" },
+  { day_of_week: 5, start_time: "09:00", end_time: "17:00" },
+  { day_of_week: 6, start_time: "10:00", end_time: "16:00" },
+]
+
+export const mockClosures: BusinessClosure[] = [
+  { type: "weekly", day_of_week: 0 },
 ]
 
 export const mockOwnerMe: Me = {
@@ -181,6 +209,8 @@ interface SalonProvidersProps {
   services?: Service[]
   employees?: Employee[]
   policy?: any
+  workingHours?: BusinessHours[]
+  closures?: BusinessClosure[]
   children: React.ReactNode
 }
 
@@ -194,6 +224,8 @@ export function SalonProviders({
   services = mockSalon.services,
   employees = mockSalon.employees,
   policy,
+  workingHours = mockWorkingHours,
+  closures = mockClosures,
   children,
 }: SalonProvidersProps) {
   const queryClient = useMemo(() => {
@@ -204,6 +236,8 @@ export function SalonProviders({
     qc.setQueryData(["sections", slug], sections)
     qc.setQueryData(["services", slug], services)
     qc.setQueryData(["employees", slug], employees)
+    qc.setQueryData(["business-working-hours", slug], workingHours)
+    qc.setQueryData(["business-closures", slug], closures)
     qc.setQueryData(["i18n", "en"], mockI18nEn)
     if (policy) {
       qc.setQueryData(["salon-policy", salon.business.id], policy)
@@ -212,7 +246,7 @@ export function SalonProviders({
       qc.setQueryData(["me"], me)
     }
     return qc
-  }, [slug, salon, me, sections, services, employees, policy])
+  }, [slug, salon, me, sections, services, employees, policy, workingHours, closures])
 
   useLayoutEffect(() => {
     useAuthStore.setState({
