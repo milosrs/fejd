@@ -310,33 +310,37 @@ export function SalonPolicyPage() {
           <CardTitle>{t("policy.workingHours")}</CardTitle>
           <CardDescription>{t("policy.workingHoursHelp")}</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-2">
+        <CardContent className="divide-y divide-border">
           {WEEKDAY_ORDER.map((dow) => (
-            <div key={dow} className="flex flex-wrap items-center gap-2">
-              <span className="w-24 text-sm text-muted-foreground">{days[dow]}</span>
-              <Input
-                type="time"
-                className="w-28"
-                value={schedule[dow]?.start_time || ""}
-                disabled={schedule[dow]?.non_working}
-                onChange={(e) => updateSchedule(dow, { start_time: e.target.value })}
-              />
-              <span className="text-muted-foreground">{t("admin.schedule.to")}</span>
-              <Input
-                type="time"
-                className="w-28"
-                value={schedule[dow]?.end_time || ""}
-                disabled={schedule[dow]?.non_working}
-                onChange={(e) => updateSchedule(dow, { end_time: e.target.value })}
-              />
-              <label className="ml-auto flex items-center gap-1.5 text-sm text-muted-foreground">
-                <input
-                  type="checkbox"
-                  checked={schedule[dow]?.non_working || false}
-                  onChange={(e) => updateSchedule(dow, { non_working: e.target.checked })}
+            <div key={dow} className="space-y-2 py-3 first:pt-0 last:pb-0">
+              <div className="text-sm font-medium text-foreground">{days[dow]}</div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  className="w-28"
+                  value={schedule[dow]?.start_time || ""}
+                  disabled={schedule[dow]?.non_working}
+                  onChange={(e) => updateSchedule(dow, { start_time: e.target.value })}
                 />
-                {t("policy.workingHoursNonWorking")}
-              </label>
+                <span className="text-sm text-muted-foreground">{t("admin.schedule.to")}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Input
+                  type="time"
+                  className="w-28"
+                  value={schedule[dow]?.end_time || ""}
+                  disabled={schedule[dow]?.non_working}
+                  onChange={(e) => updateSchedule(dow, { end_time: e.target.value })}
+                />
+                <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <input
+                    type="checkbox"
+                    checked={schedule[dow]?.non_working || false}
+                    onChange={(e) => updateSchedule(dow, { non_working: e.target.checked })}
+                  />
+                  {t("policy.workingHoursNonWorking")}
+                </label>
+              </div>
             </div>
           ))}
         </CardContent>

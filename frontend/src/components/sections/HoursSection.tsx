@@ -39,23 +39,30 @@ export function HoursSection({
       <h3 className="text-xl font-semibold text-foreground">
         {content.heading || t("sections.hours")}
       </h3>
-      <ul className="space-y-2">
+      <ul className="space-y-1.5">
         {WEEKDAY_ORDER.map((dow) => {
           const key = DAY_KEYS[dow]
           const range = localHoursForDay(hours, dow)
           const isToday = dow === today
           return (
-            <li key={dow} className="flex items-center gap-2">
+            <li key={dow} className="flex items-center gap-1.5">
               <span
-                className={`w-28 shrink-0 text-sm ${
+                className={`w-24 shrink-0 text-sm ${
                   isToday ? "font-semibold text-foreground" : "text-muted-foreground"
                 }`}
               >
                 {t(key)}
               </span>
+              <span
+                className={`text-sm ${
+                  isToday ? "font-semibold text-foreground" : "text-muted-foreground"
+                }`}
+              >
+                {range ? `${range.start} – ${range.end}` : t("sections.hours.closed")}
+              </span>
               {isToday && (
                 <span
-                  className={`size-2.5 shrink-0 rounded-full ${
+                  className={`ml-0.5 size-2.5 shrink-0 rounded-full ${
                     openNow ? "bg-green-500" : "bg-red-500"
                   }`}
                   role="img"
@@ -63,13 +70,6 @@ export function HoursSection({
                   title={openNow ? t("sections.hours.openNow") : t("sections.hours.closedNow")}
                 />
               )}
-              <span
-                className={`ml-auto text-sm ${
-                  isToday ? "font-semibold text-foreground" : "text-muted-foreground"
-                }`}
-              >
-                {range ? `${range.start} – ${range.end}` : t("sections.hours.closed")}
-              </span>
             </li>
           )
         })}
