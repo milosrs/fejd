@@ -69,6 +69,31 @@ type Customer struct {
 	Avatar string `json:"avatar,omitempty"`
 }
 
+// UserSummary is a minimal user identity shown on the realm-admin registration
+// dashboard (invited customers and self-registered users).
+type UserSummary struct {
+	UserID      string `json:"user_id" validate:"required"`
+	DisplayName string `json:"display_name"`
+	// Avatar is the URL path of the user's profile picture, if set.
+	Avatar string `json:"avatar,omitempty"`
+}
+
+// SalonInvitedCustomers groups the customers invited to a single salon.
+type SalonInvitedCustomers struct {
+	BusinessID uuid.UUID     `json:"business_id" validate:"required"`
+	Name       string        `json:"name" validate:"required"`
+	Slug       string        `json:"slug" validate:"required"`
+	Logo       string        `json:"logo,omitempty"`
+	Customers  []UserSummary `json:"customers" validate:"required"`
+}
+
+// InvitedCustomersReport is the realm-admin registration dashboard: customers
+// invited per salon plus users who registered directly.
+type InvitedCustomersReport struct {
+	Salons         []SalonInvitedCustomers `json:"salons" validate:"required"`
+	SelfRegistered []UserSummary           `json:"self_registered" validate:"required"`
+}
+
 type Service struct {
 	ID              uuid.UUID  `json:"id" validate:"required"`
 	BusinessID      uuid.UUID  `json:"business_id" validate:"required"`

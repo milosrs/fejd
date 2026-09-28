@@ -1,4 +1,6 @@
 fejd.fyi {
+    tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+
     handle /api/* {
         reverse_proxy backend:8080
     }
@@ -9,6 +11,8 @@ fejd.fyi {
 }
 
 auth.fejd.fyi {
+    tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+
     reverse_proxy keycloak:8080 {
         header_up X-Forwarded-Proto https
         header_up X-Forwarded-For {remote_host}
@@ -17,5 +21,19 @@ auth.fejd.fyi {
 }
 
 www.fejd.fyi {
+    tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+
     redir https://fejd.fyi{uri} permanent
+}
+
+*.fejd.fyi {
+    tls /etc/caddy/certs/origin.pem /etc/caddy/certs/origin.key
+
+    handle /api/* {
+        reverse_proxy backend:8080
+    }
+
+    handle {
+        reverse_proxy frontend:80
+    }
 }

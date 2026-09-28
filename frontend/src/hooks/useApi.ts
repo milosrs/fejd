@@ -25,6 +25,7 @@ const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serv
 const URL_ADMIN_SERVICE_EMPLOYEES = "/api/admin/business/{businessID}/services/{serviceID}/employees" as const
 const URL_ADMIN_INVITATIONS = "/api/admin/business/{businessID}/invitations" as const
 const URL_ADMIN_PLATFORM_INVITATIONS = "/api/admin/invitations" as const
+const URL_ADMIN_INVITED_CUSTOMERS = "/api/admin/invitations/customers" as const
 const URL_MY_UNAVAILABILITY = "/api/admin/business/{businessID}/me/unavailability" as const
 const URL_MY_UNAVAILABILITY_DELETE = "/api/admin/business/{businessID}/me/unavailability/{unavailabilityID}" as const
 const URL_MY_RESERVATIONS = "/api/admin/business/{businessID}/me/appointments" as const
@@ -53,6 +54,8 @@ export type Service = Schemas["dto.Service"]
 export type Employee = Schemas["dto.BusinessUser"]
 export type TimeSlot = Schemas["dto.TimeSlot"]
 export type DirectoryBusiness = Schemas["dto.DirectoryBusiness"]
+export type SalonInvitedCustomers = Schemas["dto.SalonInvitedCustomers"]
+export type InvitedCustomersReport = Schemas["dto.InvitedCustomersReport"]
 
 export function useBusinesses() {
   return useQuery({
@@ -60,6 +63,16 @@ export function useBusinesses() {
     queryFn: async () => {
       const { data } = await GET(URL_BUSINESSES)
       return data
+    },
+  })
+}
+
+export function useInvitedCustomersReport() {
+  return useQuery({
+    queryKey: ["invited-customers"],
+    queryFn: async () => {
+      const { data } = await GET(URL_ADMIN_INVITED_CUSTOMERS)
+      return data ?? { salons: [], self_registered: [] }
     },
   })
 }

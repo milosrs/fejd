@@ -31,6 +31,96 @@ func TestUserStore_UpsertAndGet(t *testing.T) {
 	assert.Equal(t, "Sammy B", got.DisplayName)
 }
 
+func TestUserStore_RecordInviteRegistration(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.teardown()
+	ctx := context.Background()
+	store := NewUserStore(db.pool)
+
+	businessID := insertBusinessHelper(t, ctx, db, "Salon", "salon")
+
+	// Salon-scoped invite marks the user and links the salon.
+	require.NoError(t, store.RecordInviteRegistration(ctx, db.pool, "cust-1", &businessID))
+	got, err := store.GetByID(ctx, "cust-1")
+	require.NoError(t, err)
+	assert.Equal(t, "invite", got.RegistrationSource)
+	require.NotNil(t, got.InvitedBusinessID)
+	assert.Equal(t, businessID, *got.InvitedBusinessID)
+
+	// Platform invite (nil business) clears the salon link but stays "invite".
+	require.NoError(t, store.RecordInviteRegistration(ctx, db.pool, "cust-1", nil))
+	got, err = store.GetByID(ctx, "cust-1")
+	require.NoError(t, err)
+	assert.Equal(t, "invite", got.RegistrationSource)
+	assert.Nil(t, got.InvitedBusinessID)
+}
+
+func TestUserStore_ListInvitedCustomers(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.teardown()
+	ctx := context.Background()
+	store := NewUserStore(db.pool)
+
+	businessA := insertBusinessHelper(t, ctx, db, "Salon A", "salon-a")
+	businessB := insertBusinessHelper(t, ctx, db, "Salon B", "salon-b")
+
+	require.NoError(t, store.RecordInviteRegistration(ctx, db.pool, "cust-a1", &businessA))
+	require.NoError(t, store.RecordInviteRegistration(ctx, db.pool, "cust-a2", &businessA))
+	require.NoError(t, store.RecordInviteRegistration(ctx, db.pool, "cust-b1", &businessB))
+	// Platform ("invite a friend") invites have no salon and are excluded.
+	require.NoError(t, store.RecordInviteRegistration(ctx, db.pool, "cust-none", nil))
+
+	got, err := store.ListInvitedCustomers(ctx)
+	require.NoError(t, err)
+	require.Len(t, got, 3)
+
+	byUser := make(map[string]models.InvitedCustomer, len(got))
+	for _, c := range got {
+		byUser[c.UserID] = c
+	}
+
+	a1 := byUser["cust-a1"]
+	assert.Equal(t, businessA, a1.BusinessID)
+	assert.Equal(t, "Salon A", a1.BusinessName)
+	assert.Equal(t, "salon-a", a1.BusinessSlug)
+	assert.Nil(t, a1.BusinessLogo)
+	assert.Nil(t, a1.AvatarID)
+
+	b1 := byUser["cust-b1"]
+	assert.Equal(t, businessB, b1.BusinessID)
+	assert.Equal(t, "Salon B", b1.BusinessName)
+
+	assert.NotContains(t, byUser, "cust-none")
+
+	// Salons are ordered by name: Salon A first, then Salon B.
+	assert.Equal(t, "Salon A", got[0].BusinessName)
+	assert.Equal(t, "Salon A", got[1].BusinessName)
+	assert.Equal(t, "Salon B", got[2].BusinessName)
+}
+
+func TestUserStore_ListSelfRegisteredUsers(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.teardown()
+	ctx := context.Background()
+	store := NewUserStore(db.pool)
+
+	businessID := insertBusinessHelper(t, ctx, db, "Salon", "salon")
+
+	// Self-registered users (the default registration_source).
+	require.NoError(t, store.Upsert(ctx, &models.User{ID: "self-1", DisplayName: "Alice"}))
+	require.NoError(t, store.Upsert(ctx, &models.User{ID: "self-2", DisplayName: "Bob"}))
+	// An invited user is excluded from the self-registered list.
+	require.NoError(t, store.RecordInviteRegistration(ctx, db.pool, "cust-1", &businessID))
+
+	got, err := store.ListSelfRegisteredUsers(ctx)
+	require.NoError(t, err)
+	require.Len(t, got, 2)
+	assert.Equal(t, "Alice", got[0].DisplayName)
+	assert.Equal(t, "self-1", got[0].UserID)
+	assert.Equal(t, "Bob", got[1].DisplayName)
+	assert.Equal(t, "self-2", got[1].UserID)
+}
+
 func TestUserStore_GetByID_NotFound(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.teardown()

@@ -75,3 +75,5 @@ backend/fejd-backend
 # Editor/IDE
 # .idea/
 # .vscode/
+cert
+cert.pub

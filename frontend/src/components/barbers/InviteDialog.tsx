@@ -20,7 +20,7 @@ export function InviteDialog({
   loading?: boolean
   error?: string | null
   filename?: string
-  role?: "employee" | "customer" | "owner" | "realm-admin"
+  role?: "employee" | "customer" | "owner" | "realm-admin" | "friend"
 }) {
   const qrRef = useRef<HTMLDivElement>(null)
   const [copied, setCopied] = useState(false)
@@ -71,7 +71,9 @@ export function InviteDialog({
               ? t("invite.helpOwner")
               : role === "realm-admin"
                 ? t("invite.helpRealmAdmin")
-                : t("invite.help")}
+                : role === "friend"
+                  ? t("invite.helpFriend")
+                  : t("invite.help")}
         </p>
 
         {loading ? (

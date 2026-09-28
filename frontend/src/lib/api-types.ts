@@ -2989,6 +2989,63 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/invitations/customers": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List registration provenance
+         * @description Returns the customers invited per salon plus users who registered directly. Accessible to realm administrators only.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.InvitedCustomersReport"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/appointments": {
         parameters: {
             query?: never;
@@ -3501,7 +3558,7 @@ export interface paths {
         };
         /**
          * Retrieve an image
-         * @description Public images are served directly; private images require auth and access (streamed through the API).
+         * @description All images are streamed through the API. Public images (profile pictures, employee avatars, business images) need no auth; private images require auth and access.
          */
         get: {
             parameters: {
@@ -4221,6 +4278,10 @@ export interface components {
             id: string;
             url: string;
         };
+        "dto.InvitedCustomersReport": {
+            salons: components["schemas"]["dto.SalonInvitedCustomers"][];
+            self_registered: components["schemas"]["dto.UserSummary"][];
+        };
         "dto.Me": {
             approval_status: string;
             /** @description Avatar is the URL path of the caller's profile picture, if set. */
@@ -4232,6 +4293,13 @@ export interface components {
             id: string;
             name: string;
             role: string;
+            slug: string;
+        };
+        "dto.SalonInvitedCustomers": {
+            business_id: string;
+            customers: components["schemas"]["dto.UserSummary"][];
+            logo?: string;
+            name: string;
             slug: string;
         };
         "dto.Section": {
@@ -4256,6 +4324,12 @@ export interface components {
         "dto.TimeSlot": {
             end_time: string;
             start_time: string;
+        };
+        "dto.UserSummary": {
+            /** @description Avatar is the URL path of the user's profile picture, if set. */
+            avatar?: string;
+            display_name?: string;
+            user_id: string;
         };
         "dto.WorkingHours": {
             business_user_id: string;

@@ -15,6 +15,7 @@ import { AdminSchedulePage } from "./pages/AdminSchedulePage"
 import { AdminServicesPage } from "./pages/AdminServicesPage"
 import { MySchedulePage } from "./pages/MySchedulePage"
 import { MyReservationsPage } from "./pages/MyReservationsPage"
+import { InvitedCustomersPage } from "./pages/InvitedCustomersPage"
 import { SalonLayout } from "./components/SalonLayout"
 import { Toaster } from "./components/ui/toaster"
 import { Button } from "./components/ui/button"
@@ -41,6 +42,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
   const init = useAuthStore((s) => s.init)
   const initialized = useAuthStore((s) => s.initialized)
   const authenticated = useAuthStore((s) => s.authenticated)
+  const isRealmAdmin = useAuthStore((s) => s.isRealmAdmin)
   const login = useAuthStore((s) => s.login)
   const register = useAuthStore((s) => s.register)
   const navigate = useNavigate()
@@ -152,6 +154,14 @@ function AppInit({ children }: { children: React.ReactNode }) {
                   >
                     {t("nav.myAppointments")}
                   </Link>
+                  {isRealmAdmin && (
+                    <Link
+                      to="/admin/invited-customers"
+                      className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                    >
+                      {t("nav.invitedCustomers")}
+                    </Link>
+                  )}
                   {hasSalon && primaryBusiness && (
                     <>
                       <Link
@@ -214,6 +224,15 @@ function AppInit({ children }: { children: React.ReactNode }) {
             >
               {t("nav.myAppointments")}
             </Link>
+            {isRealmAdmin && (
+              <Link
+                to="/admin/invited-customers"
+                onClick={() => setNavOpen(false)}
+                className="rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted"
+              >
+                {t("nav.invitedCustomers")}
+              </Link>
+            )}
             {hasSalon && primaryBusiness && (
               <>
                 <Link
@@ -299,6 +318,7 @@ function App() {
                 <Route path="/invite/:token" element={<InviteLandingPage />} />
 
                 <Route path="/my/appointments" element={<ProtectedRoute><MyAppointmentsPage /></ProtectedRoute>} />
+                <Route path="/admin/invited-customers" element={<ProtectedRoute><InvitedCustomersPage /></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/schedule" element={<ProtectedRoute><OnboardingGate><AdminSchedulePage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/services" element={<ProtectedRoute><OnboardingGate><AdminServicesPage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/my-schedule" element={<ProtectedRoute><OnboardingGate><MySchedulePage /></OnboardingGate></ProtectedRoute>} />

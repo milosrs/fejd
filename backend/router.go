@@ -72,6 +72,7 @@ func newRouter(
 			r.Use(authenticate)
 			r.Use(requireRealmAdmin)
 			r.Post("/admin/invitations", invitationHandler.CreatePlatformInvitation)
+			r.Get("/admin/invitations/customers", invitationHandler.ListInvitedCustomers)
 		})
 
 		// GET /api/me is exempt from approval so a pending user can read their

@@ -148,8 +148,11 @@ export function UserMenu() {
       case "invite-employee":
         invites.start("employee")
         break
-      case "invite-customer":
-        invites.start("customer")
+      case "invite-salon-customer":
+        invites.start("salon-customer")
+        break
+      case "invite-friend":
+        invites.start("friend")
         break
       case "invite-owner":
         invites.start("owner")
@@ -168,7 +171,7 @@ export function UserMenu() {
       loading={invites.loading}
       error={invites.error ? t("invite.friendError") : null}
       filename={invites.filename}
-      role={invites.kind}
+      role={invites.dialogRole}
     />
   )
 

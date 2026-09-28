@@ -10,6 +10,8 @@ services:
       - caddy_data:/data
       - caddy_config:/config
       - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/caddy/origin.pem:/etc/caddy/certs/origin.pem:ro
+      - ./deploy/caddy/origin.key:/etc/caddy/certs/origin.key:ro
     depends_on:
       frontend:
         condition: service_healthy
@@ -122,7 +124,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD in .env.production}
       FEJD_ADMIN_CLIENT_SECRET: ${FEJD_ADMIN_CLIENT_SECRET:?Set FEJD_ADMIN_CLIENT_SECRET in .env.production}
       FEJD_BACKEND_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET:?Set KEYCLOAK_CLIENT_SECRET in .env.production}
-      KC_PROXY_HEADERS: x-forwarded-for
+      KC_PROXY_HEADERS: xforwarded
       KC_HTTP_ENABLED: "false"
       KC_HOSTNAME: https://auth.fejd.fyi
       KC_HTTP_MANAGEMENT_PORT: "9000"

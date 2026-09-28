@@ -176,6 +176,35 @@ func (h *InvitationHandler) CreateCustomerInvitation(w http.ResponseWriter, r *h
 	})
 }
 
+// ListInvitedCustomers godoc
+// @Summary      List registration provenance
+// @Description  Returns the customers invited per salon plus users who registered directly. Accessible to realm administrators only.
+// @Tags         invitations
+// @Produce      json
+// @Success      200 {object} dto.InvitedCustomersReport
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/invitations/customers [get]
+func (h *InvitationHandler) ListInvitedCustomers(w http.ResponseWriter, r *http.Request) {
+	salons, err := h.invitations.ListInvitedCustomers(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list invited customers")
+		return
+	}
+
+	selfRegistered, err := h.invitations.ListSelfRegisteredUsers(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list self-registered users")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, dto.InvitedCustomersReport{
+		Salons:         dto.InvitedCustomersBySalonFromModels(salons),
+		SelfRegistered: dto.SelfRegisteredUsersFromModels(selfRegistered),
+	})
+}
+
 // GetInvitation godoc
 // @Summary      Resolve an invite link
 // @Description  Returns the target salon for an invite token, so the landing page can greet the invitee before they register. Never returns the token itself.

@@ -254,6 +254,14 @@ func TestInvitationHandler_AcceptInvitation_LinksEmployee(t *testing.T) {
 	assert.Equal(t, "Employee", users.roles[0])
 	require.Len(t, users.attrs, 1)
 	assert.Equal(t, []string{"approved"}, users.attrs[0]["approval_status"])
+
+	// Employees are tracked as invite-registered but have no "invited salon"
+	// (their salon linkage lives in business_users), so they never surface on
+	// the realm-admin invited-customers dashboard.
+	u, err := store.NewUserStore(pool).GetByID(ctx, "emp-1")
+	require.NoError(t, err)
+	assert.Equal(t, "invite", u.RegistrationSource)
+	assert.Nil(t, u.InvitedBusinessID)
 }
 
 func TestInvitationHandler_AcceptInvitation_LinksCustomer(t *testing.T) {
@@ -289,6 +297,12 @@ func TestInvitationHandler_AcceptInvitation_LinksCustomer(t *testing.T) {
 	assert.Equal(t, "Customer", users.roles[0])
 	require.Len(t, users.attrs, 1)
 	assert.Equal(t, []string{"approved"}, users.attrs[0]["approval_status"])
+
+	u, err := store.NewUserStore(pool).GetByID(ctx, "cust-1")
+	require.NoError(t, err)
+	assert.Equal(t, "invite", u.RegistrationSource)
+	require.NotNil(t, u.InvitedBusinessID)
+	assert.Equal(t, b.ID, *u.InvitedBusinessID)
 }
 
 func TestInvitationHandler_CreateInvitation_WithCustomerRole(t *testing.T) {
@@ -476,6 +490,37 @@ func TestInvitationHandler_CreateCustomerInvitation(t *testing.T) {
 	assert.Empty(t, pub.SalonName, "customer invites have no salon")
 }
 
+func TestInvitationHandler_ListInvitedCustomers(t *testing.T) {
+	h, businessStore, _, pool := newTestInvitationHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+
+	userStore := store.NewUserStore(pool)
+	require.NoError(t, userStore.RecordInviteRegistration(ctx, pool, "cust-1", &b.ID))
+	// A self-registered user appears under "own registration".
+	require.NoError(t, userStore.Upsert(ctx, &models.User{ID: "self-1", DisplayName: "Self User"}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/admin/invitations/customers", nil)
+	rr := httptest.NewRecorder()
+
+	h.ListInvitedCustomers(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var resp dto.InvitedCustomersReport
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &resp))
+	require.Len(t, resp.Salons, 1)
+	assert.Equal(t, "Salon", resp.Salons[0].Name)
+	assert.Equal(t, "salon", resp.Salons[0].Slug)
+	require.Len(t, resp.Salons[0].Customers, 1)
+	assert.Equal(t, "cust-1", resp.Salons[0].Customers[0].UserID)
+
+	require.Len(t, resp.SelfRegistered, 1)
+	assert.Equal(t, "self-1", resp.SelfRegistered[0].UserID)
+	assert.Equal(t, "Self User", resp.SelfRegistered[0].DisplayName)
+}
+
 func TestInvitationHandler_AcceptInvitation_PlatformOwner(t *testing.T) {
 	users := &recordingUsers{}
 	h, _, buStore, _ := newTestInvitationHandlerWith(t, users)
@@ -507,7 +552,7 @@ func TestInvitationHandler_AcceptInvitation_PlatformOwner(t *testing.T) {
 
 func TestInvitationHandler_AcceptInvitation_PlatformCustomer(t *testing.T) {
 	users := &recordingUsers{}
-	h, _, _, _ := newTestInvitationHandlerWith(t, users)
+	h, _, _, pool := newTestInvitationHandlerWith(t, users)
 	ctx := context.Background()
 
 	out, err := h.invitations.CreatePlatformInvitation(ctx, "admin-1", "customer", time.Hour)
@@ -528,6 +573,11 @@ func TestInvitationHandler_AcceptInvitation_PlatformCustomer(t *testing.T) {
 	assert.Equal(t, "Customer", users.roles[0])
 	require.Len(t, users.attrs, 1)
 	assert.Equal(t, []string{"approved"}, users.attrs[0]["approval_status"])
+
+	u, err := store.NewUserStore(pool).GetByID(ctx, "cust-1")
+	require.NoError(t, err)
+	assert.Equal(t, "invite", u.RegistrationSource)
+	assert.Nil(t, u.InvitedBusinessID, "platform invites have no salon")
 }
 
 func TestInvitationHandler_AcceptInvitation_PlatformRealmAdmin(t *testing.T) {

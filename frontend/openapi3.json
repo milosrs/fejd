@@ -3346,6 +3346,52 @@
                 }
             }
         },
+        "/api/admin/invitations/customers": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the customers invited per salon plus users who registered directly. Accessible to realm administrators only.",
+                "tags": [
+                    "invitations"
+                ],
+                "summary": "List registration provenance",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/dto.InvitedCustomersReport"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/appointments": {
             "post": {
                 "security": [
@@ -3811,7 +3857,7 @@
         },
         "/api/images/{imageID}": {
             "get": {
-                "description": "Public images are served directly; private images require auth and access (streamed through the API).",
+                "description": "All images are streamed through the API. Public images (profile pictures, employee avatars, business images) need no auth; private images require auth and access.",
                 "tags": [
                     "public"
                 ],
@@ -4714,6 +4760,27 @@
                     }
                 }
             },
+            "dto.InvitedCustomersReport": {
+                "type": "object",
+                "required": [
+                    "salons",
+                    "self_registered"
+                ],
+                "properties": {
+                    "salons": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/dto.SalonInvitedCustomers"
+                        }
+                    },
+                    "self_registered": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/dto.UserSummary"
+                        }
+                    }
+                }
+            },
             "dto.Me": {
                 "type": "object",
                 "required": [
@@ -4756,6 +4823,35 @@
                         "type": "string"
                     },
                     "role": {
+                        "type": "string"
+                    },
+                    "slug": {
+                        "type": "string"
+                    }
+                }
+            },
+            "dto.SalonInvitedCustomers": {
+                "type": "object",
+                "required": [
+                    "business_id",
+                    "customers",
+                    "name",
+                    "slug"
+                ],
+                "properties": {
+                    "business_id": {
+                        "type": "string"
+                    },
+                    "customers": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/dto.UserSummary"
+                        }
+                    },
+                    "logo": {
+                        "type": "string"
+                    },
+                    "name": {
                         "type": "string"
                     },
                     "slug": {
@@ -4842,6 +4938,24 @@
                         "type": "string"
                     },
                     "start_time": {
+                        "type": "string"
+                    }
+                }
+            },
+            "dto.UserSummary": {
+                "type": "object",
+                "required": [
+                    "user_id"
+                ],
+                "properties": {
+                    "avatar": {
+                        "description": "Avatar is the URL path of the user's profile picture, if set.",
+                        "type": "string"
+                    },
+                    "display_name": {
+                        "type": "string"
+                    },
+                    "user_id": {
                         "type": "string"
                     }
                 }

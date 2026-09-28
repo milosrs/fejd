@@ -287,7 +287,7 @@ func (s *InvitationService) acceptPlatform(ctx context.Context, inv *models.Invi
 		if !ok {
 			return ErrInvitationUsed
 		}
-		return nil
+		return s.userStore.RecordInviteRegistration(ctx, tx, userID, nil)
 	})
 	if err != nil {
 		return nil, err
@@ -323,6 +323,9 @@ func (s *InvitationService) acceptEmployee(ctx context.Context, inv *models.Invi
 		if err := s.grantEmployee(ctx, userID); err != nil {
 			return nil, err
 		}
+		if err := s.userStore.RecordInviteRegistration(ctx, s.pool, userID, nil); err != nil {
+			return nil, fmt.Errorf("failed to record invite registration: %w", err)
+		}
 		return business, nil
 	}
 
@@ -347,7 +350,10 @@ func (s *InvitationService) acceptEmployee(ctx context.Context, inv *models.Invi
 			DisplayName: displayName,
 			Active:      true,
 		}
-		return s.businessUsers.Create(ctx, tx, bu)
+		if err := s.businessUsers.Create(ctx, tx, bu); err != nil {
+			return err
+		}
+		return s.userStore.RecordInviteRegistration(ctx, tx, userID, nil)
 	})
 	if err != nil {
 		return nil, err
@@ -372,7 +378,7 @@ func (s *InvitationService) acceptCustomer(ctx context.Context, inv *models.Invi
 		if !ok {
 			return ErrInvitationUsed
 		}
-		return nil
+		return s.userStore.RecordInviteRegistration(ctx, tx, userID, &business.ID)
 	})
 	if err != nil {
 		return nil, err
@@ -477,4 +483,16 @@ func inviteExpiry(role string, ttl time.Duration) *time.Time {
 	}
 	expires := time.Now().UTC().Add(ttl)
 	return &expires
+}
+
+// ListInvitedCustomers returns every customer invited to a salon, with the
+// salon and customer identifying info needed for the realm-admin dashboard.
+func (s *InvitationService) ListInvitedCustomers(ctx context.Context) ([]models.InvitedCustomer, error) {
+	return s.userStore.ListInvitedCustomers(ctx)
+}
+
+// ListSelfRegisteredUsers returns every user who registered directly, for the
+// "own registration" section of the realm-admin dashboard.
+func (s *InvitationService) ListSelfRegisteredUsers(ctx context.Context) ([]models.SelfRegisteredUser, error) {
+	return s.userStore.ListSelfRegisteredUsers(ctx)
 }

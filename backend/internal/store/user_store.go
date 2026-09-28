@@ -43,10 +43,99 @@ func (s *UserStore) Upsert(ctx context.Context, u *models.User) error {
 	return err
 }
 
+// RecordInviteRegistration marks a user as having registered via a QR/invite
+// link and records the salon they were invited to (nil for platform invites).
+// It upserts so it is safe whether or not the user row already exists.
+func (s *UserStore) RecordInviteRegistration(ctx context.Context, q Querier, userID string, businessID *uuid.UUID) error {
+	sql, args, err := psql.
+		Insert("users").
+		Columns("id", "display_name", "registration_source", "invited_business_id").
+		Values(userID, "", "invite", nullableUUID(businessID)).
+		Suffix(`ON CONFLICT (id) DO UPDATE SET
+			registration_source = EXCLUDED.registration_source,
+			invited_business_id = EXCLUDED.invited_business_id,
+			updated_at = now()`).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = q.Exec(ctx, sql, args...)
+	return err
+}
+
+// ListInvitedCustomers returns every customer invited to a salon (users whose
+// invited_business_id is set), joined with the salon's name/slug/logo and the
+// customer's display name/avatar, ordered by salon name then customer name.
+func (s *UserStore) ListInvitedCustomers(ctx context.Context) ([]models.InvitedCustomer, error) {
+	sql, args, err := psql.
+		Select("b.id", "b.name", "b.slug", "il.image_id", "u.id", "COALESCE(u.display_name, '')", "u.avatar_id").
+		From("users u").
+		Join("businesses b ON b.id = u.invited_business_id").
+		LeftJoin("image_links il ON il.entity_type = 'business' AND il.entity_id = b.id AND il.purpose = 'logo'").
+		OrderBy("b.name", "u.display_name").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list invited customers: %w", err)
+	}
+	defer rows.Close()
+
+	var customers []models.InvitedCustomer
+	for rows.Next() {
+		var c models.InvitedCustomer
+		if err := rows.Scan(&c.BusinessID, &c.BusinessName, &c.BusinessSlug, &c.BusinessLogo, &c.UserID, &c.DisplayName, &c.AvatarID); err != nil {
+			return nil, fmt.Errorf("failed to scan invited customer: %w", err)
+		}
+		customers = append(customers, c)
+	}
+	if customers == nil {
+		customers = []models.InvitedCustomer{}
+	}
+	return customers, nil
+}
+
+// ListSelfRegisteredUsers returns every user who registered directly (their
+// registration_source is still the "self" default), ordered by display name.
+func (s *UserStore) ListSelfRegisteredUsers(ctx context.Context) ([]models.SelfRegisteredUser, error) {
+	sql, args, err := psql.
+		Select("id", "COALESCE(display_name, '')", "avatar_id").
+		From("users").
+		Where(sq.Eq{"registration_source": "self"}).
+		OrderBy("display_name").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list self-registered users: %w", err)
+	}
+	defer rows.Close()
+
+	var users []models.SelfRegisteredUser
+	for rows.Next() {
+		var u models.SelfRegisteredUser
+		if err := rows.Scan(&u.UserID, &u.DisplayName, &u.AvatarID); err != nil {
+			return nil, fmt.Errorf("failed to scan self-registered user: %w", err)
+		}
+		users = append(users, u)
+	}
+	if users == nil {
+		users = []models.SelfRegisteredUser{}
+	}
+	return users, nil
+}
+
 // GetByID returns a user by Keycloak subject, or pgx.ErrNoRows when absent.
 func (s *UserStore) GetByID(ctx context.Context, id string) (*models.User, error) {
 	sql, args, err := psql.
-		Select("id", "COALESCE(display_name, '')", "COALESCE(email, '')", "avatar_id", "created_at", "updated_at").
+		Select("id", "COALESCE(display_name, '')", "COALESCE(email, '')", "avatar_id", "COALESCE(registration_source, '')", "invited_business_id", "created_at", "updated_at").
 		From("users").
 		Where(sq.Eq{"id": id}).
 		ToSql()
@@ -55,7 +144,7 @@ func (s *UserStore) GetByID(ctx context.Context, id string) (*models.User, error
 	}
 
 	var u models.User
-	if err := s.pool.QueryRow(ctx, sql, args...).Scan(&u.ID, &u.DisplayName, &u.Email, &u.AvatarID, &u.CreatedAt, &u.UpdatedAt); err != nil {
+	if err := s.pool.QueryRow(ctx, sql, args...).Scan(&u.ID, &u.DisplayName, &u.Email, &u.AvatarID, &u.RegistrationSource, &u.InvitedBusinessID, &u.CreatedAt, &u.UpdatedAt); err != nil {
 		if err == pgx.ErrNoRows {
 			return nil, err
 		}

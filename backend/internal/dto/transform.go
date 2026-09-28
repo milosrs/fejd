@@ -210,6 +210,55 @@ func CustomersFromModels(ms []models.Customer) []Customer {
 	return out
 }
 
+// InvitedCustomersBySalonFromModels groups flat invited-customer rows by salon,
+// preserving the store's salon ordering and building image URL paths for the
+// salon logo and customer avatar.
+func InvitedCustomersBySalonFromModels(ms []models.InvitedCustomer) []SalonInvitedCustomers {
+	out := make([]SalonInvitedCustomers, 0, len(ms))
+	index := make(map[uuid.UUID]int, len(ms))
+	for _, m := range ms {
+		i, ok := index[m.BusinessID]
+		if !ok {
+			i = len(out)
+			index[m.BusinessID] = i
+			out = append(out, SalonInvitedCustomers{
+				BusinessID: m.BusinessID,
+				Name:       m.BusinessName,
+				Slug:       m.BusinessSlug,
+				Logo:       imagePath(m.BusinessLogo),
+				Customers:  []UserSummary{},
+			})
+		}
+		out[i].Customers = append(out[i].Customers, UserSummary{
+			UserID:      m.UserID,
+			DisplayName: m.DisplayName,
+			Avatar:      imagePath(m.AvatarID),
+		})
+	}
+	return out
+}
+
+// SelfRegisteredUsersFromModels converts self-registered users into the user
+// summary shape used by the realm-admin dashboard.
+func SelfRegisteredUsersFromModels(ms []models.SelfRegisteredUser) []UserSummary {
+	out := make([]UserSummary, 0, len(ms))
+	for _, m := range ms {
+		out = append(out, UserSummary{
+			UserID:      m.UserID,
+			DisplayName: m.DisplayName,
+			Avatar:      imagePath(m.AvatarID),
+		})
+	}
+	return out
+}
+
+func imagePath(id *uuid.UUID) string {
+	if id == nil {
+		return ""
+	}
+	return "/api/images/" + id.String()
+}
+
 func ServicesFromModels(ms []models.Service) []Service {
 	out := make([]Service, len(ms))
 	for i, m := range ms {

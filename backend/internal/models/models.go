@@ -134,13 +134,42 @@ type User struct {
 	DisplayName string
 	Email       string
 	// AvatarID references the user's profile picture in the images table.
-	AvatarID  *uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	AvatarID *uuid.UUID
+	// RegistrationSource records how the user registered: "self" (direct
+	// registration) or "invite" (via a QR/invite link).
+	RegistrationSource string
+	// InvitedBusinessID is the salon a customer was invited to, if the invite
+	// was salon-scoped; nil for platform ("invite a friend") invites.
+	InvitedBusinessID *uuid.UUID
+	CreatedAt         time.Time
+	UpdatedAt         time.Time
 }
 
 // Customer is a user who has booked with a business (resolved from local users).
 type Customer struct {
+	UserID      string
+	DisplayName string
+	// AvatarID references the user's profile picture in the images table.
+	AvatarID *uuid.UUID
+}
+
+// InvitedCustomer is a customer who was invited to a salon via a QR/invite link,
+// together with the salon's identifying info for the realm-admin dashboard.
+type InvitedCustomer struct {
+	BusinessID   uuid.UUID
+	BusinessName string
+	BusinessSlug string
+	// BusinessLogo references the salon's logo image, if set.
+	BusinessLogo *uuid.UUID
+	UserID       string
+	DisplayName  string
+	// AvatarID references the customer's profile picture in the images table.
+	AvatarID *uuid.UUID
+}
+
+// SelfRegisteredUser is a user who registered directly (not via a QR/invite
+// link), shown on the realm-admin dashboard under "own registration".
+type SelfRegisteredUser struct {
 	UserID      string
 	DisplayName string
 	// AvatarID references the user's profile picture in the images table.
