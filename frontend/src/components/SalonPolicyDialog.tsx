@@ -12,6 +12,11 @@ interface HourRow {
   end_time: string
 }
 
+interface ClosureRow {
+  closure_date: string
+  reason: string
+}
+
 const defaultHours = (): HourRow[] =>
   Array.from({ length: 7 }, (_, i) => ({ day_of_week: i, start_time: "09:00", end_time: "17:00" }))
 
@@ -64,6 +69,9 @@ export function SalonPolicyDialog({
   const [slotInterval, setSlotInterval] = useState("30")
   const [autoApprove, setAutoApprove] = useState(false)
   const [hours, setHours] = useState<HourRow[]>(defaultHours())
+  const [closures, setClosures] = useState<ClosureRow[]>([])
+  const [newClosureDate, setNewClosureDate] = useState("")
+  const [newClosureReason, setNewClosureReason] = useState("")
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState("")
 
@@ -82,6 +90,12 @@ export function SalonPolicyDialog({
         })),
       )
     }
+    setClosures(
+      (policy.closures ?? []).map((c) => ({
+        closure_date: c.closure_date,
+        reason: c.reason ?? "",
+      })),
+    )
   }, [policy])
 
   const updateRow = (index: number, field: keyof HourRow, value: string) => {
@@ -90,6 +104,25 @@ export function SalonPolicyDialog({
       next[index] = { ...next[index], [field]: value }
       return next
     })
+  }
+
+  const addClosure = () => {
+    const date = newClosureDate.trim()
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || Number.isNaN(Date.parse(date))) {
+      setError(t("policy.nonWorkingDayInvalid"))
+      return
+    }
+    setError("")
+    setClosures((prev) => {
+      if (prev.some((c) => c.closure_date === date)) return prev
+      return [...prev, { closure_date: date, reason: newClosureReason.trim() }]
+    })
+    setNewClosureDate("")
+    setNewClosureReason("")
+  }
+
+  const removeClosure = (date: string) => {
+    setClosures((prev) => prev.filter((c) => c.closure_date !== date))
   }
 
   const handleSave = async () => {
@@ -118,6 +151,10 @@ export function SalonPolicyDialog({
         auto_approve: autoApprove,
         timezone: getLocalTimeZone(),
         working_hours: hours,
+        closures: closures.map((c) => ({
+          closure_date: c.closure_date,
+          reason: c.reason || undefined,
+        })),
       })
       await queryClient.invalidateQueries({ queryKey: ["salon", slug] })
       await queryClient.invalidateQueries({ queryKey: ["salon-policy", businessId] })
@@ -215,6 +252,50 @@ export function SalonPolicyDialog({
                   />
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("policy.nonWorkingDays")}</Label>
+            <p className="text-sm text-muted-foreground">{t("policy.nonWorkingDaysHelp")}</p>
+            <div className="space-y-2 rounded-xl border border-border p-3">
+              {closures.length === 0 && (
+                <p className="text-sm text-muted-foreground">{t("policy.nonWorkingDaysEmpty")}</p>
+              )}
+              {closures.map((c) => (
+                <div key={c.closure_date} className="flex items-center justify-between gap-2">
+                  <div className="min-w-0">
+                    <span className="font-medium">{c.closure_date}</span>
+                    {c.reason && (
+                      <span className="text-muted-foreground ml-2">({c.reason})</span>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => removeClosure(c.closure_date)}
+                  >
+                    {t("common.remove")}
+                  </Button>
+                </div>
+              ))}
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={newClosureDate}
+                  onChange={(e) => setNewClosureDate(e.target.value)}
+                  className="h-8 w-36 rounded-2xl border border-border bg-input/50 px-2.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                />
+                <Input
+                  className="flex-1"
+                  placeholder={t("policy.nonWorkingDayReason")}
+                  value={newClosureReason}
+                  onChange={(e) => setNewClosureReason(e.target.value)}
+                />
+                <Button variant="outline" size="sm" onClick={addClosure}>
+                  {t("policy.addNonWorkingDay")}
+                </Button>
+              </div>
             </div>
           </div>
         </div>

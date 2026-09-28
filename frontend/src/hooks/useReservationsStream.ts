@@ -16,12 +16,24 @@ export function useReservationsStream(businessId: string, slug?: string) {
     const url = `${API_BASE_URL}/api/sse/business/${slug}/slots`
     const es = new EventSource(url)
 
-    es.addEventListener("slots_updated", () => {
+    const refresh = () => {
       queryClient.invalidateQueries({ queryKey: ["my-reservations", businessId] })
       queryClient.invalidateQueries({ queryKey: ["business-appointments", businessId] })
       queryClient.invalidateQueries({ queryKey: ["business-unavailability", businessId] })
       queryClient.invalidateQueries({ queryKey: ["customers", businessId] })
-    })
+    }
+
+    // The backend emits a dedicated SSE event per change type; all of these
+    // affect the staff calendar and pending-approvals views.
+    const events = [
+      "slots_updated",
+      "appointment_booked",
+      "appointment_cancelled",
+      "appointment_reassigned",
+    ]
+    for (const name of events) {
+      es.addEventListener(name, refresh)
+    }
 
     es.onerror = () => {
       es.close()

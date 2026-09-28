@@ -3168,6 +3168,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/business/{slug}/closures": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List non-working days
+         * @description Returns the days the salon is closed, so the booking calendar can disable them.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business slug */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.BusinessClosure"][];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/business/{slug}/employees": {
         parameters: {
             query?: never;
@@ -4238,6 +4289,12 @@ export interface components {
             slug: string;
             updated_at: string;
         };
+        "dto.BusinessClosure": {
+            business_id: string;
+            closure_date: string;
+            id: string;
+            reason?: string;
+        };
         "dto.BusinessHours": {
             day_of_week: number;
             end_time: string;
@@ -4346,6 +4403,12 @@ export interface components {
             override_date: string;
             reason?: string;
             start_time?: string;
+        };
+        "handler.BusinessClosureInput": {
+            /** @example 2024-12-25 */
+            closure_date: string;
+            /** @example Christmas */
+            reason?: string;
         };
         "handler.BusinessCreateInput": {
             /** @example My Salon */
@@ -4476,6 +4539,7 @@ export interface components {
             auto_approve: boolean;
             /** @example 2 */
             cancellation_lead_hours: number;
+            closures: components["schemas"]["dto.BusinessClosure"][];
             /** @example 2 */
             no_show_after_hours: number;
             /** @example 30 */
@@ -4526,6 +4590,7 @@ export interface components {
             auto_approve: boolean;
             /** @example 2 */
             cancellation_lead_hours: number;
+            closures: components["schemas"]["handler.BusinessClosureInput"][];
             /** @example 2 */
             no_show_after_hours: number;
             /** @example 30 */

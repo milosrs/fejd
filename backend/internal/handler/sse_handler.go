@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"encoding/json"
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/store"
 	"fmt"
@@ -54,8 +55,21 @@ func (h *SSEHandler) StreamSlots(w http.ResponseWriter, r *http.Request) {
 			if !ok {
 				return
 			}
-			fmt.Fprintf(w, "event: slots_updated\ndata: %s\n\n", data)
+			fmt.Fprintf(w, "event: %s\ndata: %s\n\n", sseEventName(data), data)
 			flusher.Flush()
 		}
 	}
+}
+
+// sseEventName derives the SSE event name from the message's "type" field so
+// subscribers can listen to dedicated events (e.g. closures_updated) rather
+// than a single generic stream. Falls back to slots_updated for legacy payloads.
+func sseEventName(data []byte) string {
+	var v struct {
+		Type string `json:"type"`
+	}
+	if err := json.Unmarshal(data, &v); err == nil && v.Type != "" {
+		return v.Type
+	}
+	return "slots_updated"
 }

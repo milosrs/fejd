@@ -30,18 +30,19 @@ var (
 )
 
 type AdminHandler struct {
-	businessStore       *store.BusinessStore
-	buStore             *store.BusinessUserStore
-	serviceStore        *store.ServiceStore
-	pageStore           *store.PageStore
-	sectionStore        *store.SectionStore
-	businessHoursStore  *store.BusinessHoursStore
-	workingHoursService *service.WorkingHoursService
-	appointmentStore    *store.AppointmentStore
-	slotService         *service.SlotService
-	imageService        *service.ImageService
-	employeeService     *service.EmployeeService
-	pool                *pgxpool.Pool
+	businessStore        *store.BusinessStore
+	buStore              *store.BusinessUserStore
+	serviceStore         *store.ServiceStore
+	pageStore            *store.PageStore
+	sectionStore         *store.SectionStore
+	businessHoursStore   *store.BusinessHoursStore
+	businessClosureStore *store.BusinessClosureStore
+	workingHoursService  *service.WorkingHoursService
+	appointmentStore     *store.AppointmentStore
+	slotService          *service.SlotService
+	imageService         *service.ImageService
+	employeeService      *service.EmployeeService
+	pool                 *pgxpool.Pool
 }
 
 func NewAdminHandler(
@@ -51,6 +52,7 @@ func NewAdminHandler(
 	pageStore *store.PageStore,
 	sectionStore *store.SectionStore,
 	businessHoursStore *store.BusinessHoursStore,
+	businessClosureStore *store.BusinessClosureStore,
 	workingHoursService *service.WorkingHoursService,
 	appointmentStore *store.AppointmentStore,
 	slotService *service.SlotService,
@@ -59,18 +61,19 @@ func NewAdminHandler(
 	pool *pgxpool.Pool,
 ) *AdminHandler {
 	return &AdminHandler{
-		businessStore:       businessStore,
-		buStore:             buStore,
-		serviceStore:        serviceStore,
-		pageStore:           pageStore,
-		sectionStore:        sectionStore,
-		businessHoursStore:  businessHoursStore,
-		workingHoursService: workingHoursService,
-		appointmentStore:    appointmentStore,
-		slotService:         slotService,
-		imageService:        imageService,
-		employeeService:     employeeService,
-		pool:                pool,
+		businessStore:        businessStore,
+		buStore:              buStore,
+		serviceStore:         serviceStore,
+		pageStore:            pageStore,
+		sectionStore:         sectionStore,
+		businessHoursStore:   businessHoursStore,
+		businessClosureStore: businessClosureStore,
+		workingHoursService:  workingHoursService,
+		appointmentStore:     appointmentStore,
+		slotService:          slotService,
+		imageService:         imageService,
+		employeeService:      employeeService,
+		pool:                 pool,
 	}
 }
 
@@ -1291,12 +1294,19 @@ func (h *AdminHandler) GetSalonPolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	closures, err := h.businessClosureStore.ListByBusiness(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
 		CancellationLeadHours: b.CancellationLeadHours,
 		NoShowAfterHours:      b.NoShowAfterHours,
 		SlotIntervalMinutes:   b.SlotIntervalMinutes,
 		AutoApprove:           b.AutoApprove,
 		WorkingHours:          dto.BusinessHoursFromModels(hours),
+		Closures:              dto.BusinessClosuresFromModels(closures),
 	})
 }
 
@@ -1370,6 +1380,20 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		})
 	}
 
+	closures := make([]models.BusinessClosure, 0, len(body.Closures))
+	for _, c := range body.Closures {
+		date, err := time.Parse(time.DateOnly, c.ClosureDate)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid closure date format, use YYYY-MM-DD")
+			return
+		}
+		closures = append(closures, models.BusinessClosure{
+			BusinessID:  businessID,
+			ClosureDate: date,
+			Reason:      strings.TrimSpace(c.Reason),
+		})
+	}
+
 	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterHours, body.SlotIntervalMinutes, body.AutoApprove); err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -1378,11 +1402,17 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if err := h.businessClosureStore.ReplaceByBusiness(r.Context(), businessID, closures); err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
 
-	// The slot interval affects every provider's availability, so refresh
-	// slot subscribers (e.g. the booking page) immediately.
+	// The slot interval and non-working days affect every provider's
+	// availability, so refresh slot subscribers (e.g. the booking page)
+	// immediately.
 	if h.slotService != nil {
 		h.slotService.PublishSlotsChangedForBusiness(businessID)
+		h.slotService.PublishClosuresChangedForBusiness(businessID)
 	}
 
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
@@ -1391,6 +1421,7 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		SlotIntervalMinutes:   body.SlotIntervalMinutes,
 		AutoApprove:           body.AutoApprove,
 		WorkingHours:          dto.BusinessHoursFromModels(hours),
+		Closures:              dto.BusinessClosuresFromModels(closures),
 	})
 }
 

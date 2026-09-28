@@ -3501,6 +3501,51 @@
                 }
             }
         },
+        "/api/business/{slug}/closures": {
+            "get": {
+                "description": "Returns the days the salon is closed, so the booking calendar can disable them.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "List non-working days",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/dto.BusinessClosure"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/business/{slug}/employees": {
             "get": {
                 "description": "Returns all employees for a business.",
@@ -4616,6 +4661,28 @@
                     }
                 }
             },
+            "dto.BusinessClosure": {
+                "type": "object",
+                "required": [
+                    "business_id",
+                    "closure_date",
+                    "id"
+                ],
+                "properties": {
+                    "business_id": {
+                        "type": "string"
+                    },
+                    "closure_date": {
+                        "type": "string"
+                    },
+                    "id": {
+                        "type": "string"
+                    },
+                    "reason": {
+                        "type": "string"
+                    }
+                }
+            },
             "dto.BusinessHours": {
                 "type": "object",
                 "required": [
@@ -5019,6 +5086,22 @@
                     }
                 }
             },
+            "handler.BusinessClosureInput": {
+                "type": "object",
+                "required": [
+                    "closure_date"
+                ],
+                "properties": {
+                    "closure_date": {
+                        "type": "string",
+                        "example": "2024-12-25"
+                    },
+                    "reason": {
+                        "type": "string",
+                        "example": "Christmas"
+                    }
+                }
+            },
             "handler.BusinessCreateInput": {
                 "type": "object",
                 "required": [
@@ -5381,6 +5464,7 @@
                 "required": [
                     "auto_approve",
                     "cancellation_lead_hours",
+                    "closures",
                     "no_show_after_hours",
                     "slot_interval_minutes",
                     "working_hours"
@@ -5393,6 +5477,12 @@
                     "cancellation_lead_hours": {
                         "type": "integer",
                         "example": 2
+                    },
+                    "closures": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/dto.BusinessClosure"
+                        }
                     },
                     "no_show_after_hours": {
                         "type": "integer",
@@ -5520,6 +5610,7 @@
                 "required": [
                     "auto_approve",
                     "cancellation_lead_hours",
+                    "closures",
                     "no_show_after_hours",
                     "slot_interval_minutes",
                     "working_hours"
@@ -5532,6 +5623,12 @@
                     "cancellation_lead_hours": {
                         "type": "integer",
                         "example": 2
+                    },
+                    "closures": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/handler.BusinessClosureInput"
+                        }
                     },
                     "no_show_after_hours": {
                         "type": "integer",

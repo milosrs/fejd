@@ -22,6 +22,7 @@ type SlotService struct {
 	workingHours     *store.WorkingHoursStore
 	businessHours    *store.BusinessHoursStore
 	overrides        *store.WorkingHoursOverrideStore
+	closures         *store.BusinessClosureStore
 	services         *store.ServiceStore
 	business         *store.BusinessStore
 	businessUser     *store.BusinessUserStore
@@ -36,6 +37,7 @@ func NewSlotService(
 	workingHours *store.WorkingHoursStore,
 	businessHours *store.BusinessHoursStore,
 	overrides *store.WorkingHoursOverrideStore,
+	closures *store.BusinessClosureStore,
 	services *store.ServiceStore,
 	business *store.BusinessStore,
 	businessUser *store.BusinessUserStore,
@@ -49,6 +51,7 @@ func NewSlotService(
 		workingHours:     workingHours,
 		businessHours:    businessHours,
 		overrides:        overrides,
+		closures:         closures,
 		services:         services,
 		business:         business,
 		businessUser:     businessUser,
@@ -73,6 +76,16 @@ func (s *SlotService) GetAvailableSlots(
 
 	if svc.BusinessID != businessID {
 		return nil, fmt.Errorf("service does not belong to business")
+	}
+
+	if s.closures != nil {
+		closed, err := s.closures.IsClosed(ctx, businessID, date)
+		if err != nil {
+			return nil, fmt.Errorf("failed to check salon closures: %w", err)
+		}
+		if closed {
+			return nil, nil
+		}
 	}
 
 	bu, err := s.businessUser.GetByID(ctx, businessUserID)
@@ -197,6 +210,16 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 		return fmt.Errorf("appointment end time does not match service duration")
 	}
 
+	if s.closures != nil {
+		closed, err := s.closures.IsClosed(ctx, appointment.BusinessID, appointment.StartTime)
+		if err != nil {
+			return fmt.Errorf("failed to check salon closures: %w", err)
+		}
+		if closed {
+			return fmt.Errorf("salon is closed on this day")
+		}
+	}
+
 	bu, err := s.businessUser.GetByID(ctx, appointment.BusinessUserID)
 	if err != nil {
 		return fmt.Errorf("employee not found: %w", err)
@@ -273,6 +296,13 @@ func (s *SlotService) PublishSlotUpdate(businessID uuid.UUID, businessUserID uui
 // interval) changes and every provider's availability should refresh.
 func (s *SlotService) PublishSlotsChangedForBusiness(businessID uuid.UUID) {
 	s.hub.Publish(businessID.String(), map[string]any{"type": "slots_updated"})
+}
+
+// PublishClosuresChangedForBusiness publishes a closures_updated event for every
+// subscriber of the business, so booking pages disable newly closed days
+// immediately.
+func (s *SlotService) PublishClosuresChangedForBusiness(businessID uuid.UUID) {
+	s.hub.Publish(businessID.String(), map[string]any{"type": "closures_updated"})
 }
 
 func (s *SlotService) publishSlotsChanged(businessID, businessUserID uuid.UUID) {

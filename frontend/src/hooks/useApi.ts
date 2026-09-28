@@ -9,6 +9,7 @@ const URL_BUSINESS_SERVICES = "/api/business/{slug}/services" as const
 const URL_SERVICE_EMPLOYEES = "/api/business/{slug}/services/{serviceID}/employees" as const
 const URL_BUSINESS_EMPLOYEES = "/api/business/{slug}/employees" as const
 const URL_BUSINESS_SLOTS = "/api/business/{slug}/slots" as const
+const URL_BUSINESS_CLOSURES = "/api/business/{slug}/closures" as const
 const URL_MY_APPOINTMENTS = "/api/my/appointments" as const
 const URL_MY_APPOINTMENTS_DELETE = "/api/my/appointments/{appointmentID}" as const
 const URL_SALON_POLICY = "/api/admin/business/{businessID}/policy" as const
@@ -132,6 +133,19 @@ export function useAvailableSlots(slug: string, serviceId: string, employeeId: s
   })
 }
 
+export function useBusinessClosures(slug: string) {
+  return useQuery({
+    queryKey: ["business-closures", slug],
+    queryFn: async () => {
+      const { data } = await GET(URL_BUSINESS_CLOSURES, {
+        params: { path: { slug } },
+      })
+      return data ?? []
+    },
+    enabled: !!slug,
+  })
+}
+
 export function useMyAppointments() {
   return useQuery({
     queryKey: ["my-appointments"],
@@ -172,6 +186,7 @@ export type SalonPolicyInput = {
   auto_approve: boolean
   timezone?: string
   working_hours: components["schemas"]["handler.BusinessHoursInput"][]
+  closures: components["schemas"]["handler.BusinessClosureInput"][]
 }
 
 export async function updateSalonPolicy(businessId: string, policy: SalonPolicyInput) {

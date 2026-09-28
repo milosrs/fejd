@@ -68,7 +68,7 @@ func TestAdminHandler_CreateEmployee(t *testing.T) {
 
 	inviter := &fakeInviter{userID: "kc-user-123"}
 	employeeService := service.NewEmployeeService(inviter, buStore, employeeServiceStore, pool, "fejd://callback", 48*3600)
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, nil, nil, employeeService, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, nil, nil, nil, employeeService, pool)
 
 	b := &models.Business{Name: "Salon", Slug: "salon"}
 	require.NoError(t, businessStore.Create(ctx, pool, b))
@@ -118,7 +118,7 @@ func TestAdminHandler_CreateEmployee_NonOwnerRejected(t *testing.T) {
 
 	inviter := &fakeInviter{userID: "kc-user-123"}
 	employeeService := service.NewEmployeeService(inviter, buStore, employeeServiceStore, pool, "fejd://callback", 48*3600)
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, nil, nil, employeeService, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, nil, nil, nil, employeeService, pool)
 
 	b := &models.Business{Name: "Salon", Slug: "salon"}
 	require.NoError(t, businessStore.Create(ctx, pool, b))
@@ -159,14 +159,14 @@ func TestAdminHandler_RemoveEmployee_RevokesRole(t *testing.T) {
 	hub := sse.NewHub()
 
 	slotService := service.NewSlotService(
-		appointmentStore, workingHoursStore, businessHoursStore, overrideStore,
+		appointmentStore, workingHoursStore, businessHoursStore, overrideStore, nil,
 		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
 	)
 
 	inviter := &fakeInviter{userID: "emp-1"}
 	employeeService := service.NewEmployeeService(inviter, buStore, employeeServiceStore, pool, "fejd://callback", 48*3600)
 
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, appointmentStore, slotService, nil, employeeService, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, nil, appointmentStore, slotService, nil, employeeService, pool)
 
 	b := &models.Business{Name: "Salon", Slug: "salon"}
 	require.NoError(t, businessStore.Create(ctx, pool, b))

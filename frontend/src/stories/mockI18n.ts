@@ -346,6 +346,13 @@ export const mockI18nEn: Record<string, string> = {
   "policy.intervalInvalid": "Slot interval must be greater than zero.",
   "policy.autoApprove": "Automatic appointment approval",
   "policy.autoApproveHelp": "Approve new appointments automatically.",
+  "policy.nonWorkingDays": "Non-working days",
+  "policy.nonWorkingDaysHelp": "Mark whole days the salon is closed. No appointments are offered on these days.",
+  "policy.nonWorkingDayDate": "Date",
+  "policy.nonWorkingDayReason": "Reason (optional)",
+  "policy.addNonWorkingDay": "Add day",
+  "policy.nonWorkingDayInvalid": "Enter a valid date (YYYY-MM-DD).",
+  "policy.nonWorkingDaysEmpty": "No non-working days yet.",
   "policy.failed": "Failed to save policy.",
   "policy.savePolicy": "Save policy",
 

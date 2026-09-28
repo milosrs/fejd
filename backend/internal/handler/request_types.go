@@ -77,20 +77,27 @@ type CreateUnavailabilityRequest struct {
 }
 
 type SalonPolicyResponse struct {
-	CancellationLeadHours int                 `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterHours      int                 `json:"no_show_after_hours" validate:"required" example:"2"`
-	SlotIntervalMinutes   int                 `json:"slot_interval_minutes" validate:"required" example:"30"`
-	AutoApprove           bool                `json:"auto_approve" validate:"required" example:"false"`
-	WorkingHours          []dto.BusinessHours `json:"working_hours" validate:"required"`
+	CancellationLeadHours int                   `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterHours      int                   `json:"no_show_after_hours" validate:"required" example:"2"`
+	SlotIntervalMinutes   int                   `json:"slot_interval_minutes" validate:"required" example:"30"`
+	AutoApprove           bool                  `json:"auto_approve" validate:"required" example:"false"`
+	WorkingHours          []dto.BusinessHours   `json:"working_hours" validate:"required"`
+	Closures              []dto.BusinessClosure `json:"closures" validate:"required"`
 }
 
 type UpdateSalonPolicyRequest struct {
-	CancellationLeadHours int                  `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterHours      int                  `json:"no_show_after_hours" validate:"required" example:"2"`
-	SlotIntervalMinutes   int                  `json:"slot_interval_minutes" validate:"required" example:"30"`
-	AutoApprove           bool                 `json:"auto_approve" validate:"required" example:"false"`
-	Timezone              string               `json:"timezone,omitempty" example:"Europe/Stockholm"`
-	WorkingHours          []BusinessHoursInput `json:"working_hours" validate:"required"`
+	CancellationLeadHours int                    `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterHours      int                    `json:"no_show_after_hours" validate:"required" example:"2"`
+	SlotIntervalMinutes   int                    `json:"slot_interval_minutes" validate:"required" example:"30"`
+	AutoApprove           bool                   `json:"auto_approve" validate:"required" example:"false"`
+	Timezone              string                 `json:"timezone,omitempty" example:"Europe/Stockholm"`
+	WorkingHours          []BusinessHoursInput   `json:"working_hours" validate:"required"`
+	Closures              []BusinessClosureInput `json:"closures" validate:"required"`
+}
+
+type BusinessClosureInput struct {
+	ClosureDate string `json:"closure_date" validate:"required" example:"2024-12-25"`
+	Reason      string `json:"reason,omitempty" example:"Christmas"`
 }
 
 type BusinessHoursInput struct {

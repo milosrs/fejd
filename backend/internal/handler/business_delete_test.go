@@ -31,7 +31,7 @@ func TestAdminHandler_DeleteBusiness(t *testing.T) {
 	inviter := &fakeInviter{userID: "owner"}
 	employeeService := service.NewEmployeeService(inviter, buStore, employeeServiceStore, pool, "fejd://callback", 48*3600)
 
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, appointmentStore, nil, nil, employeeService, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, nil, nil, nil, appointmentStore, nil, nil, employeeService, pool)
 
 	b := &models.Business{Name: "Salon", Slug: "salon"}
 	require.NoError(t, businessStore.Create(ctx, pool, b))

@@ -139,6 +139,23 @@ func WorkingHoursOverrideFromModel(m models.WorkingHoursOverride) WorkingHoursOv
 	}
 }
 
+func BusinessClosureFromModel(m models.BusinessClosure) BusinessClosure {
+	return BusinessClosure{
+		ID:          m.ID,
+		BusinessID:  m.BusinessID,
+		ClosureDate: m.ClosureDate.Format("2006-01-02"),
+		Reason:      m.Reason,
+	}
+}
+
+func BusinessClosuresFromModels(ms []models.BusinessClosure) []BusinessClosure {
+	out := make([]BusinessClosure, len(ms))
+	for i, m := range ms {
+		out[i] = BusinessClosureFromModel(m)
+	}
+	return out
+}
+
 func AppointmentFromModel(m models.Appointment) Appointment {
 	return Appointment{
 		ID:                 m.ID,

@@ -15,15 +15,16 @@ import (
 )
 
 type BusinessHandler struct {
-	businessStore       *store.BusinessStore
-	buStore             *store.BusinessUserStore
-	userStore           *store.UserStore
-	serviceStore        *store.ServiceStore
-	pageStore           *store.PageStore
-	sectionStore        *store.SectionStore
-	imageLinkStore      *store.ImageLinkStore
+	businessStore        *store.BusinessStore
+	buStore              *store.BusinessUserStore
+	userStore            *store.UserStore
+	serviceStore         *store.ServiceStore
+	pageStore            *store.PageStore
+	sectionStore         *store.SectionStore
+	imageLinkStore       *store.ImageLinkStore
 	employeeServiceStore *store.EmployeeServiceStore
-	slotService         *service.SlotService
+	businessClosureStore *store.BusinessClosureStore
+	slotService          *service.SlotService
 }
 
 func NewBusinessHandler(
@@ -35,6 +36,7 @@ func NewBusinessHandler(
 	sectionStore *store.SectionStore,
 	imageLinkStore *store.ImageLinkStore,
 	employeeServiceStore *store.EmployeeServiceStore,
+	businessClosureStore *store.BusinessClosureStore,
 	slotService *service.SlotService,
 ) *BusinessHandler {
 	return &BusinessHandler{
@@ -46,6 +48,7 @@ func NewBusinessHandler(
 		sectionStore:         sectionStore,
 		imageLinkStore:       imageLinkStore,
 		employeeServiceStore: employeeServiceStore,
+		businessClosureStore: businessClosureStore,
 		slotService:          slotService,
 	}
 }
@@ -154,6 +157,40 @@ func (h *BusinessHandler) GetSections(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, dto.SectionsFromModels(sections))
+}
+
+// GetClosures godoc
+// @Summary      List non-working days
+// @Description  Returns the days the salon is closed, so the booking calendar can disable them.
+// @Tags         public
+// @Produce      json
+// @Param        slug path string true "Business slug"
+// @Success      200 {array} dto.BusinessClosure
+// @Failure      404 {object} ErrorResponse
+// @Router       /api/business/{slug}/closures [get]
+func (h *BusinessHandler) GetClosures(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	if h.businessClosureStore == nil {
+		writeJSON(w, http.StatusOK, []dto.BusinessClosure{})
+		return
+	}
+
+	closures, err := h.businessClosureStore.ListByBusiness(r.Context(), b.ID)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to get closures")
+		return
+	}
+	if closures == nil {
+		closures = []models.BusinessClosure{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.BusinessClosuresFromModels(closures))
 }
 
 // GetServices godoc

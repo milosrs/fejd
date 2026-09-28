@@ -27,7 +27,8 @@ func newTestBusinessHandler(t *testing.T) (*BusinessHandler, *store.BusinessStor
 	sectionStore := store.NewSectionStore(pool)
 	imageLinkStore := store.NewImageLinkStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
-	h := NewBusinessHandler(businessStore, buStore, nil, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, nil)
+	businessClosureStore := store.NewBusinessClosureStore(pool)
+	h := NewBusinessHandler(businessStore, buStore, nil, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, businessClosureStore, nil)
 	return h, businessStore, pool
 }
 
@@ -163,4 +164,48 @@ func TestBusinessHandler_GetServiceEmployees(t *testing.T) {
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &employees))
 	require.Len(t, employees, 1)
 	assert.Equal(t, emp1, employees[0].ID)
+}
+
+func TestBusinessHandler_GetClosures(t *testing.T) {
+	h, businessStore, pool := newTestBusinessHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+
+	_, err := pool.Exec(ctx,
+		`INSERT INTO business_closures (business_id, closure_date, reason) VALUES ($1, '2026-12-25', 'Christmas'), ($1, '2027-01-01', '')`,
+		b.ID,
+	)
+	require.NoError(t, err)
+
+	req := withSlug(httptest.NewRequest(http.MethodGet, "/api/business/salon/closures", nil), "salon")
+	rr := httptest.NewRecorder()
+
+	h.GetClosures(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var closures []dto.BusinessClosure
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &closures))
+	require.Len(t, closures, 2)
+	assert.Equal(t, "2026-12-25", closures[0].ClosureDate)
+	assert.Equal(t, "Christmas", closures[0].Reason)
+	assert.Equal(t, "2027-01-01", closures[1].ClosureDate)
+	assert.Empty(t, closures[1].Reason)
+}
+
+func TestBusinessHandler_GetClosures_Empty(t *testing.T) {
+	h, businessStore, pool := newTestBusinessHandler(t)
+	ctx := context.Background()
+
+	b := &models.Business{Name: "Salon", Slug: "salon"}
+	require.NoError(t, businessStore.Create(ctx, pool, b))
+
+	req := withSlug(httptest.NewRequest(http.MethodGet, "/api/business/salon/closures", nil), "salon")
+	rr := httptest.NewRecorder()
+
+	h.GetClosures(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	assert.JSONEq(t, "[]", rr.Body.String())
 }

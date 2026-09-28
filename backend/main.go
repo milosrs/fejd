@@ -75,6 +75,7 @@ func main() {
 	workingHoursStore := store.NewWorkingHoursStore(pool)
 	overrideStore := store.NewWorkingHoursOverrideStore(pool)
 	businessHoursStore := store.NewBusinessHoursStore(pool)
+	businessClosureStore := store.NewBusinessClosureStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
 	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
 	imageStore := store.NewImageStore(pool)
@@ -97,7 +98,7 @@ func main() {
 
 	slotService := service.NewSlotService(
 		appointmentStore, workingHoursStore, businessHoursStore, overrideStore,
-		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
+		businessClosureStore, serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
 	)
 
 	workingHoursService := service.NewWorkingHoursService(
@@ -106,7 +107,7 @@ func main() {
 	)
 
 	businessHandler := handler.NewBusinessHandler(
-		businessStore, buStore, userStore, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, slotService,
+		businessStore, buStore, userStore, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, businessClosureStore, slotService,
 	)
 
 	appointmentHandler := handler.NewAppointmentHandler(
@@ -124,7 +125,7 @@ func main() {
 	invitationHandler := handler.NewInvitationHandler(invitationService, time.Duration(cfg.Jobs.InviteExpiryHours)*time.Hour)
 
 	adminHandler := handler.NewAdminHandler(
-		businessStore, buStore, serviceStore, pageStore, sectionStore, businessHoursStore, workingHoursService, appointmentStore, slotService, imageService, employeeService, pool,
+		businessStore, buStore, serviceStore, pageStore, sectionStore, businessHoursStore, businessClosureStore, workingHoursService, appointmentStore, slotService, imageService, employeeService, pool,
 	)
 
 	sseHandler := handler.NewSSEHandler(hub, businessStore)

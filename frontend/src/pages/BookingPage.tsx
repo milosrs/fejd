@@ -4,7 +4,7 @@ import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useSalonContext } from "../context/SalonContext"
-import { useServices, useServiceEmployees, createAppointment } from "../hooks/useApi"
+import { useServices, useServiceEmployees, useBusinessClosures, createAppointment } from "../hooks/useApi"
 import { useBookingStore } from "../stores/bookingStore"
 import { useTimeSlotStream } from "../hooks/useTimeSlotStream"
 import { useAuthStore } from "../stores/authStore"
@@ -67,6 +67,8 @@ export function BookingPage() {
     slug,
     effectiveServiceId ?? "",
   )
+  const { data: closures } = useBusinessClosures(slug)
+  const closedDates = new Set((closures ?? []).map((c) => c.closure_date))
 
   const [booking, setBooking] = useState(false)
   const [error, setError] = useState("")
@@ -215,6 +217,7 @@ export function BookingPage() {
                   value={selectedDate ? parseDate(selectedDate) : undefined}
                   onChange={(date) => date && setDate(date.toString())}
                   minValue={today(getLocalTimeZone())}
+                  isDateUnavailable={(date) => closedDates.has(date.toString())}
                   className="mx-auto"
                 />
               </CardContent>

@@ -135,6 +135,15 @@ type WorkingHoursOverride struct {
 	Reason         string     `json:"reason,omitempty"`
 }
 
+// BusinessClosure is a salon-level non-working day. The date is a UTC
+// "YYYY-MM-DD" string.
+type BusinessClosure struct {
+	ID          uuid.UUID `json:"id" validate:"required"`
+	BusinessID  uuid.UUID `json:"business_id" validate:"required"`
+	ClosureDate string    `json:"closure_date" validate:"required"`
+	Reason      string    `json:"reason,omitempty"`
+}
+
 type Appointment struct {
 	ID                 uuid.UUID `json:"id" validate:"required"`
 	BusinessID         uuid.UUID `json:"business_id" validate:"required"`

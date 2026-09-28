@@ -116,6 +116,15 @@ type WorkingHoursOverride struct {
 	Reason         string
 }
 
+// BusinessClosure marks a whole salon day as closed (a non-working day), so no
+// appointments are offered for any employee on that UTC date.
+type BusinessClosure struct {
+	ID          uuid.UUID
+	BusinessID  uuid.UUID
+	ClosureDate time.Time
+	Reason      string
+}
+
 type AppointmentStatus string
 
 const (
