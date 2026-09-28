@@ -74,7 +74,7 @@ func TestAdminHandler_BookOwnAppointment_AutoApprove(t *testing.T) {
 	h, buStore, businessID, _, _, svcID, _ := newReservationTestHandler(t)
 
 	// Enable automatic approval; the booking should be confirmed immediately.
-	require.NoError(t, h.businessStore.UpdatePolicy(context.Background(), businessID, 2, 2, 30, true))
+	require.NoError(t, h.businessStore.UpdatePolicy(context.Background(), businessID, 2, 120, 30, true))
 
 	start := time.Now().UTC().Add(3 * time.Hour).Truncate(time.Hour)
 	body := `{"service_id":"` + svcID.String() + `","start_time":"` + start.Format(time.RFC3339) + `"}`

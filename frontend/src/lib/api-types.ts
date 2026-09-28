@@ -4259,10 +4259,10 @@ export interface components {
             end_time: string;
             id: string;
             /**
-             * @description NoShowAfterHours is populated for staff reservation lists so the UI can
+             * @description NoShowAfterMinutes is populated for staff reservation lists so the UI can
              *     surface when a no-show may be recorded.
              */
-            no_show_after_hours?: number;
+            no_show_after_minutes?: number;
             service_id: string;
             /** @description ServiceName is populated for staff-facing reservation lists only. */
             service_name?: string;
@@ -4284,7 +4284,7 @@ export interface components {
             created_at: string;
             id: string;
             name: string;
-            no_show_after_hours: number;
+            no_show_after_minutes: number;
             slot_interval_minutes: number;
             slug: string;
             updated_at: string;
@@ -4555,8 +4555,8 @@ export interface components {
             /** @example 2 */
             cancellation_lead_hours: number;
             closures: components["schemas"]["dto.BusinessClosure"][];
-            /** @example 2 */
-            no_show_after_hours: number;
+            /** @example 120 */
+            no_show_after_minutes: number;
             /** @example 30 */
             slot_interval_minutes: number;
             working_hours: components["schemas"]["dto.BusinessHours"][];
@@ -4606,8 +4606,8 @@ export interface components {
             /** @example 2 */
             cancellation_lead_hours: number;
             closures: components["schemas"]["handler.BusinessClosureInput"][];
-            /** @example 2 */
-            no_show_after_hours: number;
+            /** @example 120 */
+            no_show_after_minutes: number;
             /** @example 30 */
             slot_interval_minutes: number;
             /** @example Europe/Stockholm */

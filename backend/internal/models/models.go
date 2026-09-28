@@ -15,9 +15,9 @@ type Business struct {
 	// CancellationLeadHours is the minimum notice (hours) a customer must give
 	// before cancelling an appointment. Soft policy, configurable by the owner.
 	CancellationLeadHours int
-	// NoShowAfterHours is how many hours after an appointment start a staff
+	// NoShowAfterMinutes is how many minutes after an appointment start a staff
 	// member may mark it as no-show. Soft policy, configurable by the owner.
-	NoShowAfterHours int
+	NoShowAfterMinutes int
 	// SlotIntervalMinutes is the granularity (in minutes) of the booking slot
 	// grid. Soft policy, configurable by the owner.
 	SlotIntervalMinutes int

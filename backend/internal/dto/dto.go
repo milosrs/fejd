@@ -14,7 +14,7 @@ type Business struct {
 	CreatedAt             time.Time `json:"created_at" validate:"required"`
 	UpdatedAt             time.Time `json:"updated_at" validate:"required"`
 	CancellationLeadHours int       `json:"cancellation_lead_hours" validate:"required"`
-	NoShowAfterHours      int       `json:"no_show_after_hours" validate:"required"`
+	NoShowAfterMinutes    int       `json:"no_show_after_minutes" validate:"required"`
 	SlotIntervalMinutes   int       `json:"slot_interval_minutes" validate:"required"`
 }
 
@@ -173,9 +173,9 @@ type Appointment struct {
 	// CancellationLeadHours is populated for customer appointment lists so the
 	// UI can surface the salon's cancellation notice window.
 	CancellationLeadHours int `json:"cancellation_lead_hours,omitempty"`
-	// NoShowAfterHours is populated for staff reservation lists so the UI can
+	// NoShowAfterMinutes is populated for staff reservation lists so the UI can
 	// surface when a no-show may be recorded.
-	NoShowAfterHours int `json:"no_show_after_hours,omitempty"`
+	NoShowAfterMinutes int `json:"no_show_after_minutes,omitempty"`
 	// BusinessName is the salon's name, populated for customer appointment lists.
 	BusinessName string `json:"business_name,omitempty"`
 	// BusinessSlug is the salon's slug, populated for customer appointment lists.

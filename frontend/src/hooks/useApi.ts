@@ -181,7 +181,7 @@ export function useSalonPolicy(businessId: string) {
 
 export type SalonPolicyInput = {
   cancellation_lead_hours: number
-  no_show_after_hours: number
+  no_show_after_minutes: number
   slot_interval_minutes: number
   auto_approve: boolean
   timezone?: string

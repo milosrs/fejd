@@ -78,7 +78,7 @@ type CreateUnavailabilityRequest struct {
 
 type SalonPolicyResponse struct {
 	CancellationLeadHours int                   `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterHours      int                   `json:"no_show_after_hours" validate:"required" example:"2"`
+	NoShowAfterMinutes    int                   `json:"no_show_after_minutes" validate:"required" example:"120"`
 	SlotIntervalMinutes   int                   `json:"slot_interval_minutes" validate:"required" example:"30"`
 	AutoApprove           bool                  `json:"auto_approve" validate:"required" example:"false"`
 	WorkingHours          []dto.BusinessHours   `json:"working_hours" validate:"required"`
@@ -87,7 +87,7 @@ type SalonPolicyResponse struct {
 
 type UpdateSalonPolicyRequest struct {
 	CancellationLeadHours int                    `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterHours      int                    `json:"no_show_after_hours" validate:"required" example:"2"`
+	NoShowAfterMinutes    int                    `json:"no_show_after_minutes" validate:"required" example:"120"`
 	SlotIntervalMinutes   int                    `json:"slot_interval_minutes" validate:"required" example:"30"`
 	AutoApprove           bool                   `json:"auto_approve" validate:"required" example:"false"`
 	Timezone              string                 `json:"timezone,omitempty" example:"Europe/Stockholm"`

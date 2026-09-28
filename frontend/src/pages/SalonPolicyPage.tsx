@@ -87,6 +87,22 @@ function isValidDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value))
 }
 
+// minutesToHHMM renders a total-minute count as an HH:MM time input value.
+function minutesToHHMM(total: number): string {
+  const h = Math.floor(total / 60)
+  const m = total % 60
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`
+}
+
+// hhmmToMinutes parses an HH:MM time input value into total minutes.
+function hhmmToMinutes(value: string): number {
+  const match = /^(\d{1,2}):(\d{2})$/.exec(value.trim())
+  if (!match) return Number.NaN
+  const minutes = Number(match[2])
+  if (minutes > 59) return Number.NaN
+  return Number(match[1]) * 60 + minutes
+}
+
 export function SalonPolicyPage() {
   const { slug, salon } = useSalonContext()
   const isOwner = useIsOwner()
@@ -109,7 +125,7 @@ export function SalonPolicyPage() {
 
   const [schedule, setSchedule] = useState<DaySchedule[]>(defaultSchedule())
   const [leadHours, setLeadHours] = useState("")
-  const [noShowHours, setNoShowHours] = useState("")
+  const [noShowTime, setNoShowTime] = useState("")
   const [slotInterval, setSlotInterval] = useState("30")
   const [autoApprove, setAutoApprove] = useState(false)
   const [dateClosures, setDateClosures] = useState<ClosureRule[]>([])
@@ -126,7 +142,7 @@ export function SalonPolicyPage() {
   useEffect(() => {
     if (!policy) return
     setLeadHours(String(policy.cancellation_lead_hours))
-    setNoShowHours(String(policy.no_show_after_hours))
+    setNoShowTime(minutesToHHMM(policy.no_show_after_minutes))
     setSlotInterval(String(policy.slot_interval_minutes))
     setAutoApprove(policy.auto_approve)
 
@@ -234,18 +250,18 @@ export function SalonPolicyPage() {
 
   const handleSave = async () => {
     const lead = parseInt(leadHours, 10)
-    const noShow = parseInt(noShowHours, 10)
     const interval = parseInt(slotInterval, 10)
     if (Number.isNaN(lead) || lead < 0) {
       setError(t("policy.cancellationInvalid"))
       return
     }
-    if (Number.isNaN(noShow) || noShow < 0) {
-      setError(t("policy.noShowInvalid"))
-      return
-    }
     if (Number.isNaN(interval) || interval <= 0) {
       setError(t("policy.intervalInvalid"))
+      return
+    }
+    const noShow = noShowTime.trim() === "" ? 0 : hhmmToMinutes(noShowTime)
+    if (Number.isNaN(noShow) || noShow < 0) {
+      setError(t("policy.noShowInvalid"))
       return
     }
     setSaving(true)
@@ -253,7 +269,7 @@ export function SalonPolicyPage() {
     try {
       await updateSalonPolicy(businessId, {
         cancellation_lead_hours: lead,
-        no_show_after_hours: noShow,
+        no_show_after_minutes: noShow,
         slot_interval_minutes: interval,
         auto_approve: autoApprove,
         timezone: getLocalTimeZone(),
@@ -372,13 +388,12 @@ export function SalonPolicyPage() {
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="no-show-after-hours">{t("policy.noShowGrace")}</Label>
+            <Label htmlFor="no-show-grace">{t("policy.noShowGrace")}</Label>
             <Input
-              id="no-show-after-hours"
-              type="number"
-              min={0}
-              value={noShowHours}
-              onChange={(e) => setNoShowHours(e.target.value)}
+              id="no-show-grace"
+              type="time"
+              value={noShowTime}
+              onChange={(e) => setNoShowTime(e.target.value)}
             />
           </div>
           <div className="space-y-1">

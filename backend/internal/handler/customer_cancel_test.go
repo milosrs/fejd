@@ -181,11 +181,11 @@ func TestAdminHandler_SalonPolicy(t *testing.T) {
 	var policy SalonPolicyResponse
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &policy))
 	assert.Equal(t, 2, policy.CancellationLeadHours)
-	assert.Equal(t, 2, policy.NoShowAfterHours)
+	assert.Equal(t, 120, policy.NoShowAfterMinutes)
 	assert.Equal(t, 30, policy.SlotIntervalMinutes)
 
 	putReq := withPathParams(
-		httptest.NewRequest(http.MethodPut, "/api/admin/business/"+env.businessID.String()+"/policy", bytes.NewBufferString(`{"cancellation_lead_hours":24,"no_show_after_hours":4,"slot_interval_minutes":45,"working_hours":[{"day_of_week":1,"start_time":"09:00","end_time":"17:00"}],"closures":[{"type":"single","start_date":"2026-12-25","reason":"Christmas"},{"type":"weekly","day_of_week":6}]}`)),
+		httptest.NewRequest(http.MethodPut, "/api/admin/business/"+env.businessID.String()+"/policy", bytes.NewBufferString(`{"cancellation_lead_hours":24,"no_show_after_minutes":240,"slot_interval_minutes":45,"working_hours":[{"day_of_week":1,"start_time":"09:00","end_time":"17:00"}],"closures":[{"type":"single","start_date":"2026-12-25","reason":"Christmas"},{"type":"weekly","day_of_week":6}]}`)),
 		map[string]string{"businessID": env.businessID.String()},
 	)
 	putReq = withUser(putReq, "owner-1", "approved")
@@ -194,7 +194,7 @@ func TestAdminHandler_SalonPolicy(t *testing.T) {
 	require.Equal(t, http.StatusOK, rr.Code)
 	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &policy))
 	assert.Equal(t, 24, policy.CancellationLeadHours)
-	assert.Equal(t, 4, policy.NoShowAfterHours)
+	assert.Equal(t, 240, policy.NoShowAfterMinutes)
 	assert.Equal(t, 45, policy.SlotIntervalMinutes)
 	assert.Len(t, policy.WorkingHours, 1)
 	assert.Equal(t, "09:00", policy.WorkingHours[0].StartTime)

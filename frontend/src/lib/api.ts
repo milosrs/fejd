@@ -17,7 +17,7 @@ const authMiddleware: Middleware = {
 }
 
 const errorMiddleware: Middleware = {
-  async onResponse({ request, response }) {
+  async onResponse({ response }) {
     if (response.status === 401) {
       // A 401 usually means a stale token, not a dead session: refresh it and
       // let the query retry with the fresh token. Only fall back to a full
@@ -31,9 +31,11 @@ const errorMiddleware: Middleware = {
     }
     if (!response.ok) {
       const body = await response.clone().json().catch(() => undefined)
-      // Surface write failures as a toast. Reads (GET) are left to the UI's
-      // loading/empty states and are retried, so toasting them would spam.
-      if (response.status !== 401 && request.method !== "GET") {
+      // Surface every 4xx/5xx failure as a toast. 401 is handled above via the
+      // refresh/login redirect rather than a toast. The toast store dedupes
+      // identical messages and caps concurrent toasts, so retried reads don't
+      // spam the screen.
+      if (response.status !== 401) {
         useToastStore.getState().error(body?.error ?? `Request failed (${response.status})`)
       }
       throw { status: response.status, body }

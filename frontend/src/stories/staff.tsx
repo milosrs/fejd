@@ -54,7 +54,7 @@ function mkReservation(
     status,
     created_by: customerId,
     created_at: monthDayISO(day, startHour - 1),
-    no_show_after_hours: 2,
+    no_show_after_minutes: 120,
   }
 }
 
@@ -89,7 +89,7 @@ export const mockReservations: Appointment[] = [
     status: "confirmed",
     created_by: "customer-1",
     created_at: futureISO(0, 8),
-    no_show_after_hours: 2,
+    no_show_after_minutes: 120,
   },
   {
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb2",
@@ -103,7 +103,7 @@ export const mockReservations: Appointment[] = [
     status: "pending",
     created_by: "customer-2",
     created_at: futureISO(0, 8),
-    no_show_after_hours: 2,
+    no_show_after_minutes: 120,
   },
   {
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb3",
@@ -118,7 +118,7 @@ export const mockReservations: Appointment[] = [
     created_by: "customer-3",
     created_at: futureISO(0, 8),
     cancellation_reason: "customer asked to reschedule",
-    no_show_after_hours: 2,
+    no_show_after_minutes: 120,
   },
   {
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbb4",
@@ -132,7 +132,7 @@ export const mockReservations: Appointment[] = [
     status: "confirmed",
     created_by: "customer-4",
     created_at: inHours(-4),
-    no_show_after_hours: 2,
+    no_show_after_minutes: 120,
   },
 ]
 

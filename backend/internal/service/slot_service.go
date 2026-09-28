@@ -630,7 +630,7 @@ var ErrNoShowTooEarly = errors.New("no-show cannot be marked yet")
 
 // MarkNoShow marks one of the caller's own active reservations as no-show,
 // enforcing the salon's policy that a no-show can only be recorded
-// business.no_show_after_hours after the appointment start.
+// business.no_show_after_minutes after the appointment start.
 func (s *SlotService) MarkNoShow(ctx context.Context, businessID uuid.UUID, userID string, appointmentID uuid.UUID) error {
 	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
 	if err != nil {
@@ -650,7 +650,7 @@ func (s *SlotService) MarkNoShow(ctx context.Context, businessID uuid.UUID, user
 		return fmt.Errorf("business not found: %w", err)
 	}
 
-	grace := time.Duration(b.NoShowAfterHours) * time.Hour
+	grace := time.Duration(b.NoShowAfterMinutes) * time.Minute
 	if time.Since(appt.StartTime) < grace {
 		return ErrNoShowTooEarly
 	}

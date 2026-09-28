@@ -4595,8 +4595,8 @@
                     "id": {
                         "type": "string"
                     },
-                    "no_show_after_hours": {
-                        "description": "NoShowAfterHours is populated for staff reservation lists so the UI can\nsurface when a no-show may be recorded.",
+                    "no_show_after_minutes": {
+                        "description": "NoShowAfterMinutes is populated for staff reservation lists so the UI can\nsurface when a no-show may be recorded.",
                         "type": "integer"
                     },
                     "service_id": {
@@ -4629,7 +4629,7 @@
                     "created_at",
                     "id",
                     "name",
-                    "no_show_after_hours",
+                    "no_show_after_minutes",
                     "slot_interval_minutes",
                     "slug",
                     "updated_at"
@@ -4647,7 +4647,7 @@
                     "name": {
                         "type": "string"
                     },
-                    "no_show_after_hours": {
+                    "no_show_after_minutes": {
                         "type": "integer"
                     },
                     "slot_interval_minutes": {
@@ -5500,7 +5500,7 @@
                     "auto_approve",
                     "cancellation_lead_hours",
                     "closures",
-                    "no_show_after_hours",
+                    "no_show_after_minutes",
                     "slot_interval_minutes",
                     "working_hours"
                 ],
@@ -5519,9 +5519,9 @@
                             "$ref": "#/components/schemas/dto.BusinessClosure"
                         }
                     },
-                    "no_show_after_hours": {
+                    "no_show_after_minutes": {
                         "type": "integer",
-                        "example": 2
+                        "example": 120
                     },
                     "slot_interval_minutes": {
                         "type": "integer",
@@ -5646,7 +5646,7 @@
                     "auto_approve",
                     "cancellation_lead_hours",
                     "closures",
-                    "no_show_after_hours",
+                    "no_show_after_minutes",
                     "slot_interval_minutes",
                     "working_hours"
                 ],
@@ -5665,9 +5665,9 @@
                             "$ref": "#/components/schemas/handler.BusinessClosureInput"
                         }
                     },
-                    "no_show_after_hours": {
+                    "no_show_after_minutes": {
                         "type": "integer",
-                        "example": 2
+                        "example": 120
                     },
                     "slot_interval_minutes": {
                         "type": "integer",

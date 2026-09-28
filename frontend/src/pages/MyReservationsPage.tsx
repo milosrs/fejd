@@ -85,7 +85,7 @@ function isPast(r: Appointment): boolean {
 function canMarkNoShow(r: Appointment): boolean {
   if (r.status !== "pending" && r.status !== "confirmed") return false
   if (!isPast(r)) return false
-  const graceMs = (r.no_show_after_hours ?? 0) * 3600 * 1000
+  const graceMs = (r.no_show_after_minutes ?? 0) * 60 * 1000
   return new Date().getTime() >= new Date(r.start_time).getTime() + graceMs
 }
 

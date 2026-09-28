@@ -894,12 +894,12 @@ func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	noShowAfterHours := 0
+	noShowAfterMinutes := 0
 	if b, err := h.businessStore.GetByID(r.Context(), businessID); err == nil {
-		noShowAfterHours = b.NoShowAfterHours
+		noShowAfterMinutes = b.NoShowAfterMinutes
 	}
 
-	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, servicePrices, servicePictures, noShowAfterHours))
+	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, servicePrices, servicePictures, noShowAfterMinutes))
 }
 
 // CancelMyReservation godoc
@@ -1206,12 +1206,12 @@ func (h *AdminHandler) ListBusinessAppointments(w http.ResponseWriter, r *http.R
 		return
 	}
 
-	noShowAfterHours := 0
+	noShowAfterMinutes := 0
 	if b, err := h.businessStore.GetByID(r.Context(), businessID); err == nil {
-		noShowAfterHours = b.NoShowAfterHours
+		noShowAfterMinutes = b.NoShowAfterMinutes
 	}
 
-	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, servicePrices, servicePictures, noShowAfterHours))
+	writeJSON(w, http.StatusOK, dto.StaffAppointmentsFromModels(appointments, serviceNames, servicePrices, servicePictures, noShowAfterMinutes))
 }
 
 // ListBusinessUnavailability godoc
@@ -1302,7 +1302,7 @@ func (h *AdminHandler) GetSalonPolicy(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
 		CancellationLeadHours: b.CancellationLeadHours,
-		NoShowAfterHours:      b.NoShowAfterHours,
+		NoShowAfterMinutes:    b.NoShowAfterMinutes,
 		SlotIntervalMinutes:   b.SlotIntervalMinutes,
 		AutoApprove:           b.AutoApprove,
 		WorkingHours:          dto.BusinessHoursFromModels(hours),
@@ -1341,8 +1341,8 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusBadRequest, "cancellation_lead_hours must be zero or greater")
 		return
 	}
-	if body.NoShowAfterHours < 0 {
-		writeError(w, http.StatusBadRequest, "no_show_after_hours must be zero or greater")
+	if body.NoShowAfterMinutes < 0 {
+		writeError(w, http.StatusBadRequest, "no_show_after_minutes must be zero or greater")
 		return
 	}
 	if body.SlotIntervalMinutes <= 0 {
@@ -1391,7 +1391,7 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		closures = append(closures, closure)
 	}
 
-	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterHours, body.SlotIntervalMinutes, body.AutoApprove); err != nil {
+	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterMinutes, body.SlotIntervalMinutes, body.AutoApprove); err != nil {
 		log.Printf("failed to update salon policy settings: %v", err)
 		writeError(w, http.StatusInternalServerError, "failed to update salon policy")
 		return
@@ -1417,7 +1417,7 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
 		CancellationLeadHours: body.CancellationLeadHours,
-		NoShowAfterHours:      body.NoShowAfterHours,
+		NoShowAfterMinutes:    body.NoShowAfterMinutes,
 		SlotIntervalMinutes:   body.SlotIntervalMinutes,
 		AutoApprove:           body.AutoApprove,
 		WorkingHours:          dto.BusinessHoursFromModels(hours),

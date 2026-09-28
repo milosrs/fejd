@@ -16,7 +16,7 @@ func BusinessFromModel(m models.Business) Business {
 		CreatedAt:             m.CreatedAt,
 		UpdatedAt:             m.UpdatedAt,
 		CancellationLeadHours: m.CancellationLeadHours,
-		NoShowAfterHours:      m.NoShowAfterHours,
+		NoShowAfterMinutes:    m.NoShowAfterMinutes,
 		SlotIntervalMinutes:   m.SlotIntervalMinutes,
 	}
 }
@@ -321,14 +321,14 @@ func AppointmentsFromModels(ms []models.Appointment) []Appointment {
 // StaffAppointmentsFromModels enriches appointments with their service name,
 // price and picture and the salon's no-show grace period for staff-facing
 // reservation lists.
-func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.UUID]string, servicePrices map[uuid.UUID]float64, servicePictures map[uuid.UUID]string, noShowAfterHours int) []Appointment {
+func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.UUID]string, servicePrices map[uuid.UUID]float64, servicePictures map[uuid.UUID]string, noShowAfterMinutes int) []Appointment {
 	out := make([]Appointment, len(ms))
 	for i, m := range ms {
 		out[i] = AppointmentFromModel(m)
 		out[i].ServiceName = serviceNames[m.ServiceID]
 		out[i].ServicePrice = servicePrices[m.ServiceID]
 		out[i].ServicePicture = servicePictures[m.ServiceID]
-		out[i].NoShowAfterHours = noShowAfterHours
+		out[i].NoShowAfterMinutes = noShowAfterMinutes
 	}
 	return out
 }

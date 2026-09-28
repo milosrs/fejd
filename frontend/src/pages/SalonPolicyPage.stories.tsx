@@ -4,7 +4,7 @@ import { SalonFrame, mockOwnerMe } from "../stories/salon"
 
 const mockPolicy = {
   cancellation_lead_hours: 2,
-  no_show_after_hours: 2,
+  no_show_after_minutes: 120,
   slot_interval_minutes: 30,
   auto_approve: false,
   working_hours: [
