@@ -78,5 +78,8 @@ jobs:
                       VITE_GOOGLE_MAPS_API_KEY=${{ vars.VITE_GOOGLE_MAPS_API_KEY }}
                       VITE_APP_STORE_URL=${{ vars.VITE_APP_STORE_URL }}
                       VITE_PLAY_STORE_URL=${{ vars.VITE_PLAY_STORE_URL }}
+                      VITE_FIREBASE_API_KEY=AIzaSyAsnuUEUfWLn-m_1wga6utKRym39-a8iLQ
+                      VITE_FIREBASE_APP_ID=1:719999385218:web:a899b004c507bcd4f03e9b
+                      VITE_FIREBASE_VAPID_KEY=BDa5NdKm5mvw_xyO6hSGOCBdp3jleKjMTCKZ5-zSDS5J6SPnlcvsEi7gtSYnXzVOK9CWbdzW40kPMafhYb7VPRU
                   tags: ${{ steps.frontend-meta.outputs.tags }}
                   labels: ${{ steps.frontend-meta.outputs.labels }}

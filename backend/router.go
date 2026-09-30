@@ -29,6 +29,7 @@ func newRouter(
 	invitationHandler *handler.InvitationHandler,
 	buStore *store.BusinessUserStore,
 	userStore *store.UserStore,
+	pushHandler *handler.PushHandler,
 ) *chi.Mux {
 	r := chi.NewRouter()
 
@@ -85,6 +86,8 @@ func newRouter(
 
 			r.Get("/", meHandler.GetMe)
 			r.Post("/avatar", imageHandler.UploadAvatar)
+			r.Post("/push-token", pushHandler.Register)
+			r.Delete("/push-token", pushHandler.Unregister)
 
 			r.Group(func(r chi.Router) {
 				r.Use(requireApproved)

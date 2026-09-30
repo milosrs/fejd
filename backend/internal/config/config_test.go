@@ -1,6 +1,8 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -159,4 +161,39 @@ func TestLoadRejectsInvalidInviteBaseURL(t *testing.T) {
 			require.Error(t, err)
 		})
 	}
+}
+
+func TestLoadFirebaseDefaults(t *testing.T) {
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.Empty(t, cfg.Firebase.ServiceAccountJSON)
+	assert.Empty(t, cfg.Firebase.ServiceAccountPath)
+	assert.False(t, cfg.Firebase.Enabled())
+}
+
+func TestLoadFirebaseInlineServiceAccount(t *testing.T) {
+	t.Setenv("FIREBASE_SERVICE_ACCOUNT_JSON", `{"project_id":"fejd-c8cab"}`)
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.Equal(t, `{"project_id":"fejd-c8cab"}`, cfg.Firebase.ServiceAccountJSON)
+	assert.True(t, cfg.Firebase.Enabled())
+
+	data, err := cfg.Firebase.ServiceAccount()
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"project_id":"fejd-c8cab"}`, string(data))
+}
+
+func TestLoadFirebaseServiceAccountPath(t *testing.T) {
+	file := filepath.Join(t.TempDir(), "sa.json")
+	require.NoError(t, os.WriteFile(file, []byte(`{"project_id":"fejd-c8cab"}`), 0o600))
+	t.Setenv("FIREBASE_SERVICE_ACCOUNT_PATH", file)
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.True(t, cfg.Firebase.Enabled())
+
+	data, err := cfg.Firebase.ServiceAccount()
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"project_id":"fejd-c8cab"}`, string(data))
 }

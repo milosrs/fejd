@@ -46,7 +46,7 @@ jobs:
 
       - uses: pnpm/action-setup@v4
         with:
-          version: 11.15.1
+          version: v12.8.1
 
       - uses: actions/setup-node@v4
         with:

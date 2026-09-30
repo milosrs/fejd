@@ -290,3 +290,14 @@ type Invitation struct {
 	ExpiresAt  *time.Time
 	CreatedAt  time.Time
 }
+
+// PushToken is a device's FCM registration token, linked to a user's Keycloak
+// subject so notifications can target a user across their devices.
+type PushToken struct {
+	ID        uuid.UUID
+	UserID    string
+	Token     string
+	Platform  string
+	CreatedAt time.Time
+	UpdatedAt time.Time
+}

@@ -2,7 +2,7 @@
 FROM node:26.0.0-alpine3.22 AS build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN npm install -g pnpm@11.15.1
+RUN npm install -g pnpm@v12.8.1
 RUN --mount=type=cache,id=fejd-pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile --reporter=append-only \
     --network-concurrency=4 --fetch-retries=8 --fetch-retry-factor=2 \
@@ -18,6 +18,9 @@ ARG VITE_APP_DOMAIN
 ARG VITE_APP_HOST
 ARG VITE_APP_STORE_URL
 ARG VITE_PLAY_STORE_URL
+ARG VITE_FIREBASE_API_KEY
+ARG VITE_FIREBASE_APP_ID
+ARG VITE_FIREBASE_VAPID_KEY
 ENV VITE_API_URL=$VITE_API_URL \
     VITE_KEYCLOAK_URL=$VITE_KEYCLOAK_URL \
     VITE_KEYCLOAK_REALM=$VITE_KEYCLOAK_REALM \
@@ -26,7 +29,10 @@ ENV VITE_API_URL=$VITE_API_URL \
     VITE_APP_DOMAIN=$VITE_APP_DOMAIN \
     VITE_APP_HOST=$VITE_APP_HOST \
     VITE_APP_STORE_URL=$VITE_APP_STORE_URL \
-    VITE_PLAY_STORE_URL=$VITE_PLAY_STORE_URL
+    VITE_PLAY_STORE_URL=$VITE_PLAY_STORE_URL \
+    VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
+    VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
+    VITE_FIREBASE_VAPID_KEY=$VITE_FIREBASE_VAPID_KEY
 RUN pnpm build
 
 FROM nginx:1.30.4-alpine-perl

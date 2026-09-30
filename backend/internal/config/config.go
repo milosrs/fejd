@@ -94,12 +94,55 @@ type EmailConfig struct {
 	SuperadminNotifyEmail string
 }
 
+// FirebaseConfig holds the credentials for sending FCM push notifications. The
+// service account is the JSON the Firebase console emits from Project settings
+// > Service accounts > Generate new private key (not google-services.json).
+// It is provided either inline or as a path to a mounted secret file.
+type FirebaseConfig struct {
+	ServiceAccountJSON string
+	ServiceAccountPath string
+}
+
+// defaultServiceAccountPath is the conventional location of the development
+// service account (backend/google-service.json). It is consulted only when no
+// explicit path or inline JSON is configured, so `go run main.go` from the
+// backend directory picks it up automatically.
+const defaultServiceAccountPath = "google-service.json"
+
+// Enabled reports whether Firebase push credentials are configured (via env or
+// the conventional dev service-account file).
+func (c FirebaseConfig) Enabled() bool {
+	if c.ServiceAccountJSON != "" || c.ServiceAccountPath != "" {
+		return true
+	}
+	_, err := os.Stat(defaultServiceAccountPath)
+	return err == nil
+}
+
+// ServiceAccount returns the raw service-account JSON, preferring the inline
+// value, then the configured file path, then the conventional dev file.
+func (c FirebaseConfig) ServiceAccount() ([]byte, error) {
+	if c.ServiceAccountJSON != "" {
+		return []byte(c.ServiceAccountJSON), nil
+	}
+	path := c.ServiceAccountPath
+	if path == "" {
+		path = defaultServiceAccountPath
+	}
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("read firebase service account file: %w", err)
+	}
+	return data, nil
+}
+
 // Config is the typed view of the service environment configuration.
 type Config struct {
 	ImageStorage StorageConfig
 	Keycloak     KeycloakConfig
 	Jobs         JobsConfig
 	Email        EmailConfig
+	Firebase     FirebaseConfig
 	CORS         CORSConfig
 	AppDomain    string
 }
@@ -153,6 +196,10 @@ func Load() (*Config, error) {
 			SMTPPass:              getEnv("SMTP_PASS", ""),
 			SMTPFrom:              getEnv("SMTP_FROM", ""),
 			SuperadminNotifyEmail: getEnv("SUPERADMIN_NOTIFY_EMAIL", ""),
+		},
+		Firebase: FirebaseConfig{
+			ServiceAccountJSON: os.Getenv("FIREBASE_SERVICE_ACCOUNT_JSON"),
+			ServiceAccountPath: os.Getenv("FIREBASE_SERVICE_ACCOUNT_PATH"),
 		},
 		CORS: CORSConfig{
 			AllowedOrigins: splitCSV(getEnv("CORS_ALLOWED_ORIGINS",

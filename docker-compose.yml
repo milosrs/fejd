@@ -30,6 +30,11 @@ services:
       S3_BUCKET: fejd-images
       S3_USE_SSL: "false"
       S3_FORCE_PATH_STYLE: "true"
+      # Firebase service account for FCM push (optional). Inline JSON or a path.
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
+      FIREBASE_SERVICE_ACCOUNT_PATH: /app/google-service.json
+    volumes:
+      - ./backend/google-service.json:/app/google-service.json:ro
     depends_on:
       - db
       - keycloak
@@ -50,12 +55,16 @@ services:
       # installed. Fill in once the app is published (see .kilo/plans/invite-link-qr/09-infrastructure.md).
       VITE_APP_STORE_URL: ""
       VITE_PLAY_STORE_URL: ""
+      # Firebase web credentials for push notifications (public client config).
+      VITE_FIREBASE_API_KEY: AIzaSyAsnuUEUfWLn-m_1wga6utKRym39-a8iLQ
+      VITE_FIREBASE_APP_ID: "1:719999385218:web:a899b004c507bcd4f03e9b"
+      VITE_FIREBASE_VAPID_KEY: BDa5NdKm5mvw_xyO6hSGOCBdp3jleKjMTCKZ5-zSDS5J6SPnlcvsEi7gtSYnXzVOK9CWbdzW40kPMafhYb7VPRU
     ports:
       - "5173:5173"
     volumes:
       - ./frontend:/app
       - /app/node_modules
-    command: sh -c "npm install -g pnpm@11.15.1 && pnpm install && pnpm dev"
+    command: sh -c "npm install -g pnpm@v12.8.1 && pnpm install && pnpm dev"
     depends_on:
       - backend
       - keycloak

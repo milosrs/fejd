@@ -70,6 +70,10 @@ services:
       CORS_ALLOWED_SUFFIX: ${CORS_ALLOWED_SUFFIX:-fejd.fyi}
       FEJD_DOMAIN: ${FEJD_DOMAIN:-fejd.fyi}
       RUN_JOBS: ${RUN_JOBS:-true}
+      FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
+      FIREBASE_SERVICE_ACCOUNT_PATH: ${FIREBASE_SERVICE_ACCOUNT_PATH:-}
+    volumes:
+      - ./google-service.json:/app/google-service.json:ro
     depends_on:
       postgres:
         condition: service_healthy

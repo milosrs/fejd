@@ -76,6 +76,15 @@ type CreateUnavailabilityRequest struct {
 	Reason    string `json:"reason,omitempty" example:"Vacation"`
 }
 
+type RegisterPushTokenRequest struct {
+	Token    string `json:"token" validate:"required"`
+	Platform string `json:"platform,omitempty" example:"ios"`
+}
+
+type UnregisterPushTokenRequest struct {
+	Token string `json:"token" validate:"required"`
+}
+
 type SalonPolicyResponse struct {
 	CancellationLeadHours int                   `json:"cancellation_lead_hours" validate:"required" example:"2"`
 	NoShowAfterMinutes    int                   `json:"no_show_after_minutes" validate:"required" example:"120"`

@@ -30,6 +30,7 @@ import (
 	"fejd-backend/internal/handler"
 	"fejd-backend/internal/jobs"
 	"fejd-backend/internal/keycloak"
+	"fejd-backend/internal/push"
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/storage"
@@ -83,6 +84,7 @@ func main() {
 	sectionStore := store.NewSectionStore(pool)
 	pageStore := store.NewPageStore(pool)
 	translationStore := store.NewTranslationStore(pool)
+	pushTokenStore := store.NewPushTokenStore(pool)
 
 	var imageStorage storage.ImageStorage
 	if cfg.ImageStorage.Backend != config.BackendPostgres {
@@ -138,6 +140,8 @@ func main() {
 
 	i18nHandler := handler.NewI18nHandler(translationStore)
 
+	pushHandler := handler.NewPushHandler(pushTokenStore)
+
 	jobCtx, jobCancel := context.WithCancel(context.Background())
 	defer jobCancel()
 
@@ -147,6 +151,19 @@ func main() {
 		inviteCleanup := jobs.NewInviteCleanup(keycloakAdmin, cfg.Jobs.InviteExpiryHours)
 		scheduler := jobs.NewScheduler(pendingNotifier, inviteCleanup, cfg.Jobs.PendingScanInterval, cfg.Jobs.CleanupInterval)
 		go scheduler.Run(jobCtx)
+	}
+
+	// Validate Firebase push credentials at startup so a misconfigured service
+	// account fails fast. The sender is reused by the notification triggers.
+	if cfg.Firebase.Enabled() {
+		sa, err := cfg.Firebase.ServiceAccount()
+		if err != nil {
+			log.Fatalf("Failed to load Firebase service account: %v", err)
+		}
+		if _, err := push.NewSender(sa); err != nil {
+			log.Fatalf("Failed to initialize Firebase push sender: %v", err)
+		}
+		log.Printf("Firebase push notifications enabled")
 	}
 
 	r := newRouter(
@@ -167,6 +184,7 @@ func main() {
 		invitationHandler,
 		buStore,
 		userStore,
+		pushHandler,
 	)
 
 	port := getEnv("PORT", "8080")

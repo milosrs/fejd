@@ -69,6 +69,15 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   logout: async () => {
+    // Remove this device's push registration before the auth session ends.
+    // Dynamically imported to avoid a static import cycle (push -> api -> store).
+    try {
+      const { unregisterPush } = await import("../lib/push")
+      await unregisterPush()
+    } catch {
+      // push cleanup is best-effort and must never block logout
+    }
+
     await auth.logout()
     set({
       authenticated: false,

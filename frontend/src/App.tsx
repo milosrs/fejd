@@ -33,6 +33,7 @@ import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
 import { subdomainSlug, openAppHome } from "./lib/salonDomain"
 import { consumeReturnTo, auth } from "./lib/auth"
 import { claimRegistrationRole } from "./lib/api"
+import { registerPush } from "./lib/push"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,6 +100,13 @@ function AppInit({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true
     }
+  }, [initialized, authenticated])
+
+  // Register this device for push notifications once authenticated. Best-effort:
+  // permission denial or a missing web Firebase config are logged and ignored.
+  useEffect(() => {
+    if (!initialized || !authenticated) return
+    registerPush().catch(() => {})
   }, [initialized, authenticated])
 
   if (!appReady) {
