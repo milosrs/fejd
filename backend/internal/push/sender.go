@@ -33,6 +33,14 @@ const (
 type Message struct {
 	Title string
 	Body  string
+	// ImageURL is a public image shown with the notification (Android/iOS
+	// large image, web notification image).
+	ImageURL string
+	// IconURL is a public image shown to the left of the title on web (the
+	// small notification icon). Ignored on mobile.
+	IconURL string
+	// Link is the URL opened when the notification is tapped on web.
+	Link string
 	// Data carries optional key/value pairs delivered with the notification
 	// (e.g. appointment ID, type). Values are strings only.
 	Data map[string]string
@@ -233,16 +241,42 @@ func (s *Sender) buildJWTAssertion(now time.Time) (string, error) {
 }
 
 func messagePayload(token string, msg Message) map[string]any {
-	m := map[string]any{
-		"token": token,
-		"notification": map[string]any{
-			"title": msg.Title,
-			"body":  msg.Body,
-		},
+	notification := map[string]any{
+		"title": msg.Title,
+		"body":  msg.Body,
 	}
+	if msg.ImageURL != "" {
+		notification["image"] = msg.ImageURL
+	}
+
+	m := map[string]any{
+		"token":        token,
+		"notification": notification,
+	}
+
 	if len(msg.Data) > 0 {
 		m["data"] = msg.Data
 	}
+
+	webpushNotification := map[string]any{}
+	if msg.IconURL != "" {
+		webpushNotification["icon"] = msg.IconURL
+		webpushNotification["badge"] = msg.IconURL
+	}
+	if msg.ImageURL != "" {
+		webpushNotification["image"] = msg.ImageURL
+	}
+	if len(webpushNotification) > 0 || msg.Link != "" {
+		webpush := map[string]any{}
+		if len(webpushNotification) > 0 {
+			webpush["notification"] = webpushNotification
+		}
+		if msg.Link != "" {
+			webpush["fcm_options"] = map[string]any{"link": msg.Link}
+		}
+		m["webpush"] = webpush
+	}
+
 	return m
 }
 

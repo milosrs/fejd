@@ -85,6 +85,27 @@ func TestMessagePayload(t *testing.T) {
 	assert.Equal(t, map[string]string{"k": "v"}, payload["data"])
 }
 
+func TestMessagePayloadWithImageAndLink(t *testing.T) {
+	payload := messagePayload("token-1", Message{
+		Title:    "Hi",
+		Body:     "There",
+		ImageURL: "https://fejd.fyi/api/images/logo",
+		IconURL:  "https://fejd.fyi/api/images/logo",
+		Link:     "https://fejd.fyi/admin/business/123/my-reservations",
+	})
+
+	notification := payload["notification"].(map[string]any)
+	assert.Equal(t, "https://fejd.fyi/api/images/logo", notification["image"])
+
+	webpush := payload["webpush"].(map[string]any)
+	webpushNotification := webpush["notification"].(map[string]any)
+	assert.Equal(t, "https://fejd.fyi/api/images/logo", webpushNotification["icon"])
+	assert.Equal(t, "https://fejd.fyi/api/images/logo", webpushNotification["image"])
+
+	fcmOptions := webpush["fcm_options"].(map[string]any)
+	assert.Equal(t, "https://fejd.fyi/admin/business/123/my-reservations", fcmOptions["link"])
+}
+
 func TestMessagePayloadOmitsEmptyData(t *testing.T) {
 	payload := messagePayload("token-1", Message{Title: "Hi", Body: "There"})
 	assert.NotContains(t, payload, "data")

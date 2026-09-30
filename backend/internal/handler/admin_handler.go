@@ -1301,12 +1301,17 @@ func (h *AdminHandler) GetSalonPolicy(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
-		CancellationLeadHours: b.CancellationLeadHours,
-		NoShowAfterMinutes:    b.NoShowAfterMinutes,
-		SlotIntervalMinutes:   b.SlotIntervalMinutes,
-		AutoApprove:           b.AutoApprove,
-		WorkingHours:          dto.BusinessHoursFromModels(hours),
-		Closures:              dto.BusinessClosuresFromModels(closures),
+		CancellationLeadHours:          b.CancellationLeadHours,
+		NoShowAfterMinutes:             b.NoShowAfterMinutes,
+		SlotIntervalMinutes:            b.SlotIntervalMinutes,
+		AutoApprove:                    b.AutoApprove,
+		AppointmentReminderEnabled:     b.AppointmentReminderEnabled,
+		AppointmentReminderLeadMinutes: b.AppointmentReminderLeadMinutes,
+		StaffNotificationsEnabled:      b.StaffNotificationsEnabled,
+		ReminderTitle:                  b.ReminderTitle,
+		ReminderBody:                   b.ReminderBody,
+		WorkingHours:                   dto.BusinessHoursFromModels(hours),
+		Closures:                       dto.BusinessClosuresFromModels(closures),
 	})
 }
 
@@ -1347,6 +1352,21 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 	}
 	if body.SlotIntervalMinutes <= 0 {
 		writeError(w, http.StatusBadRequest, "slot_interval_minutes must be greater than zero")
+		return
+	}
+	if body.AppointmentReminderLeadMinutes < 0 {
+		writeError(w, http.StatusBadRequest, "appointment_reminder_lead_minutes must be zero or greater")
+		return
+	}
+
+	reminderTitle := strings.TrimSpace(body.ReminderTitle)
+	reminderBody := strings.TrimSpace(body.ReminderBody)
+	if len(reminderTitle) > 255 {
+		writeError(w, http.StatusBadRequest, "reminder_title must be 255 characters or fewer")
+		return
+	}
+	if len(reminderBody) > 500 {
+		writeError(w, http.StatusBadRequest, "reminder_body must be 500 characters or fewer")
 		return
 	}
 
@@ -1391,7 +1411,7 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 		closures = append(closures, closure)
 	}
 
-	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterMinutes, body.SlotIntervalMinutes, body.AutoApprove); err != nil {
+	if err := h.businessStore.UpdatePolicy(r.Context(), businessID, body.CancellationLeadHours, body.NoShowAfterMinutes, body.SlotIntervalMinutes, body.AutoApprove, body.AppointmentReminderEnabled, body.AppointmentReminderLeadMinutes, body.StaffNotificationsEnabled, reminderTitle, reminderBody); err != nil {
 		log.Printf("failed to update salon policy settings: %v", err)
 		writeError(w, http.StatusInternalServerError, "failed to update salon policy")
 		return
@@ -1416,12 +1436,17 @@ func (h *AdminHandler) UpdateSalonPolicy(w http.ResponseWriter, r *http.Request)
 	}
 
 	writeJSON(w, http.StatusOK, SalonPolicyResponse{
-		CancellationLeadHours: body.CancellationLeadHours,
-		NoShowAfterMinutes:    body.NoShowAfterMinutes,
-		SlotIntervalMinutes:   body.SlotIntervalMinutes,
-		AutoApprove:           body.AutoApprove,
-		WorkingHours:          dto.BusinessHoursFromModels(hours),
-		Closures:              dto.BusinessClosuresFromModels(closures),
+		CancellationLeadHours:          body.CancellationLeadHours,
+		NoShowAfterMinutes:             body.NoShowAfterMinutes,
+		SlotIntervalMinutes:            body.SlotIntervalMinutes,
+		AutoApprove:                    body.AutoApprove,
+		AppointmentReminderEnabled:     body.AppointmentReminderEnabled,
+		AppointmentReminderLeadMinutes: body.AppointmentReminderLeadMinutes,
+		StaffNotificationsEnabled:      body.StaffNotificationsEnabled,
+		ReminderTitle:                  reminderTitle,
+		ReminderBody:                   reminderBody,
+		WorkingHours:                   dto.BusinessHoursFromModels(hours),
+		Closures:                       dto.BusinessClosuresFromModels(closures),
 	})
 }
 

@@ -7,27 +7,33 @@ import (
 )
 
 type Scheduler struct {
-	notifier        *PendingNotifier
-	cleanup         *InviteCleanup
-	scanInterval    time.Duration
-	cleanupInterval time.Duration
+	notifier         *PendingNotifier
+	cleanup          *InviteCleanup
+	reminder         *ReminderNotifier
+	scanInterval     time.Duration
+	cleanupInterval  time.Duration
+	reminderInterval time.Duration
 }
 
-func NewScheduler(notifier *PendingNotifier, cleanup *InviteCleanup, scanInterval, cleanupInterval time.Duration) *Scheduler {
+func NewScheduler(notifier *PendingNotifier, cleanup *InviteCleanup, reminder *ReminderNotifier, scanInterval, cleanupInterval, reminderInterval time.Duration) *Scheduler {
 	return &Scheduler{
-		notifier:        notifier,
-		cleanup:         cleanup,
-		scanInterval:    scanInterval,
-		cleanupInterval: cleanupInterval,
+		notifier:         notifier,
+		cleanup:          cleanup,
+		reminder:         reminder,
+		scanInterval:     scanInterval,
+		cleanupInterval:  cleanupInterval,
+		reminderInterval: reminderInterval,
 	}
 }
 
-// Run blocks running both jobs on their intervals until ctx is cancelled.
+// Run blocks running all jobs on their intervals until ctx is cancelled.
 func (s *Scheduler) Run(ctx context.Context) {
 	scan := time.NewTicker(s.scanInterval)
 	cleanup := time.NewTicker(s.cleanupInterval)
+	reminder := time.NewTicker(s.reminderInterval)
 	defer scan.Stop()
 	defer cleanup.Stop()
+	defer reminder.Stop()
 
 	for {
 		select {
@@ -40,6 +46,12 @@ func (s *Scheduler) Run(ctx context.Context) {
 		case <-cleanup.C:
 			if err := s.cleanup.Run(ctx); err != nil {
 				log.Printf("[jobs] invite cleanup failed: %v", err)
+			}
+		case <-reminder.C:
+			if s.reminder != nil {
+				if err := s.reminder.Run(ctx); err != nil {
+					log.Printf("[jobs] appointment reminder failed: %v", err)
+				}
 			}
 		}
 	}

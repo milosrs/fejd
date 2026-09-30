@@ -142,6 +142,30 @@ func main() {
 
 	pushHandler := handler.NewPushHandler(pushTokenStore)
 
+	// Build the push sender from the Firebase service account. Enabled by
+	// default; disable with FIREBASE_ENABLED=false. A missing sender makes all
+	// notifications no-ops, so the app still runs without credentials.
+	var pushSender service.PushSender
+	if cfg.Firebase.Enabled {
+		if !cfg.Firebase.Configured() {
+			log.Printf("Firebase push enabled but no service account configured; push notifications are disabled")
+		} else {
+			sa, err := cfg.Firebase.ServiceAccount()
+			if err != nil {
+				log.Fatalf("Failed to load Firebase service account: %v", err)
+			}
+			sender, err := push.NewSender(sa)
+			if err != nil {
+				log.Fatalf("Failed to initialize Firebase push sender: %v", err)
+			}
+			pushSender = sender
+			log.Printf("Firebase push notifications enabled")
+		}
+	}
+
+	notificationService := service.NewNotificationService(pushTokenStore, buStore, businessStore, userStore, imageLinkStore, pushSender, cfg.PublicURL, cfg.Jobs.InviteBaseURL)
+	slotService.SetNotifier(notificationService)
+
 	jobCtx, jobCancel := context.WithCancel(context.Background())
 	defer jobCancel()
 
@@ -149,21 +173,9 @@ func main() {
 		emailSender := email.NewSender(cfg.Email)
 		pendingNotifier := jobs.NewPendingNotifier(keycloakAdmin, emailSender, cfg.Email.SuperadminNotifyEmail)
 		inviteCleanup := jobs.NewInviteCleanup(keycloakAdmin, cfg.Jobs.InviteExpiryHours)
-		scheduler := jobs.NewScheduler(pendingNotifier, inviteCleanup, cfg.Jobs.PendingScanInterval, cfg.Jobs.CleanupInterval)
+		reminderNotifier := jobs.NewReminderNotifier(businessStore, appointmentStore, notificationService)
+		scheduler := jobs.NewScheduler(pendingNotifier, inviteCleanup, reminderNotifier, cfg.Jobs.PendingScanInterval, cfg.Jobs.CleanupInterval, cfg.Jobs.ReminderScanInterval)
 		go scheduler.Run(jobCtx)
-	}
-
-	// Validate Firebase push credentials at startup so a misconfigured service
-	// account fails fast. The sender is reused by the notification triggers.
-	if cfg.Firebase.Enabled() {
-		sa, err := cfg.Firebase.ServiceAccount()
-		if err != nil {
-			log.Fatalf("Failed to load Firebase service account: %v", err)
-		}
-		if _, err := push.NewSender(sa); err != nil {
-			log.Fatalf("Failed to initialize Firebase push sender: %v", err)
-		}
-		log.Printf("Firebase push notifications enabled")
 	}
 
 	r := newRouter(

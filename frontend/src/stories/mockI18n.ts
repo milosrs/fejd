@@ -146,6 +146,7 @@ export const mockI18nEn: Record<string, string> = {
   "invite.landing.unavailable": "Invite unavailable",
   "invite.landing.invalid": "This invite link is invalid, has already been used, or has expired.",
   "invite.landing.joining": "Joining {salon}…",
+  "invite.landing.joiningPlatform": "Joining Fejd…",
   "invite.landing.redirect": "You'll be redirected shortly.",
   "invite.landing.invitedTo": "You've been invited to {salon}",
   "invite.landing.invitedToPlatform": "You've been invited to Fejd",

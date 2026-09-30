@@ -24,6 +24,21 @@ type Business struct {
 	// AutoApprove is whether new appointments are approved automatically
 	// instead of waiting for a barber or owner to approve them.
 	AutoApprove bool
+	// AppointmentReminderEnabled is whether customers receive a push reminder
+	// before their appointment starts. Soft policy, configurable by the owner.
+	AppointmentReminderEnabled bool
+	// AppointmentReminderLeadMinutes is how many minutes before an appointment
+	// the reminder is sent. Soft policy, configurable by the owner.
+	AppointmentReminderLeadMinutes int
+	// StaffNotificationsEnabled is whether the owner/employees receive a push
+	// when a customer books an appointment with them. Soft policy.
+	StaffNotificationsEnabled bool
+	// ReminderTitle is the owner's custom reminder header. Empty falls back to
+	// the default title.
+	ReminderTitle string
+	// ReminderBody is the owner's custom reminder description. Empty falls back
+	// to the default body.
+	ReminderBody string
 }
 
 type BusinessUser struct {

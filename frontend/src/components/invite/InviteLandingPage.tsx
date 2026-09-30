@@ -45,7 +45,9 @@ export function InviteLandingPage() {
       ) : authenticated ? (
         <>
           <h1 className="text-xl font-semibold text-foreground text-center">
-            {t("invite.landing.joining", { salon: invitation?.salon_name ?? "" })}
+            {invitation?.salon_name
+              ? t("invite.landing.joining", { salon: invitation.salon_name })
+              : t("invite.landing.joiningPlatform")}
           </h1>
           <p className="text-muted-foreground">{t("invite.landing.redirect")}</p>
         </>

@@ -92,6 +92,7 @@ func TestLoadJobsDefaults(t *testing.T) {
 	assert.Equal(t, 48, cfg.Jobs.InviteExpiryHours)
 	assert.Equal(t, 15*time.Minute, cfg.Jobs.PendingScanInterval)
 	assert.Equal(t, time.Hour, cfg.Jobs.CleanupInterval)
+	assert.Equal(t, time.Minute, cfg.Jobs.ReminderScanInterval)
 }
 
 func TestLoadEmailDefaults(t *testing.T) {
@@ -168,7 +169,8 @@ func TestLoadFirebaseDefaults(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, cfg.Firebase.ServiceAccountJSON)
 	assert.Empty(t, cfg.Firebase.ServiceAccountPath)
-	assert.False(t, cfg.Firebase.Enabled())
+	assert.True(t, cfg.Firebase.Enabled)
+	assert.False(t, cfg.Firebase.Configured())
 }
 
 func TestLoadFirebaseInlineServiceAccount(t *testing.T) {
@@ -177,7 +179,7 @@ func TestLoadFirebaseInlineServiceAccount(t *testing.T) {
 	cfg, err := Load()
 	require.NoError(t, err)
 	assert.Equal(t, `{"project_id":"fejd-c8cab"}`, cfg.Firebase.ServiceAccountJSON)
-	assert.True(t, cfg.Firebase.Enabled())
+	assert.True(t, cfg.Firebase.Configured())
 
 	data, err := cfg.Firebase.ServiceAccount()
 	require.NoError(t, err)
@@ -191,9 +193,39 @@ func TestLoadFirebaseServiceAccountPath(t *testing.T) {
 
 	cfg, err := Load()
 	require.NoError(t, err)
-	assert.True(t, cfg.Firebase.Enabled())
+	assert.True(t, cfg.Firebase.Configured())
 
 	data, err := cfg.Firebase.ServiceAccount()
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"project_id":"fejd-c8cab"}`, string(data))
+}
+
+func TestLoadFirebaseCanBeDisabled(t *testing.T) {
+	t.Setenv("FIREBASE_ENABLED", "false")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.False(t, cfg.Firebase.Enabled)
+}
+
+func TestLoadPublicURLDefaultsToLocalhost(t *testing.T) {
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:8080", cfg.PublicURL)
+}
+
+func TestLoadPublicURLFromDomain(t *testing.T) {
+	t.Setenv("FEJD_DOMAIN", "fejd.fyi")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.Equal(t, "https://fejd.fyi", cfg.PublicURL)
+}
+
+func TestLoadPublicURLExplicit(t *testing.T) {
+	t.Setenv("PUBLIC_URL", "http://localhost:9090/")
+
+	cfg, err := Load()
+	require.NoError(t, err)
+	assert.Equal(t, "http://localhost:9090", cfg.PublicURL)
 }

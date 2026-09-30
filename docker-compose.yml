@@ -31,6 +31,7 @@ services:
       S3_USE_SSL: "false"
       S3_FORCE_PATH_STYLE: "true"
       # Firebase service account for FCM push (optional). Inline JSON or a path.
+      FIREBASE_ENABLED: ${FIREBASE_ENABLED:-true}
       FIREBASE_SERVICE_ACCOUNT_JSON: ${FIREBASE_SERVICE_ACCOUNT_JSON:-}
       FIREBASE_SERVICE_ACCOUNT_PATH: /app/google-service.json
     volumes:

@@ -307,6 +307,57 @@ func (s *AppointmentStore) Reject(ctx context.Context, q Querier, id, businessUs
 	return err
 }
 
+// ListDueForReminder returns confirmed appointments whose start time falls in
+// (now, cutoff] and whose reminder has not been sent yet. The reminder job
+// passes a per-business cutoff derived from the salon's reminder lead time.
+func (s *AppointmentStore) ListDueForReminder(ctx context.Context, businessID uuid.UUID, now, cutoff time.Time) ([]models.Appointment, error) {
+	sql, args, err := psql.
+		Select("id", "business_id", "service_id", "business_user_id", "COALESCE(customer_user_id, '')",
+			"start_time", "end_time", "status", "created_by", "COALESCE(cancellation_reason, '')", "created_at").
+		From("appointments").
+		Where(sq.Eq{"business_id": businessID, "status": string(models.AppointmentStatusConfirmed)}).
+		Where(sq.Gt{"start_time": now}).
+		Where(sq.LtOrEq{"start_time": cutoff}).
+		Where(sq.Expr("reminder_sent_at IS NULL")).
+		OrderBy("start_time").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list due reminders: %w", err)
+	}
+	defer rows.Close()
+
+	var appointments []models.Appointment
+	for rows.Next() {
+		a, err := scanAppointment(rows)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan appointment: %w", err)
+		}
+		appointments = append(appointments, *a)
+	}
+	return appointments, nil
+}
+
+// MarkReminderSent stamps an appointment so the reminder job never sends it a
+// second time.
+func (s *AppointmentStore) MarkReminderSent(ctx context.Context, id uuid.UUID) error {
+	sql, args, err := psql.
+		Update("appointments").
+		Set("reminder_sent_at", sq.Expr("now()")).
+		Where(sq.Eq{"id": id}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = s.pool.Exec(ctx, sql, args...)
+	return err
+}
+
 func scanAppointment(row rowScanner) (*models.Appointment, error) {
 	var a models.Appointment
 	if err := row.Scan(&a.ID, &a.BusinessID, &a.ServiceID, &a.BusinessUserID,

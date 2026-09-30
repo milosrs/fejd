@@ -3824,6 +3824,51 @@
                 }
             }
         },
+        "/api/business/{slug}/working-hours": {
+            "get": {
+                "description": "Returns the salon's default weekly opening hours, so the landing page can show when it is open.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "List opening hours",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/dto.BusinessHours"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/businesses": {
             "get": {
                 "description": "Returns all salons for the public directory.",
@@ -4325,6 +4370,118 @@
                                     "additionalProperties": {
                                         "type": "boolean"
                                     }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/me/push-token": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Associates the current device's FCM token with the authenticated user so they can receive push notifications.",
+                "tags": [
+                    "me"
+                ],
+                "summary": "Register a push token",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.RegisterPushTokenRequest"
+                            }
+                        }
+                    },
+                    "description": "Device token",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Removes the current device's FCM token so it no longer receives push notifications.",
+                "tags": [
+                    "me"
+                ],
+                "summary": "Remove a push token",
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.UnregisterPushTokenRequest"
+                            }
+                        }
+                    },
+                    "description": "Device token",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
                                 }
                             }
                         }
@@ -5434,6 +5591,21 @@
                     }
                 }
             },
+            "handler.RegisterPushTokenRequest": {
+                "type": "object",
+                "required": [
+                    "token"
+                ],
+                "properties": {
+                    "platform": {
+                        "type": "string",
+                        "example": "ios"
+                    },
+                    "token": {
+                        "type": "string"
+                    }
+                }
+            },
             "handler.RejectRequest": {
                 "type": "object",
                 "required": [
@@ -5497,14 +5669,25 @@
             "handler.SalonPolicyResponse": {
                 "type": "object",
                 "required": [
+                    "appointment_reminder_enabled",
+                    "appointment_reminder_lead_minutes",
                     "auto_approve",
                     "cancellation_lead_hours",
                     "closures",
                     "no_show_after_minutes",
                     "slot_interval_minutes",
+                    "staff_notifications_enabled",
                     "working_hours"
                 ],
                 "properties": {
+                    "appointment_reminder_enabled": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "appointment_reminder_lead_minutes": {
+                        "type": "integer",
+                        "example": 60
+                    },
                     "auto_approve": {
                         "type": "boolean",
                         "example": false
@@ -5523,9 +5706,21 @@
                         "type": "integer",
                         "example": 120
                     },
+                    "reminder_body": {
+                        "type": "string",
+                        "example": "Your appointment is starting soon."
+                    },
+                    "reminder_title": {
+                        "type": "string",
+                        "example": "Upcoming appointment"
+                    },
                     "slot_interval_minutes": {
                         "type": "integer",
                         "example": 30
+                    },
+                    "staff_notifications_enabled": {
+                        "type": "boolean",
+                        "example": true
                     },
                     "working_hours": {
                         "type": "array",
@@ -5640,17 +5835,39 @@
                     "type": "string"
                 }
             },
+            "handler.UnregisterPushTokenRequest": {
+                "type": "object",
+                "required": [
+                    "token"
+                ],
+                "properties": {
+                    "token": {
+                        "type": "string"
+                    }
+                }
+            },
             "handler.UpdateSalonPolicyRequest": {
                 "type": "object",
                 "required": [
+                    "appointment_reminder_enabled",
+                    "appointment_reminder_lead_minutes",
                     "auto_approve",
                     "cancellation_lead_hours",
                     "closures",
                     "no_show_after_minutes",
                     "slot_interval_minutes",
+                    "staff_notifications_enabled",
                     "working_hours"
                 ],
                 "properties": {
+                    "appointment_reminder_enabled": {
+                        "type": "boolean",
+                        "example": true
+                    },
+                    "appointment_reminder_lead_minutes": {
+                        "type": "integer",
+                        "example": 60
+                    },
                     "auto_approve": {
                         "type": "boolean",
                         "example": false
@@ -5669,9 +5886,21 @@
                         "type": "integer",
                         "example": 120
                     },
+                    "reminder_body": {
+                        "type": "string",
+                        "example": "Your appointment is starting soon."
+                    },
+                    "reminder_title": {
+                        "type": "string",
+                        "example": "Upcoming appointment"
+                    },
                     "slot_interval_minutes": {
                         "type": "integer",
                         "example": 30
+                    },
+                    "staff_notifications_enabled": {
+                        "type": "boolean",
+                        "example": true
                     },
                     "timezone": {
                         "type": "string",

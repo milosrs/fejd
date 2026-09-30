@@ -113,3 +113,46 @@ func TestAppointmentDailyCap(t *testing.T) {
 
 	require.NoError(t, insert(slot2, "confirmed"))
 }
+
+func TestAppointmentStore_ListDueForReminder(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.teardown()
+
+	ctx := context.Background()
+	store := NewAppointmentStore(db.pool)
+	businessID, buID, serviceID := seedBooking(t, db)
+
+	now := time.Now().UTC()
+	insert := func(id uuid.UUID, customerID string, start time.Time, status string, reminded bool) {
+		var reminderSent any
+		if reminded {
+			reminderSent = now.Add(-5 * time.Minute)
+		}
+		_, err := db.pool.Exec(ctx,
+			`INSERT INTO appointments (id, business_id, service_id, business_user_id, customer_user_id, start_time, end_time, status, created_by, reminder_sent_at)
+			 VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $5, $9)`,
+			id, businessID, serviceID, buID, customerID, start, start.Add(30*time.Minute), status, reminderSent)
+		require.NoError(t, err)
+	}
+
+	due := uuid.New()
+	farFuture := uuid.New()
+	alreadyReminded := uuid.New()
+
+	insert(due, "customer-due", now.Add(10*time.Minute), "confirmed", false)
+	insert(alreadyReminded, "customer-reminded", now.Add(60*time.Minute), "confirmed", true)
+	insert(farFuture, "customer-far", now.Add(4*time.Hour), "confirmed", false)
+
+	cutoff := now.Add(2 * time.Hour)
+	appointments, err := store.ListDueForReminder(ctx, businessID, now, cutoff)
+	require.NoError(t, err)
+
+	require.Len(t, appointments, 1)
+	assert.Equal(t, due, appointments[0].ID)
+
+	require.NoError(t, store.MarkReminderSent(ctx, due))
+
+	appointments, err = store.ListDueForReminder(ctx, businessID, now, cutoff)
+	require.NoError(t, err)
+	assert.Empty(t, appointments)
+}

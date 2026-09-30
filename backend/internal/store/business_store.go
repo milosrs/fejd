@@ -20,7 +20,7 @@ func NewBusinessStore(pool *pgxpool.Pool) *BusinessStore {
 
 func (s *BusinessStore) GetBySlug(ctx context.Context, slug string) (*models.Business, error) {
 	sql, args, err := psql.
-		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve").
+		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body").
 		From("businesses").
 		Where(sq.Eq{"slug": slug}).
 		ToSql()
@@ -29,7 +29,7 @@ func (s *BusinessStore) GetBySlug(ctx context.Context, slug string) (*models.Bus
 	}
 
 	var b models.Business
-	err = s.pool.QueryRow(ctx, sql, args...).Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove)
+	err = s.pool.QueryRow(ctx, sql, args...).Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody)
 	if err != nil {
 		return nil, fmt.Errorf("business not found: %w", err)
 	}
@@ -38,7 +38,7 @@ func (s *BusinessStore) GetBySlug(ctx context.Context, slug string) (*models.Bus
 
 func (s *BusinessStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Business, error) {
 	sql, args, err := psql.
-		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve").
+		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body").
 		From("businesses").
 		Where(sq.Eq{"id": id}).
 		ToSql()
@@ -47,7 +47,7 @@ func (s *BusinessStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Busi
 	}
 
 	var b models.Business
-	err = s.pool.QueryRow(ctx, sql, args...).Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove)
+	err = s.pool.QueryRow(ctx, sql, args...).Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody)
 	if err != nil {
 		return nil, fmt.Errorf("business not found: %w", err)
 	}
@@ -56,7 +56,7 @@ func (s *BusinessStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Busi
 
 func (s *BusinessStore) List(ctx context.Context) ([]models.Business, error) {
 	sql, args, err := psql.
-		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve").
+		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body").
 		From("businesses").
 		OrderBy("created_at").
 		ToSql()
@@ -73,7 +73,7 @@ func (s *BusinessStore) List(ctx context.Context) ([]models.Business, error) {
 	var businesses []models.Business
 	for rows.Next() {
 		var b models.Business
-		if err := rows.Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove); err != nil {
+		if err := rows.Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody); err != nil {
 			return nil, fmt.Errorf("failed to scan business: %w", err)
 		}
 		businesses = append(businesses, b)
@@ -118,24 +118,29 @@ func (s *BusinessStore) Create(ctx context.Context, q Querier, b *models.Busines
 		Insert("businesses").
 		Columns("id", "name", "slug").
 		Values(b.ID, b.Name, b.Slug).
-		Suffix("RETURNING created_at, updated_at, cancellation_lead_hours, no_show_after_minutes, slot_interval_minutes").
+		Suffix("RETURNING created_at, updated_at, cancellation_lead_hours, no_show_after_minutes, slot_interval_minutes, appointment_reminder_enabled, appointment_reminder_lead_minutes, staff_notifications_enabled, reminder_title, reminder_body").
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("failed to build query: %w", err)
 	}
 
-	return q.QueryRow(ctx, sql, args...).Scan(&b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes)
+	return q.QueryRow(ctx, sql, args...).Scan(&b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody)
 }
 
-// UpdatePolicy updates a business's cancellation, no-show, slot and automatic
-// approval policies.
-func (s *BusinessStore) UpdatePolicy(ctx context.Context, businessID uuid.UUID, cancellationLeadHours, noShowAfterMinutes, slotIntervalMinutes int, autoApprove bool) error {
+// UpdatePolicy updates a business's cancellation, no-show, slot, automatic
+// approval, appointment-reminder and staff-notification policies.
+func (s *BusinessStore) UpdatePolicy(ctx context.Context, businessID uuid.UUID, cancellationLeadHours, noShowAfterMinutes, slotIntervalMinutes int, autoApprove bool, appointmentReminderEnabled bool, appointmentReminderLeadMinutes int, staffNotificationsEnabled bool, reminderTitle, reminderBody string) error {
 	sql, args, err := psql.
 		Update("businesses").
 		Set("cancellation_lead_hours", cancellationLeadHours).
 		Set("no_show_after_minutes", noShowAfterMinutes).
 		Set("slot_interval_minutes", slotIntervalMinutes).
 		Set("auto_approve", autoApprove).
+		Set("appointment_reminder_enabled", appointmentReminderEnabled).
+		Set("appointment_reminder_lead_minutes", appointmentReminderLeadMinutes).
+		Set("staff_notifications_enabled", staffNotificationsEnabled).
+		Set("reminder_title", reminderTitle).
+		Set("reminder_body", reminderBody).
 		Where(sq.Eq{"id": businessID}).
 		ToSql()
 	if err != nil {

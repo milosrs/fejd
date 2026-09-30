@@ -76,12 +76,13 @@ type CORSConfig struct {
 
 // JobsConfig holds scheduled-job settings.
 type JobsConfig struct {
-	PendingScanInterval time.Duration
-	CleanupInterval     time.Duration
-	RunJobs             bool
-	InviteExpiryHours   int
-	InviteRedirectURI   string
-	InviteBaseURL       string
+	PendingScanInterval  time.Duration
+	CleanupInterval      time.Duration
+	ReminderScanInterval time.Duration
+	RunJobs              bool
+	InviteExpiryHours    int
+	InviteRedirectURI    string
+	InviteBaseURL        string
 }
 
 // EmailConfig holds SMTP settings and the superadmin notification target.
@@ -97,8 +98,11 @@ type EmailConfig struct {
 // FirebaseConfig holds the credentials for sending FCM push notifications. The
 // service account is the JSON the Firebase console emits from Project settings
 // > Service accounts > Generate new private key (not google-services.json).
-// It is provided either inline or as a path to a mounted secret file.
+// It is provided either inline or as a path to a mounted secret file. Enabled
+// is an explicit on/off switch (default true); Configured reports whether the
+// credentials are actually present.
 type FirebaseConfig struct {
+	Enabled            bool
 	ServiceAccountJSON string
 	ServiceAccountPath string
 }
@@ -109,9 +113,9 @@ type FirebaseConfig struct {
 // backend directory picks it up automatically.
 const defaultServiceAccountPath = "google-service.json"
 
-// Enabled reports whether Firebase push credentials are configured (via env or
-// the conventional dev service-account file).
-func (c FirebaseConfig) Enabled() bool {
+// Configured reports whether Firebase push credentials are present (inline
+// JSON, a configured path, or the conventional dev service-account file).
+func (c FirebaseConfig) Configured() bool {
 	if c.ServiceAccountJSON != "" || c.ServiceAccountPath != "" {
 		return true
 	}
@@ -145,6 +149,10 @@ type Config struct {
 	Firebase     FirebaseConfig
 	CORS         CORSConfig
 	AppDomain    string
+	// PublicURL is the backend's public origin, used to build absolute image
+	// URLs for push notifications. Explicit PUBLIC_URL wins; otherwise it is
+	// derived from FEJD_DOMAIN, falling back to localhost in development.
+	PublicURL string
 }
 
 // Load reads configuration from environment variables, applies defaults, and
@@ -182,12 +190,13 @@ func Load() (*Config, error) {
 			AdminClientSecret: getEnv("KEYCLOAK_ADMIN_CLIENT_SECRET", ""),
 		},
 		Jobs: JobsConfig{
-			PendingScanInterval: getEnvDuration("PENDING_SCAN_INTERVAL", 15*time.Minute),
-			CleanupInterval:     getEnvDuration("CLEANUP_INTERVAL", time.Hour),
-			RunJobs:             getEnvBool("RUN_JOBS", true),
-			InviteExpiryHours:   int(getEnvInt("INVITE_EXPIRY_HOURS", 48)),
-			InviteRedirectURI:   getEnv("INVITE_REDIRECT_URI", ""),
-			InviteBaseURL:       getEnv("INVITE_BASE_URL", "http://localhost:5173"),
+			PendingScanInterval:  getEnvDuration("PENDING_SCAN_INTERVAL", 15*time.Minute),
+			CleanupInterval:      getEnvDuration("CLEANUP_INTERVAL", time.Hour),
+			ReminderScanInterval: getEnvDuration("REMINDER_SCAN_INTERVAL", time.Minute),
+			RunJobs:              getEnvBool("RUN_JOBS", true),
+			InviteExpiryHours:    int(getEnvInt("INVITE_EXPIRY_HOURS", 48)),
+			InviteRedirectURI:    getEnv("INVITE_REDIRECT_URI", ""),
+			InviteBaseURL:        getEnv("INVITE_BASE_URL", "http://localhost:5173"),
 		},
 		Email: EmailConfig{
 			SMTPHost:              getEnv("SMTP_HOST", ""),
@@ -198,6 +207,7 @@ func Load() (*Config, error) {
 			SuperadminNotifyEmail: getEnv("SUPERADMIN_NOTIFY_EMAIL", ""),
 		},
 		Firebase: FirebaseConfig{
+			Enabled:            getEnvBool("FIREBASE_ENABLED", true),
 			ServiceAccountJSON: os.Getenv("FIREBASE_SERVICE_ACCOUNT_JSON"),
 			ServiceAccountPath: os.Getenv("FIREBASE_SERVICE_ACCOUNT_PATH"),
 		},
@@ -207,6 +217,7 @@ func Load() (*Config, error) {
 			AllowedSuffix: getEnv("CORS_ALLOWED_SUFFIX", ""),
 		},
 		AppDomain: getEnv("FEJD_DOMAIN", ""),
+		PublicURL: publicURL(),
 	}
 
 	if err := cfg.validate(); err != nil {
@@ -261,6 +272,18 @@ func getEnv(key, def string) string {
 		return v
 	}
 	return def
+}
+
+// publicURL resolves the backend's public origin: explicit PUBLIC_URL, then
+// https://<FEJD_DOMAIN>, then http://localhost:8080 for local development.
+func publicURL() string {
+	if v := os.Getenv("PUBLIC_URL"); v != "" {
+		return strings.TrimSuffix(v, "/")
+	}
+	if domain := os.Getenv("FEJD_DOMAIN"); domain != "" {
+		return "https://" + domain
+	}
+	return "http://localhost:8080"
 }
 
 func getEnvBool(key string, def bool) bool {

@@ -116,6 +116,11 @@ export function SalonPolicyPage() {
   const [noShowTime, setNoShowTime] = useState<Time | null>(null)
   const [slotInterval, setSlotInterval] = useState("30")
   const [autoApprove, setAutoApprove] = useState(false)
+  const [reminderEnabled, setReminderEnabled] = useState(true)
+  const [reminderLead, setReminderLead] = useState<Time | null>(null)
+  const [staffNotifications, setStaffNotifications] = useState(true)
+  const [reminderTitle, setReminderTitle] = useState("")
+  const [reminderBody, setReminderBody] = useState("")
   const [dateClosures, setDateClosures] = useState<ClosureRule[]>([])
   const [closureMode, setClosureMode] = useState<"single" | "range">("single")
   const [singleDate, setSingleDate] = useState("")
@@ -138,6 +143,16 @@ export function SalonPolicyPage() {
     )
     setSlotInterval(String(policy.slot_interval_minutes))
     setAutoApprove(policy.auto_approve)
+    setReminderEnabled(policy.appointment_reminder_enabled)
+    setReminderLead(
+      new Time(
+        Math.floor(policy.appointment_reminder_lead_minutes / 60),
+        policy.appointment_reminder_lead_minutes % 60,
+      ),
+    )
+    setStaffNotifications(policy.staff_notifications_enabled)
+    setReminderTitle(policy.reminder_title ?? "")
+    setReminderBody(policy.reminder_body ?? "")
 
     const next = defaultSchedule()
     for (const wh of policy.working_hours ?? []) {
@@ -253,6 +268,7 @@ export function SalonPolicyPage() {
       return
     }
     const noShow = noShowTime ? noShowTime.hour * 60 + noShowTime.minute : 0
+    const reminderLeadMinutes = reminderLead ? reminderLead.hour * 60 + reminderLead.minute : 0
     setSaving(true)
     setError("")
     try {
@@ -261,6 +277,11 @@ export function SalonPolicyPage() {
         no_show_after_minutes: noShow,
         slot_interval_minutes: interval,
         auto_approve: autoApprove,
+        appointment_reminder_enabled: reminderEnabled,
+        appointment_reminder_lead_minutes: reminderLeadMinutes,
+        staff_notifications_enabled: staffNotifications,
+        reminder_title: reminderTitle.trim(),
+        reminder_body: reminderBody.trim(),
         timezone: getLocalTimeZone(),
         working_hours: schedule
           .filter((d) => !d.non_working)
@@ -369,6 +390,79 @@ export function SalonPolicyPage() {
               </span>
             </span>
           </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-border p-3">
+            <input
+              type="checkbox"
+              checked={staffNotifications}
+              onChange={(e) => setStaffNotifications(e.target.checked)}
+              className="mt-0.5 shrink-0"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-foreground">
+                {t("policy.staffNotifications")}
+              </span>
+              <span className="block text-sm text-muted-foreground">
+                {t("policy.staffNotificationsHelp")}
+              </span>
+            </span>
+          </label>
+
+          <label className="flex items-start gap-3 rounded-xl border border-border p-3">
+            <input
+              type="checkbox"
+              checked={reminderEnabled}
+              onChange={(e) => setReminderEnabled(e.target.checked)}
+              className="mt-0.5 shrink-0"
+            />
+            <span className="min-w-0">
+              <span className="block text-sm font-medium text-foreground">
+                {t("policy.appointmentReminder")}
+              </span>
+              <span className="block text-sm text-muted-foreground">
+                {t("policy.appointmentReminderHelp")}
+              </span>
+            </span>
+          </label>
+
+          {reminderEnabled && (
+            <>
+              <TimeField
+                value={reminderLead}
+                onChange={setReminderLead}
+                granularity="minute"
+                hourCycle={24}
+                shouldForceLeadingZeros
+                className="space-y-1"
+              >
+                <Label>{t("policy.appointmentReminderLead")}</Label>
+                <TimeFieldInput>
+                  {(segment) => <TimeFieldSegment segment={segment} />}
+                </TimeFieldInput>
+              </TimeField>
+
+              <div className="space-y-1">
+                <Label htmlFor="reminder-title">{t("policy.reminderTitle")}</Label>
+                <Input
+                  id="reminder-title"
+                  value={reminderTitle}
+                  onChange={(e) => setReminderTitle(e.target.value)}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="reminder-body">{t("policy.reminderBody")}</Label>
+                <textarea
+                  id="reminder-body"
+                  value={reminderBody}
+                  onChange={(e) => setReminderBody(e.target.value)}
+                  rows={2}
+                  className="w-full rounded-2xl border border-border bg-input/50 px-2.5 py-1.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
+                />
+                <p className="text-xs text-muted-foreground">{t("policy.reminderBodyHelp")}</p>
+              </div>
+            </>
+          )}
 
           <div className="space-y-1">
             <Label htmlFor="cancellation-lead-hours">{t("policy.cancellationNotice")}</Label>

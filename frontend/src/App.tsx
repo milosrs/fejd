@@ -33,7 +33,7 @@ import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
 import { subdomainSlug, openAppHome } from "./lib/salonDomain"
 import { consumeReturnTo, auth } from "./lib/auth"
 import { claimRegistrationRole } from "./lib/api"
-import { registerPush } from "./lib/push"
+import { registerPush, setNotificationTapHandler } from "./lib/push"
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -296,8 +296,25 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function App() {
-  // On a salon subdomain the salon site is served from the root; on the app
+// PushNavigationHandler routes native notification taps to the salon's
+// reservation list. Web taps are handled by the firebase-messaging service
+// worker (which opens the link directly).
+function PushNavigationHandler() {
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    setNotificationTapHandler((data) => {
+      const businessId = data.business_id
+      if (!businessId) return
+      navigate(`/admin/business/${businessId}/my-reservations`)
+    })
+    return () => setNotificationTapHandler(null)
+  }, [navigate])
+
+  return null
+}
+
+function App() {  // On a salon subdomain the salon site is served from the root; on the app
   // host, native, and local dev it is served from /:slug.
   const hostSlug = subdomainSlug()
 
@@ -307,6 +324,7 @@ function App() {
       <QueryClientProvider client={queryClient}>
         <I18nProvider>
           <BrowserRouter>
+            <PushNavigationHandler />
             <AppInit>
               <Routes>
                 {hostSlug ? (

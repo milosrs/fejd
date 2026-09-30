@@ -198,6 +198,11 @@ export type SalonPolicyInput = {
   no_show_after_minutes: number
   slot_interval_minutes: number
   auto_approve: boolean
+  appointment_reminder_enabled: boolean
+  appointment_reminder_lead_minutes: number
+  staff_notifications_enabled: boolean
+  reminder_title: string
+  reminder_body: string
   timezone?: string
   working_hours: components["schemas"]["handler.BusinessHoursInput"][]
   closures: components["schemas"]["handler.BusinessClosureInput"][]

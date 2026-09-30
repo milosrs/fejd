@@ -3219,57 +3219,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/business/{slug}/working-hours": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * List opening hours
-         * @description Returns the salon's default weekly opening hours, so the landing page can show when it is open.
-         */
-        get: {
-            parameters: {
-                query?: never;
-                header?: never;
-                path: {
-                    /** @description Business slug */
-                    slug: string;
-                };
-                cookie?: never;
-            };
-            requestBody?: never;
-            responses: {
-                /** @description OK */
-                200: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["dto.BusinessHours"][];
-                    };
-                };
-                /** @description Not Found */
-                404: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content: {
-                        "application/json": components["schemas"]["handler.ErrorResponse"];
-                    };
-                };
-            };
-        };
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/api/business/{slug}/employees": {
         parameters: {
             query?: never;
@@ -3531,6 +3480,57 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/business/{slug}/working-hours": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List opening hours
+         * @description Returns the salon's default weekly opening hours, so the landing page can show when it is open.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business slug */
+                    slug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.BusinessHours"][];
                     };
                 };
                 /** @description Not Found */
@@ -4159,6 +4159,114 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/me/push-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Register a push token
+         * @description Associates the current device's FCM token with the authenticated user so they can receive push notifications.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Device token */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.RegisterPushTokenRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Remove a push token
+         * @description Removes the current device's FCM token so it no longer receives push notifications.
+         */
+        delete: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path?: never;
+                cookie?: never;
+            };
+            /** @description Device token */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.UnregisterPushTokenRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/my/appointments": {
         parameters: {
             query?: never;
@@ -4579,6 +4687,11 @@ export interface components {
             salon_name: string;
             salon_slug: string;
         };
+        "handler.RegisterPushTokenRequest": {
+            /** @example ios */
+            platform?: string;
+            token: string;
+        };
         "handler.RejectRequest": {
             /** @example slot no longer available */
             reason: string;
@@ -4601,6 +4714,10 @@ export interface components {
             section_ids: string[];
         };
         "handler.SalonPolicyResponse": {
+            /** @example true */
+            appointment_reminder_enabled: boolean;
+            /** @example 60 */
+            appointment_reminder_lead_minutes: number;
             /** @example false */
             auto_approve: boolean;
             /** @example 2 */
@@ -4608,8 +4725,14 @@ export interface components {
             closures: components["schemas"]["dto.BusinessClosure"][];
             /** @example 120 */
             no_show_after_minutes: number;
+            /** @example Your appointment is starting soon. */
+            reminder_body?: string;
+            /** @example Upcoming appointment */
+            reminder_title?: string;
             /** @example 30 */
             slot_interval_minutes: number;
+            /** @example true */
+            staff_notifications_enabled: boolean;
             working_hours: components["schemas"]["dto.BusinessHours"][];
         };
         "handler.ServiceInput": {
@@ -4651,7 +4774,14 @@ export interface components {
         "handler.Translations": {
             [key: string]: string;
         };
+        "handler.UnregisterPushTokenRequest": {
+            token: string;
+        };
         "handler.UpdateSalonPolicyRequest": {
+            /** @example true */
+            appointment_reminder_enabled: boolean;
+            /** @example 60 */
+            appointment_reminder_lead_minutes: number;
             /** @example false */
             auto_approve: boolean;
             /** @example 2 */
@@ -4659,8 +4789,14 @@ export interface components {
             closures: components["schemas"]["handler.BusinessClosureInput"][];
             /** @example 120 */
             no_show_after_minutes: number;
+            /** @example Your appointment is starting soon. */
+            reminder_body?: string;
+            /** @example Upcoming appointment */
+            reminder_title?: string;
             /** @example 30 */
             slot_interval_minutes: number;
+            /** @example true */
+            staff_notifications_enabled: boolean;
             /** @example Europe/Stockholm */
             timezone?: string;
             working_hours: components["schemas"]["handler.BusinessHoursInput"][];

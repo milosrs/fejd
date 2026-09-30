@@ -7,6 +7,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/google/uuid"
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -89,6 +90,28 @@ func (s *ImageLinkStore) ListByEntity(ctx context.Context, entityType string, en
 	}
 
 	return s.list(ctx, sql, args...)
+}
+
+// GetBusinessLogoID returns the image ID of a business's logo, or nil when it
+// has none.
+func (s *ImageLinkStore) GetBusinessLogoID(ctx context.Context, businessID uuid.UUID) (*uuid.UUID, error) {
+	sql, args, err := psql.
+		Select("image_id").
+		From("image_links").
+		Where(sq.Eq{"entity_type": "business", "entity_id": businessID, "purpose": "logo"}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var id uuid.UUID
+	if err := s.pool.QueryRow(ctx, sql, args...).Scan(&id); err != nil {
+		if err == pgx.ErrNoRows {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to get business logo: %w", err)
+	}
+	return &id, nil
 }
 
 func (s *ImageLinkStore) ListByImage(ctx context.Context, imageID uuid.UUID) ([]models.ImageLink, error) {

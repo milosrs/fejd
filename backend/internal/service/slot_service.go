@@ -9,6 +9,7 @@ import (
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/store"
 	"fmt"
+	"log"
 	"sort"
 	"time"
 
@@ -31,6 +32,7 @@ type SlotService struct {
 	unavailability   *store.EmployeeUnavailabilityStore
 	hub              *sse.Hub
 	pool             *pgxpool.Pool
+	notifier         *NotificationService
 }
 
 func NewSlotService(
@@ -61,6 +63,12 @@ func NewSlotService(
 		hub:              hub,
 		pool:             pool,
 	}
+}
+
+// SetNotifier wires the optional notification service used to push a "new
+// booking" alert to the selected provider. It is nil by default (no-op).
+func (s *SlotService) SetNotifier(n *NotificationService) {
+	s.notifier = n
 }
 
 func (s *SlotService) GetAvailableSlots(
@@ -274,6 +282,12 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 		"start_time":       appointment.StartTime.Format(time.RFC3339),
 		"end_time":         appointment.EndTime.Format(time.RFC3339),
 	})
+
+	if s.notifier != nil {
+		if err := s.notifier.NotifyNewBooking(ctx, appointment); err != nil {
+			log.Printf("[booking] failed to notify provider: %v", err)
+		}
+	}
 
 	return nil
 }

@@ -86,22 +86,32 @@ type UnregisterPushTokenRequest struct {
 }
 
 type SalonPolicyResponse struct {
-	CancellationLeadHours int                   `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterMinutes    int                   `json:"no_show_after_minutes" validate:"required" example:"120"`
-	SlotIntervalMinutes   int                   `json:"slot_interval_minutes" validate:"required" example:"30"`
-	AutoApprove           bool                  `json:"auto_approve" validate:"required" example:"false"`
-	WorkingHours          []dto.BusinessHours   `json:"working_hours" validate:"required"`
-	Closures              []dto.BusinessClosure `json:"closures" validate:"required"`
+	CancellationLeadHours          int                   `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterMinutes             int                   `json:"no_show_after_minutes" validate:"required" example:"120"`
+	SlotIntervalMinutes            int                   `json:"slot_interval_minutes" validate:"required" example:"30"`
+	AutoApprove                    bool                  `json:"auto_approve" validate:"required" example:"false"`
+	AppointmentReminderEnabled     bool                  `json:"appointment_reminder_enabled" validate:"required" example:"true"`
+	AppointmentReminderLeadMinutes int                   `json:"appointment_reminder_lead_minutes" validate:"required" example:"60"`
+	StaffNotificationsEnabled      bool                  `json:"staff_notifications_enabled" validate:"required" example:"true"`
+	ReminderTitle                  string                `json:"reminder_title" example:"Upcoming appointment"`
+	ReminderBody                   string                `json:"reminder_body" example:"Your appointment is starting soon."`
+	WorkingHours                   []dto.BusinessHours   `json:"working_hours" validate:"required"`
+	Closures                       []dto.BusinessClosure `json:"closures" validate:"required"`
 }
 
 type UpdateSalonPolicyRequest struct {
-	CancellationLeadHours int                    `json:"cancellation_lead_hours" validate:"required" example:"2"`
-	NoShowAfterMinutes    int                    `json:"no_show_after_minutes" validate:"required" example:"120"`
-	SlotIntervalMinutes   int                    `json:"slot_interval_minutes" validate:"required" example:"30"`
-	AutoApprove           bool                   `json:"auto_approve" validate:"required" example:"false"`
-	Timezone              string                 `json:"timezone,omitempty" example:"Europe/Stockholm"`
-	WorkingHours          []BusinessHoursInput   `json:"working_hours" validate:"required"`
-	Closures              []BusinessClosureInput `json:"closures" validate:"required"`
+	CancellationLeadHours          int                    `json:"cancellation_lead_hours" validate:"required" example:"2"`
+	NoShowAfterMinutes             int                    `json:"no_show_after_minutes" validate:"required" example:"120"`
+	SlotIntervalMinutes            int                    `json:"slot_interval_minutes" validate:"required" example:"30"`
+	AutoApprove                    bool                   `json:"auto_approve" validate:"required" example:"false"`
+	AppointmentReminderEnabled     bool                   `json:"appointment_reminder_enabled" validate:"required" example:"true"`
+	AppointmentReminderLeadMinutes int                    `json:"appointment_reminder_lead_minutes" validate:"required" example:"60"`
+	StaffNotificationsEnabled      bool                   `json:"staff_notifications_enabled" validate:"required" example:"true"`
+	ReminderTitle                  string                 `json:"reminder_title" example:"Upcoming appointment"`
+	ReminderBody                   string                 `json:"reminder_body" example:"Your appointment is starting soon."`
+	Timezone                       string                 `json:"timezone,omitempty" example:"Europe/Stockholm"`
+	WorkingHours                   []BusinessHoursInput   `json:"working_hours" validate:"required"`
+	Closures                       []BusinessClosureInput `json:"closures" validate:"required"`
 }
 
 type BusinessClosureInput struct {

@@ -2,12 +2,13 @@ import { useEffect, useRef } from "react"
 import { useNavigate } from "react-router-dom"
 import { useAuthStore } from "../../stores/authStore"
 import { useAcceptInvitation } from "../../hooks/useInvitations"
-import { openSalon } from "../../lib/salonDomain"
+import { openSalon, openAppHome } from "../../lib/salonDomain"
 
 /**
  * Watches the pending invite token and, once the user is authenticated, redeems
- * it and navigates to the salon. Mounted once at the app root so it works for
- * both the web `/invite/:token` route and native deep links.
+ * it and navigates to the salon (or back to the app home for platform invites
+ * that have no salon). Mounted once at the app root so it works for both the
+ * web `/invite/:token` route and native deep links.
  */
 export function InviteAcceptHandler() {
   const navigate = useNavigate()
@@ -24,6 +25,7 @@ export function InviteAcceptHandler() {
       onSuccess: (business) => {
         setToken(null)
         if (business) openSalon(navigate, business.slug)
+        else openAppHome(navigate)
       },
       onError: () => {
         setToken(null)

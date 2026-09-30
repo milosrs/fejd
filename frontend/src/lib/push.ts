@@ -8,6 +8,28 @@ import { API_BASE_URL } from "./api"
 const TOKEN_STORAGE_KEY = "fejd.push_token"
 
 let tokenListenerRegistered = false
+let actionListenerRegistered = false
+
+type NotificationTapHandler = (data: Record<string, string | undefined>) => void
+
+let tapHandler: NotificationTapHandler | null = null
+
+// setNotificationTapHandler registers a callback invoked when the user taps a
+// notification (native only; web taps are handled by the service worker).
+export function setNotificationTapHandler(handler: NotificationTapHandler | null) {
+  tapHandler = handler
+}
+
+async function ensureActionListener() {
+  if (actionListenerRegistered) return
+  actionListenerRegistered = true
+  if (Capacitor.getPlatform() === "web") return
+
+  await FirebaseMessaging.addListener("notificationActionPerformed", (event) => {
+    const data = (event.notification?.data ?? {}) as Record<string, string | undefined>
+    tapHandler?.(data)
+  })
+}
 
 // On web the messaging plugin delegates to the Firebase JS SDK, which expects a
 // default Firebase app to exist (the plugin calls getMessaging() without an
@@ -71,6 +93,7 @@ export async function registerPush(): Promise<void> {
     if (permission.receive !== "granted") return
 
     await requestTokenAndRegister()
+    await ensureActionListener()
 
     // FCM refreshes the registration token occasionally on native; re-register
     // it so the backend always holds the current token.
