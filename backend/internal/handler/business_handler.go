@@ -423,6 +423,7 @@ func (h *BusinessHandler) GetServiceEmployees(w http.ResponseWriter, r *http.Req
 // @Param        service_id query string true "Service UUID"
 // @Param        employee_id query string true "Employee UUID"
 // @Param        date query string true "Date (YYYY-MM-DD)"
+// @Param        additional_service_ids query []string false "Additional service UUIDs"
 // @Success      200 {object} SlotsResponse
 // @Failure      400 {object} ErrorResponse
 // @Failure      404 {object} ErrorResponse
@@ -454,7 +455,13 @@ func (h *BusinessHandler) GetAvailableSlots(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	slots, err := h.slotService.GetAvailableSlots(r.Context(), b.ID, serviceID, employeeID, date)
+	additionalServiceIDs, err := parseUUIDList(r.URL.Query()["additional_service_ids"])
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid additional_service_ids")
+		return
+	}
+
+	slots, err := h.slotService.GetAvailableSlots(r.Context(), b.ID, serviceID, additionalServiceIDs, employeeID, date)
 	if err != nil {
 		writeInternalError(w, err)
 		return
@@ -468,6 +475,56 @@ func (h *BusinessHandler) GetAvailableSlots(w http.ResponseWriter, r *http.Reque
 		Slots: dto.TimeSlotsFromModels(slots),
 		Date:  dateStr,
 	})
+}
+
+// GetServiceCombinations godoc
+// @Summary      List combinable services
+// @Description  Returns the services a base service may be combined with when booking.
+// @Tags         public
+// @Produce      json
+// @Param        slug path string true "Business slug"
+// @Param        serviceID path string true "Service UUID"
+// @Success      200 {array} dto.Service
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Router       /api/business/{slug}/services/{serviceID}/combinations [get]
+func (h *BusinessHandler) GetServiceCombinations(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	serviceID, err := uuid.Parse(chi.URLParam(r, "serviceID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid service ID")
+		return
+	}
+
+	services, err := h.slotService.ListCombinableServices(r.Context(), b.ID, serviceID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "service not found")
+		return
+	}
+	if services == nil {
+		services = []models.Service{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.ServicesFromModels(services))
+}
+
+// parseUUIDList parses a repeated query-parameter list of UUIDs.
+func parseUUIDList(values []string) ([]uuid.UUID, error) {
+	ids := make([]uuid.UUID, 0, len(values))
+	for _, v := range values {
+		id, err := uuid.Parse(v)
+		if err != nil {
+			return nil, err
+		}
+		ids = append(ids, id)
+	}
+	return ids, nil
 }
 
 func writeJSON(w http.ResponseWriter, status int, data any) {

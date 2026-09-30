@@ -1,7 +1,7 @@
 import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { useSalonContext, useIsOwner } from "../context/SalonContext"
-import { useServices, useAdminEmployees, useServiceEmployeesAdmin, type Service } from "../hooks/useApi"
+import { useServices, useAdminEmployees, useServiceEmployeesAdmin, useServiceCombinationsAdmin, type Service } from "../hooks/useApi"
 import { useServiceMutations } from "../hooks/useServiceMutations"
 import { useBookingStore } from "../stores/bookingStore"
 import { useCanWrite } from "../hooks/useCanWrite"
@@ -26,7 +26,7 @@ export function ServicesPage() {
 
   const businessId = salon?.business.id ?? ""
   const { data, isLoading, isError } = useServices(slug)
-  const { create, update, remove, uploadImage, setEmployees } = useServiceMutations(businessId, slug)
+  const { create, update, remove, uploadImage, setEmployees, setCombinations } = useServiceMutations(businessId, slug)
 
   const [form, setForm] = useState<FormState>(null)
   const [deleting, setDeleting] = useState<Service | null>(null)
@@ -38,9 +38,12 @@ export function ServicesPage() {
   const editingServiceId = form?.mode === "edit" ? form.service.id : ""
   const { data: staffData } = useAdminEmployees(editingOn ? businessId : "")
   const { data: assignedEmployees } = useServiceEmployeesAdmin(businessId, editingServiceId)
+  const { data: assignedCombinations } = useServiceCombinationsAdmin(businessId, editingServiceId)
 
   const staff = (staffData ?? []).filter((e) => e.active)
   const assignedEmployeeIds = (assignedEmployees ?? []).map((e) => e.id)
+  const assignedCombinableIds = (assignedCombinations ?? []).map((s) => s.id)
+  const combinableOptions = (data ?? []).filter((s) => s.id !== editingServiceId)
 
   const services = editingOn ? (data ?? []) : (data ?? []).filter((s) => s.active)
 
@@ -88,6 +91,11 @@ export function ServicesPage() {
       await setEmployees.mutateAsync({
         serviceId,
         businessUserIds: values.employee_ids,
+      })
+
+      await setCombinations.mutateAsync({
+        serviceId,
+        serviceIds: values.combinable_service_ids,
       })
 
       setForm(null)
@@ -162,13 +170,16 @@ export function ServicesPage() {
           initial={form.mode === "edit" ? form.service : undefined}
           staff={staff}
           assignedEmployeeIds={assignedEmployeeIds}
+          services={combinableOptions}
+          assignedCombinableIds={assignedCombinableIds}
           onClose={() => setForm(null)}
           onSubmit={handleSubmit}
           saving={
             create.isPending ||
             update.isPending ||
             uploadImage.isPending ||
-            setEmployees.isPending
+            setEmployees.isPending ||
+            setCombinations.isPending
           }
           error={formError}
           disabled={!canWrite}

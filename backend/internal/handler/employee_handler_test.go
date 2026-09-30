@@ -160,7 +160,7 @@ func TestAdminHandler_RemoveEmployee_RevokesRole(t *testing.T) {
 
 	slotService := service.NewSlotService(
 		appointmentStore, workingHoursStore, businessHoursStore, overrideStore, nil,
-		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
+		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, nil, hub, pool,
 	)
 
 	inviter := &fakeInviter{userID: "emp-1"}

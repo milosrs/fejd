@@ -37,7 +37,7 @@ func newReservationTestHandler(t *testing.T) (*AdminHandler, *store.BusinessUser
 
 	slotService := service.NewSlotService(
 		appointmentStore, workingHoursStore, businessHoursStore, overrideStore, nil,
-		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
+		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, nil, hub, pool,
 	)
 	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, nil, appointmentStore, slotService, nil, nil, pool)
 

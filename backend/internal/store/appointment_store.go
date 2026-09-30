@@ -87,6 +87,61 @@ func (s *AppointmentStore) Create(ctx context.Context, q Querier, a *models.Appo
 	return q.QueryRow(ctx, sql, args...).Scan(&a.CreatedAt)
 }
 
+// InsertAdditionalServices records the add-on services combined onto an
+// appointment, in display order (position starts at 1 because the base service
+// is the appointment's own service_id). Callers insert within the same
+// transaction as the appointment itself.
+func (s *AppointmentStore) InsertAdditionalServices(ctx context.Context, q Querier, appointmentID uuid.UUID, serviceIDs []uuid.UUID) error {
+	for i, sid := range serviceIDs {
+		sql, args, err := psql.
+			Insert("appointment_services").
+			Columns("appointment_id", "service_id", "position").
+			Values(appointmentID, sid, i+1).
+			ToSql()
+		if err != nil {
+			return fmt.Errorf("failed to build query: %w", err)
+		}
+		if _, err := q.Exec(ctx, sql, args...); err != nil {
+			return fmt.Errorf("failed to insert additional service: %w", err)
+		}
+	}
+	return nil
+}
+
+// ListAdditionalServiceIDs returns, for each given appointment, its add-on
+// service IDs in display order (position ascending).
+func (s *AppointmentStore) ListAdditionalServiceIDs(ctx context.Context, appointmentIDs []uuid.UUID) (map[uuid.UUID][]uuid.UUID, error) {
+	result := make(map[uuid.UUID][]uuid.UUID, len(appointmentIDs))
+	if len(appointmentIDs) == 0 {
+		return result, nil
+	}
+
+	sql, args, err := psql.
+		Select("appointment_id", "service_id").
+		From("appointment_services").
+		Where(sq.Eq{"appointment_id": appointmentIDs}).
+		OrderBy("appointment_id", "position").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list additional services: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var apptID, serviceID uuid.UUID
+		if err := rows.Scan(&apptID, &serviceID); err != nil {
+			return nil, fmt.Errorf("failed to scan additional service: %w", err)
+		}
+		result[apptID] = append(result[apptID], serviceID)
+	}
+	return result, nil
+}
+
 func (s *AppointmentStore) ListByCustomer(ctx context.Context, customerUserID string) ([]models.Appointment, error) {
 	sql, args, err := psql.
 		Select("id", "business_id", "service_id", "business_user_id", "COALESCE(customer_user_id, '')",

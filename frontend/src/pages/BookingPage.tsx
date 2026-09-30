@@ -4,7 +4,7 @@ import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today, type DateValue } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
 import { useSalonContext } from "../context/SalonContext"
-import { useServices, useServiceEmployees, useBusinessClosures, createAppointment } from "../hooks/useApi"
+import { useServices, useServiceEmployees, useServiceCombinations, useBusinessClosures, createAppointment, type Service } from "../hooks/useApi"
 import { useBookingStore } from "../stores/bookingStore"
 import { useTimeSlotStream } from "../hooks/useTimeSlotStream"
 import { useAuthStore } from "../stores/authStore"
@@ -26,6 +26,8 @@ function mapBookingError(msg: string, t: (key: string) => string): string {
       return t("booking.error.alreadyBooked")
     case "employee does not offer this service":
       return t("booking.error.noService")
+    case "service combination not allowed":
+      return t("booking.error.noCombination")
     default:
       return t("booking.error.generic")
   }
@@ -43,10 +45,12 @@ export function BookingPage() {
 
   const {
     selectedServiceId,
+    selectedAdditionalServiceIds,
     selectedEmployeeId,
     selectedDate,
     selectedSlot,
     setService,
+    setAdditionalServices,
     setDate,
     selectSlot,
     clearSlot,
@@ -69,6 +73,7 @@ export function BookingPage() {
     slug,
     effectiveServiceId ?? "",
   )
+  const { data: combinable } = useServiceCombinations(slug, effectiveServiceId ?? "")
   const { data: closures } = useBusinessClosures(slug)
 
   const isDateUnavailable = (date: DateValue) => {
@@ -97,6 +102,23 @@ export function BookingPage() {
   const service = (services ?? []).find((s) => s.id === effectiveServiceId)
   const barber = (barbers ?? []).find((b) => b.id === selectedEmployeeId)
 
+  const additionalServices = selectedAdditionalServiceIds
+    .map((id) => (combinable ?? []).find((s) => s.id === id))
+    .filter((s): s is Service => !!s)
+  const totalDuration = service
+    ? service.duration_minutes + additionalServices.reduce((n, s) => n + s.duration_minutes, 0)
+    : 0
+  const totalPrice = service
+    ? (service.price ?? 0) + additionalServices.reduce((n, s) => n + (s.price ?? 0), 0)
+    : 0
+
+  const toggleAdditional = (id: string) => {
+    const next = selectedAdditionalServiceIds.includes(id)
+      ? selectedAdditionalServiceIds.filter((s) => s !== id)
+      : [...selectedAdditionalServiceIds, id]
+    setAdditionalServices(next)
+  }
+
   const handleBook = async () => {
     if (!authenticated) {
       login()
@@ -112,6 +134,7 @@ export function BookingPage() {
         service_id: effectiveServiceId,
         business_user_id: selectedEmployeeId,
         start_time: selectedSlot.start_time,
+        additional_service_ids: selectedAdditionalServiceIds,
       })
       setBookedTime(selectedSlot.start_time)
       reset()
@@ -225,6 +248,37 @@ export function BookingPage() {
                 )}
               </CardContent>
             </Card>
+
+            {(combinable ?? []).length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>{t("booking.addons.title")}</CardTitle>
+                  <CardDescription>{t("booking.addons.description")}</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {(combinable ?? []).map((addon) => (
+                    <label
+                      key={addon.id}
+                      className="flex items-center gap-3 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAdditionalServiceIds.includes(addon.id)}
+                        onChange={() => toggleAdditional(addon.id)}
+                        className="shrink-0"
+                      />
+                      <span className="min-w-0 flex-1 truncate text-foreground">
+                        {addon.name}
+                      </span>
+                      <span className="text-muted-foreground tabular-nums">
+                        +{addon.duration_minutes} {t("booking.minutes")}
+                        {addon.price != null && addon.price > 0 && ` · $${addon.price.toFixed(2)}`}
+                      </span>
+                    </label>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
           </aside>
 
           <div className="space-y-4">
@@ -261,6 +315,7 @@ export function BookingPage() {
                         slug={slug}
                         serviceId={effectiveServiceId}
                         date={selectedDate}
+                        additionalServiceIds={selectedAdditionalServiceIds}
                         selectedStartTime={selectedSlot?.start_time}
                         onSelectSlot={(employeeId, slot) => selectSlot(employeeId, slot)}
                       />
@@ -277,12 +332,19 @@ export function BookingPage() {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <dl className="space-y-2 text-sm">
-                    <Row label={t("booking.confirm.service")} value={service.name} />
+                    <Row
+                      label={t("booking.confirm.service")}
+                      value={[service.name, ...additionalServices.map((s) => s.name)].join(" + ")}
+                    />
                     <Row label={t("booking.confirm.barber")} value={barber.display_name || barber.user_id} />
                     <Row label={t("booking.confirm.date")} value={format(new Date(selectedSlot.start_time), "EEEE, MMMM d, yyyy")} />
                     <Row label={t("booking.confirm.time")} value={format(new Date(selectedSlot.start_time), "h:mm a")} />
-                    {service.price != null && service.price > 0 && (
-                      <Row label={t("booking.confirm.price")} value={`$${service.price.toFixed(2)}`} />
+                    <Row
+                      label={t("booking.duration")}
+                      value={`${totalDuration} ${t("booking.minutes")}`}
+                    />
+                    {totalPrice > 0 && (
+                      <Row label={t("booking.confirm.price")} value={`$${totalPrice.toFixed(2)}`} />
                     )}
                   </dl>
                   {error && <p className="text-sm text-destructive">{error}</p>}

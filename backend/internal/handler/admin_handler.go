@@ -616,6 +616,84 @@ func (h *AdminHandler) SetServiceEmployees(w http.ResponseWriter, r *http.Reques
 	writeJSON(w, http.StatusOK, MessageResponse{Message: "service employees updated"})
 }
 
+// GetServiceCombinations godoc
+// @Summary      List combinable services
+// @Description  Returns the services a base service may be combined with.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        serviceID path string true "Service UUID"
+// @Success      200 {array} dto.Service
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/services/{serviceID}/combinations [get]
+func (h *AdminHandler) GetServiceCombinations(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	serviceID, err := uuid.Parse(chi.URLParam(r, "serviceID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidServiceID.Error())
+		return
+	}
+
+	services, err := h.slotService.ListCombinableServices(r.Context(), businessID, serviceID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "service not found")
+		return
+	}
+	if services == nil {
+		services = []models.Service{}
+	}
+
+	writeJSON(w, http.StatusOK, dto.ServicesFromModels(services))
+}
+
+// SetServiceCombinations godoc
+// @Summary      Set combinable services
+// @Description  Replaces the set of services a base service may be combined with.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        serviceID path string true "Service UUID"
+// @Param        body body SetServiceCombinationsRequest true "Combinable service IDs"
+// @Success      200 {object} MessageResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/services/{serviceID}/combinations [put]
+func (h *AdminHandler) SetServiceCombinations(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	serviceID, err := uuid.Parse(chi.URLParam(r, "serviceID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidServiceID.Error())
+		return
+	}
+
+	var body SetServiceCombinationsRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	if err := h.slotService.SetServiceCombinations(r.Context(), businessID, serviceID, body.ServiceIDs); err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, MessageResponse{Message: "service combinations updated"})
+}
+
 // AddUnavailability godoc
 // @Summary      Mark an employee unavailable
 // @Description  Blocks a time range (e.g. vacation) for an employee.
@@ -886,6 +964,11 @@ func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request
 	}
 	if appointments == nil {
 		appointments = []models.Appointment{}
+	}
+
+	if err := h.attachAdditionalServices(r.Context(), appointments); err != nil {
+		writeInternalError(w, err)
+		return
 	}
 
 	serviceNames, servicePrices, servicePictures, err := h.serviceMaps(r.Context(), businessID)
@@ -1200,6 +1283,11 @@ func (h *AdminHandler) ListBusinessAppointments(w http.ResponseWriter, r *http.R
 		appointments = []models.Appointment{}
 	}
 
+	if err := h.attachAdditionalServices(r.Context(), appointments); err != nil {
+		writeInternalError(w, err)
+		return
+	}
+
 	serviceNames, servicePrices, servicePictures, err := h.serviceMaps(r.Context(), businessID)
 	if err != nil {
 		writeInternalError(w, err)
@@ -1261,6 +1349,26 @@ func (h *AdminHandler) serviceMaps(ctx context.Context, businessID uuid.UUID) (m
 		}
 	}
 	return names, prices, pictures, nil
+}
+
+// attachAdditionalServices populates each appointment's AdditionalServiceIDs
+// from the appointment_services join table.
+func (h *AdminHandler) attachAdditionalServices(ctx context.Context, appointments []models.Appointment) error {
+	if len(appointments) == 0 {
+		return nil
+	}
+	ids := make([]uuid.UUID, len(appointments))
+	for i := range appointments {
+		ids[i] = appointments[i].ID
+	}
+	addons, err := h.appointmentStore.ListAdditionalServiceIDs(ctx, ids)
+	if err != nil {
+		return err
+	}
+	for i := range appointments {
+		appointments[i].AdditionalServiceIDs = addons[appointments[i].ID]
+	}
+	return nil
 }
 
 // GetSalonPolicy godoc

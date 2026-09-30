@@ -99,7 +99,9 @@ export const mockI18nEn: Record<string, string> = {
   "services.fields.price": "Price ($)",
   "services.fields.barbers": "Barbers",
   "services.fields.picture": "Picture",
+  "services.fields.combine": "Can be combined with",
   "services.noBarbers": "No barbers yet. Invite barbers from the Barbers page.",
+  "services.noCombinations": "No other services to combine with yet.",
   "services.previewName": "Service name",
   "services.livePreview": "Live preview",
   "services.replaceImage": "Replace image",
@@ -154,6 +156,8 @@ export const mockI18nEn: Record<string, string> = {
   "invite.landing.noApp": "Don't have the app?",
 
   "booking.title": "Booking",
+  "booking.addons.title": "Add-on services",
+  "booking.addons.description": "Combine additional services with your booking. Duration and price add up.",
   "booking.duration": "Duration",
   "booking.minutes": "min",
   "booking.loginToComplete": "Log in to complete the reservation",
@@ -176,6 +180,7 @@ export const mockI18nEn: Record<string, string> = {
   "booking.error.taken": "That time was just taken. Please pick another.",
   "booking.error.alreadyBooked": "You already have a booking with this salon today.",
   "booking.error.noService": "This barber doesn't offer this service. Please pick another.",
+  "booking.error.noCombination": "This service combination is not available.",
   "booking.error.generic": "Booking failed. Please try again.",
 
   "appointments.title": "My Appointments",

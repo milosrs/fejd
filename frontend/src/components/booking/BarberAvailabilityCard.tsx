@@ -9,6 +9,7 @@ export function BarberAvailabilityCard({
   slug,
   serviceId,
   date,
+  additionalServiceIds = [],
   selectedStartTime,
   onSelectSlot,
 }: {
@@ -16,11 +17,12 @@ export function BarberAvailabilityCard({
   slug: string
   serviceId: string
   date: string
+  additionalServiceIds?: string[]
   selectedStartTime?: string
   onSelectSlot: (employeeId: string, slot: TimeSlot) => void
 }) {
   const { t } = useI18n()
-  const { data } = useAvailableSlots(slug, serviceId, barber.id, date)
+  const { data } = useAvailableSlots(slug, serviceId, barber.id, date, additionalServiceIds)
   const slots = data?.slots ?? []
   const avatar = resolveImageUrl(barber.avatar)
   const name = barber.display_name || barber.user_id

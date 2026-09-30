@@ -30,6 +30,7 @@ type SlotService struct {
 	businessUser     *store.BusinessUserStore
 	employeeServices *store.EmployeeServiceStore
 	unavailability   *store.EmployeeUnavailabilityStore
+	combinations     *store.ServiceCombinationStore
 	hub              *sse.Hub
 	pool             *pgxpool.Pool
 	notifier         *NotificationService
@@ -46,6 +47,7 @@ func NewSlotService(
 	businessUser *store.BusinessUserStore,
 	employeeServices *store.EmployeeServiceStore,
 	unavailability *store.EmployeeUnavailabilityStore,
+	combinations *store.ServiceCombinationStore,
 	hub *sse.Hub,
 	pool *pgxpool.Pool,
 ) *SlotService {
@@ -60,6 +62,7 @@ func NewSlotService(
 		businessUser:     businessUser,
 		employeeServices: employeeServices,
 		unavailability:   unavailability,
+		combinations:     combinations,
 		hub:              hub,
 		pool:             pool,
 	}
@@ -71,20 +74,94 @@ func (s *SlotService) SetNotifier(n *NotificationService) {
 	s.notifier = n
 }
 
+// resolveCombinedServices loads and validates the base service plus its add-on
+// services for a booking. It ensures every service belongs to the business, is
+// active, appears at most once, and (for add-ons) is a configured combinable
+// service of the base.
+func (s *SlotService) resolveCombinedServices(ctx context.Context, businessID, serviceID uuid.UUID, additionalIDs []uuid.UUID) (*models.Service, []models.Service, error) {
+	base, err := s.services.GetByID(ctx, serviceID)
+	if err != nil {
+		return nil, nil, fmt.Errorf("service not found: %w", err)
+	}
+	if base.BusinessID != businessID {
+		return nil, nil, fmt.Errorf("service does not belong to business")
+	}
+	if !base.Active {
+		return nil, nil, fmt.Errorf("service is inactive")
+	}
+
+	seen := map[uuid.UUID]struct{}{serviceID: {}}
+	addons := make([]models.Service, 0, len(additionalIDs))
+	for _, id := range additionalIDs {
+		if _, ok := seen[id]; ok {
+			return nil, nil, fmt.Errorf("duplicate service in combination")
+		}
+		seen[id] = struct{}{}
+
+		addon, err := s.services.GetByID(ctx, id)
+		if err != nil {
+			return nil, nil, fmt.Errorf("service not found: %w", err)
+		}
+		if addon.BusinessID != businessID {
+			return nil, nil, fmt.Errorf("service does not belong to business")
+		}
+		if !addon.Active {
+			return nil, nil, fmt.Errorf("service is inactive")
+		}
+		addons = append(addons, *addon)
+	}
+
+	if len(addons) > 0 && s.combinations != nil {
+		edges, err := s.combinations.ListByService(ctx, serviceID)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to list service combinations: %w", err)
+		}
+		allowed := make(map[uuid.UUID]struct{}, len(edges))
+		for _, e := range edges {
+			allowed[e.CombinableServiceID] = struct{}{}
+		}
+		for _, addon := range addons {
+			if _, ok := allowed[addon.ID]; !ok {
+				return nil, nil, fmt.Errorf("service combination not allowed")
+			}
+		}
+	}
+
+	return base, addons, nil
+}
+
+// combinedDuration is the total reservation duration of a base service plus its
+// add-on services.
+func combinedDuration(base *models.Service, addons []models.Service) time.Duration {
+	d := time.Duration(base.DurationMinutes) * time.Minute
+	for _, a := range addons {
+		d += time.Duration(a.DurationMinutes) * time.Minute
+	}
+	return d
+}
+
+// CombinedDuration resolves and validates a base service plus its add-ons and
+// returns the total reservation duration, reusing the same validation as
+// booking and slot computation.
+func (s *SlotService) CombinedDuration(ctx context.Context, businessID, serviceID uuid.UUID, additionalIDs []uuid.UUID) (time.Duration, error) {
+	base, addons, err := s.resolveCombinedServices(ctx, businessID, serviceID, additionalIDs)
+	if err != nil {
+		return 0, err
+	}
+	return combinedDuration(base, addons), nil
+}
+
 func (s *SlotService) GetAvailableSlots(
 	ctx context.Context,
 	businessID uuid.UUID,
 	serviceID uuid.UUID,
+	additionalServiceIDs []uuid.UUID,
 	businessUserID uuid.UUID,
 	date time.Time,
 ) ([]models.TimeSlot, error) {
-	svc, err := s.services.GetByID(ctx, serviceID)
+	base, addons, err := s.resolveCombinedServices(ctx, businessID, serviceID, additionalServiceIDs)
 	if err != nil {
-		return nil, fmt.Errorf("service not found: %w", err)
-	}
-
-	if svc.BusinessID != businessID {
-		return nil, fmt.Errorf("service does not belong to business")
+		return nil, err
 	}
 
 	if s.closures != nil {
@@ -102,9 +179,11 @@ func (s *SlotService) GetAvailableSlots(
 		return nil, nil
 	}
 
-	offers, err := s.employeeServices.OffersService(ctx, businessUserID, serviceID)
-	if err != nil || !offers {
-		return nil, nil
+	for _, svc := range append([]models.Service{*base}, addons...) {
+		offers, err := s.employeeServices.OffersService(ctx, businessUserID, svc.ID)
+		if err != nil || !offers {
+			return nil, nil
+		}
 	}
 
 	dayOfWeek := int(date.Weekday())
@@ -157,12 +236,12 @@ func (s *SlotService) GetAvailableSlots(
 	dayStart := time.Date(date.Year(), date.Month(), date.Day(), startTime.Hour(), startTime.Minute(), startTime.Second(), 0, date.Location())
 	dayEnd := time.Date(date.Year(), date.Month(), date.Day(), endTime.Hour(), endTime.Minute(), endTime.Second(), 0, date.Location())
 
-	// Time slots are computed dynamically from the selected service's actual
+	// Time slots are computed dynamically from the combined services' total
 	// duration and the employee's existing reservations and unavailability, so
 	// the service is squeezed into the day's free windows. The salon's slot
 	// interval no longer drives the grid; it is only a UI default for new
 	// service durations.
-	serviceDuration := time.Duration(svc.DurationMinutes) * time.Minute
+	serviceDuration := combinedDuration(base, addons)
 
 	existing, err := s.appointments.GetConflictingAppointments(ctx, businessID, businessUserID, dayStart, dayEnd)
 	if err != nil {
@@ -203,12 +282,12 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 		appointment.Status = models.AppointmentStatusPending
 	}
 
-	svc, err := s.services.GetByID(ctx, appointment.ServiceID)
+	svc, addons, err := s.resolveCombinedServices(ctx, appointment.BusinessID, appointment.ServiceID, appointment.AdditionalServiceIDs)
 	if err != nil {
-		return fmt.Errorf("service not found: %w", err)
+		return err
 	}
 
-	expectedEnd := appointment.StartTime.Add(time.Duration(svc.DurationMinutes) * time.Minute)
+	expectedEnd := appointment.StartTime.Add(combinedDuration(svc, addons))
 	if !appointment.EndTime.Equal(expectedEnd) {
 		return fmt.Errorf("appointment end time does not match service duration")
 	}
@@ -231,12 +310,14 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 		return fmt.Errorf("employee is inactive")
 	}
 
-	offers, err := s.employeeServices.OffersService(ctx, appointment.BusinessUserID, appointment.ServiceID)
-	if err != nil {
-		return fmt.Errorf("failed to check employee services: %w", err)
-	}
-	if !offers {
-		return fmt.Errorf("employee does not offer this service")
+	for _, svc := range append([]models.Service{*svc}, addons...) {
+		offers, err := s.employeeServices.OffersService(ctx, appointment.BusinessUserID, svc.ID)
+		if err != nil {
+			return fmt.Errorf("failed to check employee services: %w", err)
+		}
+		if !offers {
+			return fmt.Errorf("employee does not offer this service")
+		}
 	}
 
 	unavail, err := s.unavailability.ListOverlapping(ctx, appointment.BusinessUserID, appointment.StartTime, appointment.EndTime)
@@ -268,6 +349,16 @@ func (s *SlotService) BookAppointment(ctx context.Context, appointment *models.A
 
 		if err := s.appointments.Create(ctx, tx, appointment); err != nil {
 			return mapAppointmentError(err)
+		}
+
+		if len(addons) > 0 {
+			addonIDs := make([]uuid.UUID, len(addons))
+			for i, a := range addons {
+				addonIDs[i] = a.ID
+			}
+			if err := s.appointments.InsertAdditionalServices(ctx, tx, appointment.ID, addonIDs); err != nil {
+				return fmt.Errorf("failed to save combined services: %w", err)
+			}
 		}
 
 		return nil
@@ -631,6 +722,69 @@ func (s *SlotService) ListMyServices(ctx context.Context, businessID uuid.UUID, 
 		return nil, fmt.Errorf("target user not found in business: %w", err)
 	}
 	return s.services.ListByBusinessUser(ctx, bu.ID)
+}
+
+// ListCombinableServices returns the active services a base service may be
+// combined with, ordered by name.
+func (s *SlotService) ListCombinableServices(ctx context.Context, businessID, serviceID uuid.UUID) ([]models.Service, error) {
+	base, err := s.services.GetByID(ctx, serviceID)
+	if err != nil || base.BusinessID != businessID {
+		return nil, fmt.Errorf("service not found in business")
+	}
+
+	if s.combinations == nil {
+		return nil, nil
+	}
+
+	edges, err := s.combinations.ListByService(ctx, serviceID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list service combinations: %w", err)
+	}
+
+	result := make([]models.Service, 0, len(edges))
+	for _, e := range edges {
+		svc, err := s.services.GetByID(ctx, e.CombinableServiceID)
+		if err != nil {
+			continue
+		}
+		if svc.Active && svc.BusinessID == businessID {
+			result = append(result, *svc)
+		}
+	}
+	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })
+	return result, nil
+}
+
+// SetServiceCombinations replaces the set of services combinable onto a base
+// service. Every combinable service must belong to the same business and differ
+// from the base.
+func (s *SlotService) SetServiceCombinations(ctx context.Context, businessID, serviceID uuid.UUID, combinableIDs []uuid.UUID) error {
+	base, err := s.services.GetByID(ctx, serviceID)
+	if err != nil || base.BusinessID != businessID {
+		return fmt.Errorf("service not found in business")
+	}
+
+	seen := map[uuid.UUID]struct{}{serviceID: {}}
+	for _, id := range combinableIDs {
+		if _, ok := seen[id]; ok {
+			return fmt.Errorf("service cannot be combined with itself or duplicated")
+		}
+		seen[id] = struct{}{}
+
+		svc, err := s.services.GetByID(ctx, id)
+		if err != nil || svc.BusinessID != businessID {
+			return fmt.Errorf("combinable service not found in business")
+		}
+	}
+
+	if s.combinations == nil {
+		return fmt.Errorf("service combinations unavailable")
+	}
+
+	if err := s.combinations.ReplaceByService(ctx, serviceID, combinableIDs); err != nil {
+		return fmt.Errorf("failed to set service combinations: %w", err)
+	}
+	return nil
 }
 
 // ErrNoShowTooEarly is returned when a staff member tries to mark an

@@ -17,6 +17,7 @@ export interface ServiceFormValues {
   price: number
   imageFile?: File | null
   employee_ids: string[]
+  combinable_service_ids: string[]
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
@@ -32,6 +33,8 @@ export function ServiceForm({
   initial,
   staff = [],
   assignedEmployeeIds = [],
+  services = [],
+  assignedCombinableIds = [],
   onClose,
   onSubmit,
   saving,
@@ -41,6 +44,8 @@ export function ServiceForm({
   initial?: Service
   staff?: Employee[]
   assignedEmployeeIds?: string[]
+  services?: Service[]
+  assignedCombinableIds?: string[]
   onClose: () => void
   onSubmit: (values: ServiceFormValues) => void
   saving?: boolean
@@ -58,6 +63,8 @@ export function ServiceForm({
   const staffList = staff ?? []
   const [employeeIds, setEmployeeIds] = useState<string[]>(assignedEmployeeIds)
   const employeesTouched = useRef(false)
+  const [combinableIds, setCombinableIds] = useState<string[]>(assignedCombinableIds)
+  const combinableTouched = useRef(false)
   const { t } = useI18n()
 
   useEffect(() => {
@@ -65,6 +72,12 @@ export function ServiceForm({
       setEmployeeIds(assignedEmployeeIds)
     }
   }, [assignedEmployeeIds])
+
+  useEffect(() => {
+    if (!combinableTouched.current) {
+      setCombinableIds(assignedCombinableIds)
+    }
+  }, [assignedCombinableIds])
 
   useEffect(() => {
     if (!imageFile) {
@@ -83,6 +96,13 @@ export function ServiceForm({
     )
   }
 
+  const toggleCombinable = (id: string) => {
+    combinableTouched.current = true
+    setCombinableIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    )
+  }
+
   const handleSubmit = () => {
     if (!name.trim()) return
     onSubmit({
@@ -92,6 +112,7 @@ export function ServiceForm({
       price: price ? parseFloat(price) : 0,
       imageFile,
       employee_ids: employeeIds,
+      combinable_service_ids: combinableIds,
     })
   }
 
@@ -196,6 +217,33 @@ export function ServiceForm({
                       </label>
                     )
                   })}
+                </div>
+              )}
+            </Field>
+
+            <Field label={t("services.fields.combine")}>
+              {services.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  {t("services.noCombinations")}
+                </p>
+              ) : (
+                <div className="max-h-40 space-y-1 overflow-y-auto rounded-xl border border-border p-2">
+                  {services.map((service) => (
+                    <label
+                      key={service.id}
+                      className="flex items-center gap-3 rounded-lg px-2 py-1.5 text-sm hover:bg-muted"
+                    >
+                      <span className="min-w-0 flex-1 truncate text-foreground">
+                        {service.name}
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={combinableIds.includes(service.id)}
+                        onChange={() => toggleCombinable(service.id)}
+                        className="shrink-0"
+                      />
+                    </label>
+                  ))}
                 </div>
               )}
             </Field>

@@ -92,9 +92,14 @@ func (h *AppointmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	svc, err := h.services.GetByID(r.Context(), serviceID)
-	if err != nil {
+	if _, err := h.services.GetByID(r.Context(), serviceID); err != nil {
 		writeError(w, http.StatusBadRequest, "service not found")
+		return
+	}
+
+	duration, err := h.slotService.CombinedDuration(r.Context(), businessID, serviceID, body.AdditionalServiceIDs)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid service combination")
 		return
 	}
 
@@ -104,14 +109,15 @@ func (h *AppointmentHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	appointment := &models.Appointment{
-		BusinessID:     businessID,
-		ServiceID:      serviceID,
-		BusinessUserID: businessUserID,
-		CustomerUserID: customerUserID,
-		StartTime:      startTime,
-		EndTime:        startTime.Add(time.Duration(svc.DurationMinutes) * time.Minute),
-		Status:         models.AppointmentStatusPending,
-		CreatedBy:      userID,
+		BusinessID:           businessID,
+		ServiceID:            serviceID,
+		BusinessUserID:       businessUserID,
+		CustomerUserID:       customerUserID,
+		StartTime:            startTime,
+		EndTime:              startTime.Add(duration),
+		Status:               models.AppointmentStatusPending,
+		CreatedBy:            userID,
+		AdditionalServiceIDs: body.AdditionalServiceIDs,
 	}
 
 	if err := h.slotService.BookAppointment(r.Context(), appointment); err != nil {
@@ -142,6 +148,21 @@ func (h *AppointmentHandler) ListMyAppointments(w http.ResponseWriter, r *http.R
 	if err != nil {
 		writeInternalError(w, err)
 		return
+	}
+
+	if len(appointments) > 0 {
+		ids := make([]uuid.UUID, len(appointments))
+		for i := range appointments {
+			ids[i] = appointments[i].ID
+		}
+		addons, err := h.appointments.ListAdditionalServiceIDs(r.Context(), ids)
+		if err != nil {
+			writeInternalError(w, err)
+			return
+		}
+		for i := range appointments {
+			appointments[i].AdditionalServiceIDs = addons[appointments[i].ID]
+		}
 	}
 
 	leadHoursByBusiness := make(map[uuid.UUID]int)

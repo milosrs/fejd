@@ -15,6 +15,9 @@ type CreateAppointmentRequest struct {
 	BusinessUserID uuid.UUID `json:"business_user_id" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 	StartTime      string    `json:"start_time" validate:"required" example:"2024-01-01T09:00:00Z"`
 	CustomerUserID string    `json:"customer_user_id,omitempty" example:"550e8400-e29b-41d4-a716-446655440000"`
+	// AdditionalServiceIDs are combinable add-on services booked together with
+	// the base service. Their durations and prices are added to the base.
+	AdditionalServiceIDs []uuid.UUID `json:"additional_service_ids,omitempty"`
 }
 
 type CancelAppointmentRequest struct {
@@ -37,6 +40,10 @@ type SetEmployeeServicesRequest struct {
 
 type SetServiceEmployeesRequest struct {
 	BusinessUserIDs []uuid.UUID `json:"business_user_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
+}
+
+type SetServiceCombinationsRequest struct {
+	ServiceIDs []uuid.UUID `json:"service_ids" validate:"required" example:"550e8400-e29b-41d4-a716-446655440000"`
 }
 
 type CreateEmployeeRequest struct {

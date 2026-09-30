@@ -3,10 +3,12 @@ import { createJSONStorage, persist } from "zustand/middleware"
 
 export interface BookingState {
   selectedServiceId: string | null
+  selectedAdditionalServiceIds: string[]
   selectedEmployeeId: string | null
   selectedDate: string | null
   selectedSlot: { start_time: string; end_time: string } | null
   setService: (id: string) => void
+  setAdditionalServices: (ids: string[]) => void
   setDate: (date: string) => void
   selectSlot: (employeeId: string, slot: { start_time: string; end_time: string }) => void
   clearSlot: () => void
@@ -40,25 +42,49 @@ export const useBookingStore = create<BookingState>()(
   persist(
     (set) => ({
       selectedServiceId: null,
+      selectedAdditionalServiceIds: [],
       selectedEmployeeId: null,
       selectedDate: null,
       selectedSlot: null,
-      setService: (id) => set({ selectedServiceId: id, selectedEmployeeId: null, selectedDate: null, selectedSlot: null }),
+      setService: (id) =>
+        set({
+          selectedServiceId: id,
+          selectedAdditionalServiceIds: [],
+          selectedEmployeeId: null,
+          selectedDate: null,
+          selectedSlot: null,
+        }),
+      setAdditionalServices: (ids) => set({ selectedAdditionalServiceIds: ids, selectedSlot: null }),
       setDate: (date) => set({ selectedDate: date, selectedEmployeeId: null, selectedSlot: null }),
       selectSlot: (employeeId, slot) => set({ selectedEmployeeId: employeeId, selectedSlot: slot }),
       clearSlot: () => set({ selectedSlot: null }),
-      reset: () => set({ selectedServiceId: null, selectedEmployeeId: null, selectedDate: null, selectedSlot: null }),
+      reset: () =>
+        set({
+          selectedServiceId: null,
+          selectedAdditionalServiceIds: [],
+          selectedEmployeeId: null,
+          selectedDate: null,
+          selectedSlot: null,
+        }),
     }),
     {
       name: "fejd.booking",
-      version: 1,
+      version: 2,
       storage: createJSONStorage(bookingStorage),
       partialize: (state) => ({
         selectedServiceId: state.selectedServiceId,
+        selectedAdditionalServiceIds: state.selectedAdditionalServiceIds,
         selectedEmployeeId: state.selectedEmployeeId,
         selectedDate: state.selectedDate,
         selectedSlot: state.selectedSlot,
       }),
+      migrate: (persisted, version) => {
+        const state = persisted as Partial<BookingState>
+        if (version < 2) {
+          state.selectedAdditionalServiceIds = []
+        }
+        return state as BookingState
+      },
     },
   ),
 )

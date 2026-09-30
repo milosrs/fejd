@@ -7,6 +7,7 @@ import type { components } from "../lib/api-types"
 
 const URL_BUSINESS_SERVICES = "/api/business/{slug}/services" as const
 const URL_SERVICE_EMPLOYEES = "/api/business/{slug}/services/{serviceID}/employees" as const
+const URL_SERVICE_COMBINATIONS = "/api/business/{slug}/services/{serviceID}/combinations" as const
 const URL_BUSINESS_EMPLOYEES = "/api/business/{slug}/employees" as const
 const URL_BUSINESS_SLOTS = "/api/business/{slug}/slots" as const
 const URL_BUSINESS_CLOSURES = "/api/business/{slug}/closures" as const
@@ -25,6 +26,7 @@ const URL_ADMIN_SERVICES = "/api/admin/business/{businessID}/services" as const
 const URL_ADMIN_SERVICES_DELETE = "/api/admin/business/{businessID}/services/{serviceID}" as const
 const URL_ADMIN_SERVICE_IMAGE = "/api/admin/business/{businessID}/services/{serviceID}/image" as const
 const URL_ADMIN_SERVICE_EMPLOYEES = "/api/admin/business/{businessID}/services/{serviceID}/employees" as const
+const URL_ADMIN_SERVICE_COMBINATIONS = "/api/admin/business/{businessID}/services/{serviceID}/combinations" as const
 const URL_ADMIN_INVITATIONS = "/api/admin/business/{businessID}/invitations" as const
 const URL_ADMIN_PLATFORM_INVITATIONS = "/api/admin/invitations" as const
 const URL_ADMIN_INVITED_CUSTOMERS = "/api/admin/invitations/customers" as const
@@ -118,14 +120,38 @@ export function useServiceEmployees(slug: string, serviceId: string) {
   })
 }
 
-export function useAvailableSlots(slug: string, serviceId: string, employeeId: string, date: string) {
+export function useServiceCombinations(slug: string, serviceId: string) {
   return useQuery({
-    queryKey: ["slots", slug, serviceId, employeeId, date],
+    queryKey: ["service-combinations", slug, serviceId],
+    queryFn: async () => {
+      const { data } = await GET(URL_SERVICE_COMBINATIONS, {
+        params: { path: { slug, serviceID: serviceId } },
+      })
+      return data ?? []
+    },
+    enabled: !!(slug && serviceId),
+  })
+}
+
+export function useAvailableSlots(
+  slug: string,
+  serviceId: string,
+  employeeId: string,
+  date: string,
+  additionalServiceIds: string[] = [],
+) {
+  return useQuery({
+    queryKey: ["slots", slug, serviceId, additionalServiceIds, employeeId, date],
     queryFn: async () => {
       const { data } = await GET(URL_BUSINESS_SLOTS, {
         params: {
           path: { slug },
-          query: { service_id: serviceId, employee_id: employeeId, date },
+          query: {
+            service_id: serviceId,
+            employee_id: employeeId,
+            date,
+            additional_service_ids: additionalServiceIds,
+          },
         },
       })
       return data
@@ -266,6 +292,7 @@ export async function createAppointment(params: {
   service_id: string
   business_user_id: string
   start_time: string
+  additional_service_ids?: string[]
 }) {
   const { data } = await POST(URL_APPOINTMENTS, {
     body: params,
@@ -328,6 +355,31 @@ export function useServiceEmployeesAdmin(businessId: string, serviceId: string) 
     },
     enabled: !!(businessId && serviceId),
   })
+}
+
+export function useServiceCombinationsAdmin(businessId: string, serviceId: string) {
+  return useQuery({
+    queryKey: ["admin-service-combinations", businessId, serviceId],
+    queryFn: async () => {
+      const { data } = await GET(URL_ADMIN_SERVICE_COMBINATIONS, {
+        params: { path: { businessID: businessId, serviceID: serviceId } },
+      })
+      return data ?? []
+    },
+    enabled: !!(businessId && serviceId),
+  })
+}
+
+export async function setServiceCombinations(
+  businessId: string,
+  serviceId: string,
+  serviceIds: string[],
+) {
+  const { data } = await PUT(URL_ADMIN_SERVICE_COMBINATIONS, {
+    params: { path: { businessID: businessId, serviceID: serviceId } },
+    body: { service_ids: serviceIds },
+  })
+  return data
 }
 
 export async function setServiceEmployees(

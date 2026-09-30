@@ -103,6 +103,14 @@ type Service struct {
 	CreatedAt       time.Time
 }
 
+// ServiceCombination declares a directed combinability edge: a customer may add
+// CombinableServiceID onto a booking whose base service is ServiceID. The edge
+// is directional (beard -> fade does not imply fade -> beard).
+type ServiceCombination struct {
+	ServiceID           uuid.UUID
+	CombinableServiceID uuid.UUID
+}
+
 type WorkingHours struct {
 	ID             uuid.UUID
 	BusinessUserID uuid.UUID
@@ -232,6 +240,10 @@ type Appointment struct {
 	CreatedBy          string
 	CancellationReason string
 	CreatedAt          time.Time
+	// AdditionalServiceIDs are the add-on services combined onto the base
+	// ServiceID, in display order. The reservation's duration and price are the
+	// sum of the base service and these add-ons.
+	AdditionalServiceIDs []uuid.UUID
 }
 
 type TimeSlot struct {

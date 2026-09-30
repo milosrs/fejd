@@ -55,7 +55,7 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 
 	slotService := service.NewSlotService(
 		appointmentStore, workingHoursStore, businessHoursStore, overrideStore, businessClosureStore,
-		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
+		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, nil, hub, pool,
 	)
 
 	b := &models.Business{Name: "Salon", Slug: "salon"}

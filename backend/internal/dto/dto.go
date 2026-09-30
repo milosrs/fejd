@@ -170,6 +170,9 @@ type Appointment struct {
 	// ServicePicture is the URL path of the service's picture, populated for
 	// staff-facing reservation lists only.
 	ServicePicture string `json:"service_picture,omitempty"`
+	// AdditionalServiceIDs are the add-on services combined onto the base
+	// service, in display order.
+	AdditionalServiceIDs []uuid.UUID `json:"additional_service_ids,omitempty"`
 	// CancellationLeadHours is populated for customer appointment lists so the
 	// UI can surface the salon's cancellation notice window.
 	CancellationLeadHours int `json:"cancellation_lead_hours,omitempty"`

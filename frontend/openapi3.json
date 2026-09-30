@@ -2821,6 +2821,150 @@
                 }
             }
         },
+        "/api/admin/business/{businessID}/services/{serviceID}/combinations": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns the services a base service may be combined with.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "List combinable services",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service UUID",
+                        "name": "serviceID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/dto.Service"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Replaces the set of services a base service may be combined with.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Set combinable services",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service UUID",
+                        "name": "serviceID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.SetServiceCombinationsRequest"
+                            }
+                        }
+                    },
+                    "description": "Combinable service IDs",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.MessageResponse"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/business/{businessID}/services/{serviceID}/employees": {
             "get": {
                 "security": [
@@ -3681,6 +3825,70 @@
                 }
             }
         },
+        "/api/business/{slug}/services/{serviceID}/combinations": {
+            "get": {
+                "description": "Returns the services a base service may be combined with when booking.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "List combinable services",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service UUID",
+                        "name": "serviceID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/dto.Service"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/business/{slug}/services/{serviceID}/employees": {
             "get": {
                 "description": "Returns active business users (owner and employees) assigned to the given service.",
@@ -3787,6 +3995,19 @@
                         "required": true,
                         "schema": {
                             "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Additional service UUIDs",
+                        "name": "additional_service_ids",
+                        "in": "query",
+                        "style": "form",
+                        "explode": false,
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
                         }
                     }
                 ],
@@ -4712,6 +4933,13 @@
                     "status"
                 ],
                 "properties": {
+                    "additional_service_ids": {
+                        "description": "AdditionalServiceIDs are the add-on services combined onto the base\nservice, in display order.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
                     "business_id": {
                         "type": "string"
                     },
@@ -5389,6 +5617,13 @@
                     "start_time"
                 ],
                 "properties": {
+                    "additional_service_ids": {
+                        "description": "AdditionalServiceIDs are combinable add-on services booked together with\nthe base service. Their durations and prices are added to the base.",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
                     "business_id": {
                         "type": "string",
                         "example": "550e8400-e29b-41d4-a716-446655440000"
@@ -5763,6 +5998,23 @@
                 }
             },
             "handler.SetEmployeeServicesRequest": {
+                "type": "object",
+                "required": [
+                    "service_ids"
+                ],
+                "properties": {
+                    "service_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "example": [
+                            "550e8400-e29b-41d4-a716-446655440000"
+                        ]
+                    }
+                }
+            },
+            "handler.SetServiceCombinationsRequest": {
                 "type": "object",
                 "required": [
                     "service_ids"

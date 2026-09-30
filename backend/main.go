@@ -79,6 +79,7 @@ func main() {
 	businessClosureStore := store.NewBusinessClosureStore(pool)
 	employeeServiceStore := store.NewEmployeeServiceStore(pool)
 	unavailabilityStore := store.NewEmployeeUnavailabilityStore(pool)
+	serviceCombinationStore := store.NewServiceCombinationStore(pool)
 	imageStore := store.NewImageStore(pool)
 	imageLinkStore := store.NewImageLinkStore(pool)
 	sectionStore := store.NewSectionStore(pool)
@@ -100,7 +101,7 @@ func main() {
 
 	slotService := service.NewSlotService(
 		appointmentStore, workingHoursStore, businessHoursStore, overrideStore,
-		businessClosureStore, serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, hub, pool,
+		businessClosureStore, serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, serviceCombinationStore, hub, pool,
 	)
 
 	workingHoursService := service.NewWorkingHoursService(

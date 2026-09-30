@@ -2,6 +2,7 @@ package dto
 
 import (
 	"encoding/json"
+	"strings"
 
 	"fejd-backend/internal/models"
 
@@ -168,17 +169,18 @@ func BusinessClosuresFromModels(ms []models.BusinessClosure) []BusinessClosure {
 
 func AppointmentFromModel(m models.Appointment) Appointment {
 	return Appointment{
-		ID:                 m.ID,
-		BusinessID:         m.BusinessID,
-		ServiceID:          m.ServiceID,
-		BusinessUserID:     m.BusinessUserID,
-		CustomerUserID:     m.CustomerUserID,
-		StartTime:          m.StartTime,
-		EndTime:            m.EndTime,
-		Status:             string(m.Status),
-		CreatedBy:          m.CreatedBy,
-		CancellationReason: m.CancellationReason,
-		CreatedAt:          m.CreatedAt,
+		ID:                   m.ID,
+		BusinessID:           m.BusinessID,
+		ServiceID:            m.ServiceID,
+		BusinessUserID:       m.BusinessUserID,
+		CustomerUserID:       m.CustomerUserID,
+		StartTime:            m.StartTime,
+		EndTime:              m.EndTime,
+		Status:               string(m.Status),
+		CreatedBy:            m.CreatedBy,
+		CancellationReason:   m.CancellationReason,
+		CreatedAt:            m.CreatedAt,
+		AdditionalServiceIDs: m.AdditionalServiceIDs,
 	}
 }
 
@@ -318,19 +320,40 @@ func AppointmentsFromModels(ms []models.Appointment) []Appointment {
 	return out
 }
 
-// StaffAppointmentsFromModels enriches appointments with their service name,
-// price and picture and the salon's no-show grace period for staff-facing
-// reservation lists.
+// StaffAppointmentsFromModels enriches appointments with their combined service
+// name, price and picture and the salon's no-show grace period for staff-facing
+// reservation lists. Combined appointments are rendered as "base + add-on + ..."
+// with a summed price.
 func StaffAppointmentsFromModels(ms []models.Appointment, serviceNames map[uuid.UUID]string, servicePrices map[uuid.UUID]float64, servicePictures map[uuid.UUID]string, noShowAfterMinutes int) []Appointment {
 	out := make([]Appointment, len(ms))
 	for i, m := range ms {
 		out[i] = AppointmentFromModel(m)
-		out[i].ServiceName = serviceNames[m.ServiceID]
-		out[i].ServicePrice = servicePrices[m.ServiceID]
+		out[i].ServiceName = combinedServiceName(m, serviceNames)
+		out[i].ServicePrice = combinedServicePrice(m, servicePrices)
 		out[i].ServicePicture = servicePictures[m.ServiceID]
 		out[i].NoShowAfterMinutes = noShowAfterMinutes
 	}
 	return out
+}
+
+func combinedServiceName(m models.Appointment, names map[uuid.UUID]string) string {
+	if len(m.AdditionalServiceIDs) == 0 {
+		return names[m.ServiceID]
+	}
+	parts := make([]string, 0, len(m.AdditionalServiceIDs)+1)
+	parts = append(parts, names[m.ServiceID])
+	for _, id := range m.AdditionalServiceIDs {
+		parts = append(parts, names[id])
+	}
+	return strings.Join(parts, " + ")
+}
+
+func combinedServicePrice(m models.Appointment, prices map[uuid.UUID]float64) float64 {
+	total := prices[m.ServiceID]
+	for _, id := range m.AdditionalServiceIDs {
+		total += prices[id]
+	}
+	return total
 }
 
 // CustomerAppointmentsFromModels enriches customer appointments with each

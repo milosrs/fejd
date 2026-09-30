@@ -2514,6 +2514,119 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/business/{businessID}/services/{serviceID}/combinations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List combinable services
+         * @description Returns the services a base service may be combined with.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Service UUID */
+                    serviceID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Service"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        /**
+         * Set combinable services
+         * @description Replaces the set of services a base service may be combined with.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                    /** @description Service UUID */
+                    serviceID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Combinable service IDs */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.SetServiceCombinationsRequest"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.MessageResponse"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/business/{businessID}/services/{serviceID}/employees": {
         parameters: {
             query?: never;
@@ -3372,6 +3485,68 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/business/{slug}/services/{serviceID}/combinations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List combinable services
+         * @description Returns the services a base service may be combined with when booking.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business slug */
+                    slug: string;
+                    /** @description Service UUID */
+                    serviceID: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Service"][];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/business/{slug}/services/{serviceID}/employees": {
         parameters: {
             query?: never;
@@ -3454,6 +3629,8 @@ export interface paths {
                     employee_id: string;
                     /** @description Date (YYYY-MM-DD) */
                     date: string;
+                    /** @description Additional service UUIDs */
+                    additional_service_ids?: string[];
                 };
                 header?: never;
                 path: {
@@ -4398,6 +4575,11 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         "dto.Appointment": {
+            /**
+             * @description AdditionalServiceIDs are the add-on services combined onto the base
+             *     service, in display order.
+             */
+            additional_service_ids?: string[];
             business_id: string;
             /** @description BusinessLogo is the salon's logo URL path, populated for customer appointment lists. */
             business_logo?: string;
@@ -4612,6 +4794,11 @@ export interface components {
             cancellation_reason?: string;
         };
         "handler.CreateAppointmentRequest": {
+            /**
+             * @description AdditionalServiceIDs are combinable add-on services booked together with
+             *     the base service. Their durations and prices are added to the base.
+             */
+            additional_service_ids?: string[];
             /** @example 550e8400-e29b-41d4-a716-446655440000 */
             business_id: string;
             /** @example 550e8400-e29b-41d4-a716-446655440000 */
@@ -4748,6 +4935,14 @@ export interface components {
             price?: number;
         };
         "handler.SetEmployeeServicesRequest": {
+            /**
+             * @example [
+             *       "550e8400-e29b-41d4-a716-446655440000"
+             *     ]
+             */
+            service_ids: string[];
+        };
+        "handler.SetServiceCombinationsRequest": {
             /**
              * @example [
              *       "550e8400-e29b-41d4-a716-446655440000"
