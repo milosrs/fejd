@@ -3,6 +3,7 @@ import { renderToPipeableStream } from "react-dom/server"
 import { ServerRouter } from "react-router"
 import { createReadableStreamFromReadable } from "@react-router/node"
 import { QueryClientProvider } from "@tanstack/react-query"
+import { isbot } from "isbot"
 import { resolveQueryClient } from "./lib/context"
 
 export default function handleRequest(
@@ -13,6 +14,11 @@ export default function handleRequest(
   loadContext: unknown,
 ) {
   const queryClient = resolveQueryClient(loadContext)
+  // Crawlers get the fully-rendered HTML (meta + JSON-LD resolved); browsers
+  // get the shell early for faster TTFB.
+  const readyOption: "onShellReady" | "onAllReady" = isbot(request.headers.get("user-agent"))
+    ? "onAllReady"
+    : "onShellReady"
 
   return new Promise((resolve, reject) => {
     const { pipe, abort } = renderToPipeableStream(
@@ -20,9 +26,7 @@ export default function handleRequest(
         <ServerRouter context={routerContext} url={request.url} />
       </QueryClientProvider>,
       {
-        // Wait for loaders (and thus <Meta>/JSON-LD) before streaming so search
-        // crawlers receive fully server-rendered metadata.
-        onAllReady() {
+        [readyOption]() {
           const body = new PassThrough()
           responseHeaders.set("Content-Type", "text/html")
           resolve(

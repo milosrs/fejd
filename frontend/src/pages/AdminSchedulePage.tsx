@@ -7,7 +7,6 @@ import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
-import { Select } from "../components/ui/select"
 import { useI18n } from "../lib/i18n"
 import { WEEKDAY_ORDER } from "../lib/calendar"
 
@@ -46,7 +45,7 @@ export function AdminSchedulePage() {
   useEffect(() => {
     if (whData?.working_hours) {
       setHours(
-        whData.working_hours.map((wh: any) => ({
+        whData.working_hours.map((wh) => ({
           day_of_week: wh.day_of_week,
           start_time: wh.start_time,
           end_time: wh.end_time,
@@ -139,7 +138,7 @@ export function AdminSchedulePage() {
               onChange={(e) => setSelectedUserId(e.target.value)}
             >
               <option value="">{t("admin.schedule.selectPlaceholder")}</option>
-              {(employees || []).map((emp: any) => (
+              {(employees || []).map((emp) => (
                 <option key={emp.user_id} value={emp.user_id}>
                   {emp.display_name || emp.user_id}
                 </option>
@@ -191,7 +190,7 @@ export function AdminSchedulePage() {
               <CardContent className="space-y-3">
                 {whData?.overrides && whData.overrides.length > 0 && (
                   <div className="space-y-2 mb-4">
-                    {whData.overrides.map((o: any) => (
+                    {whData.overrides.map((o) => (
                       <div key={o.id} className="flex items-center justify-between p-2 bg-muted rounded-md">
                         <div>
                           <span className="font-medium">{o.override_date}</span>

@@ -53,8 +53,8 @@ RUN pnpm install --prod --frozen-lockfile --reporter=append-only \
     --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=120000 \
     --fetch-timeout=120000
 COPY --from=build /app/build ./build
-COPY --from=build /app/server.ts ./server.ts
+COPY --from=build /app/server.js ./server.js
 COPY --from=build /app/app ./app
 EXPOSE 80
 # Serve the SSR app via the custom Node server (provides the query-client load context).
-CMD ["node", "server.ts"]
+CMD ["node", "server.js"]

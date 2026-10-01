@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { POST, PUT, DELETE } from "../lib/api"
 import type { Section } from "../lib/sections"
+import type { components } from "../lib/api-types"
 
 const URL_ADMIN_SECTIONS = "/api/admin/business/{businessID}/sections" as const
 const URL_ADMIN_SECTIONS_ITEM =
@@ -13,14 +14,14 @@ type JsonObject = Record<string, unknown>
 function createSectionRequest(businessId: string, type: string, content: JsonObject) {
   return POST(URL_ADMIN_SECTIONS, {
     params: { path: { businessID: businessId } },
-    body: { type, content } as any,
+    body: { type, content } as unknown as components["schemas"]["handler.CreateSectionRequest"],
   })
 }
 
 function updateSectionRequest(businessId: string, sectionId: string, content: JsonObject) {
   return PUT(URL_ADMIN_SECTIONS_ITEM, {
     params: { path: { businessID: businessId, sectionID: sectionId } },
-    body: { content } as any,
+    body: { content } as unknown as components["schemas"]["handler.UpdateSectionRequest"],
   })
 }
 
@@ -33,7 +34,7 @@ function deleteSectionRequest(businessId: string, sectionId: string) {
 function reorderSectionsRequest(businessId: string, sectionIds: string[]) {
   return PUT(URL_ADMIN_SECTIONS_REORDER, {
     params: { path: { businessID: businessId } },
-    body: { section_ids: sectionIds } as any,
+    body: { section_ids: sectionIds } as unknown as components["schemas"]["handler.ReorderSectionsRequest"],
   })
 }
 

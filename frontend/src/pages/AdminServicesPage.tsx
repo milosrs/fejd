@@ -8,6 +8,9 @@ import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
 import { Card, CardHeader, CardTitle, CardContent } from "../components/ui/card"
 import { useI18n } from "../lib/i18n"
+import type { components } from "../lib/api-types"
+
+type Service = components["schemas"]["dto.Service"]
 
 export function AdminServicesPage() {
   const { businessId } = useParams<{ businessId: string }>()
@@ -60,7 +63,7 @@ export function AdminServicesPage() {
     }
   }
 
-  const handleUpdate = async (svc: any) => {
+  const handleUpdate = async (svc: Service) => {
     try {
       await updateService(businessId!, svc.id, {
         name: editName,
@@ -133,7 +136,7 @@ export function AdminServicesPage() {
               <p className="text-muted-foreground">{t("admin.services.empty")}</p>
             ) : (
               <div className="space-y-3">
-                {(services || []).map((svc: any) => (
+                {(services || []).map((svc) => (
                   <div key={svc.id} className="p-3 bg-muted rounded-md">
                     {editingId === svc.id ? (
                       <div className="space-y-2">
@@ -150,7 +153,7 @@ export function AdminServicesPage() {
                         <div>
                           <span className="font-medium">{svc.name}</span>
                           <span className="text-muted-foreground ml-3">{svc.duration_minutes} min</span>
-                          {svc.price > 0 && <span className="text-muted-foreground ml-3">${svc.price.toFixed(2)}</span>}
+                          {svc.price != null && svc.price > 0 && <span className="text-muted-foreground ml-3">${svc.price.toFixed(2)}</span>}
                           {!svc.active && <span className="text-red-500 ml-2">{t("admin.services.inactive")}</span>}
                         </div>
                         <div className="flex gap-2">

@@ -1,10 +1,8 @@
 import keycloak from "../keycloak"
-import type { AuthAdapter, AuthUserInfo } from "./types"
+import type { AuthAdapter, AuthUserInfo, JwtClaims } from "./types"
 
-function parsedToken(): Record<string, any> | undefined {
-  console.log("parsedToken() called")
-  console.log(keycloak.tokenParsed)
-  return keycloak.tokenParsed as Record<string, any> | undefined
+function parsedToken(): JwtClaims | undefined {
+  return keycloak.tokenParsed as JwtClaims | undefined
 }
 
 // The app stores its locale under "fejd-locale" (en | rs); map it to Keycloak's

@@ -216,7 +216,7 @@ export function SalonPolicyPage() {
     }
     setError("")
     if (repeatYearly) {
-      const [year, month, day] = date.split("-").map(Number)
+      const [, month, day] = date.split("-").map(Number)
       setDateClosures((prev) => [
         ...prev,
         { key: newClosureKey(), type: "yearly", month, day, reason: singleReason.trim() || undefined },

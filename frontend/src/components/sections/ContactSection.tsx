@@ -10,7 +10,10 @@ import { MapEmbed } from "./MapEmbed"
 // Address shown in the Contact section. Prefers the structured salon location
 // (set via the Location dialog), falling back to the legacy contact-section
 // address for salons that have not been migrated yet.
-function addressFor(content: ContactContent, salon: { business: { address_line?: string; city?: string; country?: string } } | undefined): string {
+function addressFor(
+  content: ContactContent,
+  salon: { business: { address_line?: string; city?: string; country?: string } } | undefined,
+): string {
   const structured = [
     salon?.business.address_line,
     salon?.business.city,
@@ -21,16 +24,26 @@ function addressFor(content: ContactContent, salon: { business: { address_line?:
   return structured || content.address || ""
 }
 
+// Phone shown in the Contact section. Prefers the structured salon phone (set
+// via the Location dialog), falling back to the legacy contact-section phone.
+function phoneFor(
+  content: ContactContent,
+  salon: { business: { phone?: string } } | undefined,
+): string {
+  return salon?.business.phone || content.phone || ""
+}
+
 export function ContactSection({ content }: { content: ContactContent }) {
   const { t } = useI18n()
   const { salon } = useSalonContext()
   const igUrl = content.instagram_url ? instagramUrl(content.instagram_url) : ""
   const igHandle = content.instagram_url ? instagramHandle(content.instagram_url) : ""
   const address = addressFor(content, salon)
+  const phone = phoneFor(content, salon)
 
   const hasContent = Boolean(
     content.heading ||
-      content.phone ||
+      phone ||
       content.email ||
       address ||
       content.rating_url ||
@@ -46,10 +59,10 @@ export function ContactSection({ content }: { content: ContactContent }) {
       <div className="flex flex-col gap-6 md:flex-row md:items-start">
         <div className="space-y-4 md:max-w-[50%]">
           <ul className="space-y-2 text-muted-foreground">
-            {content.phone && (
+            {phone && (
               <li className="flex items-center gap-2">
                 <Phone className="size-4" />
-                <a href={`tel:${content.phone}`}>{content.phone}</a>
+                <a href={`tel:${phone}`}>{phone}</a>
               </li>
             )}
             {content.email && (

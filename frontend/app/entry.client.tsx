@@ -29,10 +29,3 @@ startTransition(() => {
     </StrictMode>,
   )
 })
-
-if ("serviceWorker" in navigator) {
-  import("workbox-window").then(({ Workbox }) => {
-    const wb = new Workbox("/sw.js")
-    wb.register()
-  })
-}

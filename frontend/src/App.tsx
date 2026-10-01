@@ -71,14 +71,6 @@ export function AppInit({ children }: { children: React.ReactNode }) {
     init()
   }, [init])
 
-  const [appReady, setAppReady] = useState(() => typeof window === "undefined")
-
-  useEffect(() => {
-    if (!initialized) return
-    const t = setTimeout(() => setAppReady(true), 350)
-    return () => clearTimeout(t)
-  }, [initialized])
-
   // After authentication completes, send the user back to the route they were
   // on before logging in (relevant for the native app, which can be cold-started
   // by the redirect and lose its in-memory route).
@@ -113,10 +105,6 @@ export function AppInit({ children }: { children: React.ReactNode }) {
     if (!initialized || !authenticated) return
     registerPush().catch(() => {})
   }, [initialized, authenticated])
-
-  if (!appReady) {
-    return <Loader className={initialized ? "animate-fade-out" : undefined} />
-  }
 
   const isSalonView = (() => {
     if (subdomainSlug()) return true

@@ -11,9 +11,13 @@ type SalonData = {
     address_line?: string
     country?: string
     phone?: string
-    image?: string
   }
   services?: Array<{ name?: string; slug?: string; description?: string; price?: number }>
+  images?: {
+    hero?: string
+    logo?: string
+    background?: string
+  }
 }
 
 export async function loader({
@@ -26,7 +30,7 @@ export async function loader({
   context: unknown
 }) {
   const hostname = new URL(request.url).hostname
-  const slug = params.slug ?? resolveSubdomainSlug(hostname, BASE_DOMAIN, APP_HOST) ?? ""
+  const slug = resolveSubdomainSlug(hostname, BASE_DOMAIN, APP_HOST) ?? params.slug ?? ""
   const qc = resolveQueryClient(context)
 
   let salon: SalonData | null = null
@@ -61,6 +65,13 @@ function salonDescription(salon: SalonData | null): string {
   return `${name}${city ? ` in ${city}` : ""}. ${services}.`.trim()
 }
 
+function absoluteImageUrl(path: string | undefined, slug: string): string | undefined {
+  if (!path) return undefined
+  if (/^https?:\/\//.test(path)) return path
+  if (!BASE_DOMAIN) return undefined
+  return `https://${slug}.${BASE_DOMAIN}${path.startsWith("/") ? path : `/${path}`}`
+}
+
 export function meta({
   loaderData,
   location,
@@ -81,7 +92,9 @@ export function meta({
   const title = salonTitle(salon)
   const description = salonDescription(salon)
   const path = location?.pathname ?? "/"
-  const url = `https://${slug}.${BASE_DOMAIN}${path}`
+  const url = BASE_DOMAIN ? `https://${slug}.${BASE_DOMAIN}${path}` : null
+  const rootUrl = BASE_DOMAIN ? `https://${slug}.${BASE_DOMAIN}` : null
+  const image = absoluteImageUrl(salon.images?.hero ?? salon.images?.logo, slug)
 
   return [
     { title },
@@ -89,19 +102,20 @@ export function meta({
     { property: "og:title", content: title },
     { property: "og:description", content: description },
     { property: "og:type", content: "website" },
-    { property: "og:url", content: url },
+    ...(url ? [{ property: "og:url", content: url }] : []),
+    ...(image ? [{ property: "og:image", content: image }] : []),
     { name: "twitter:card", content: "summary_large_image" },
     { name: "twitter:title", content: title },
     { name: "twitter:description", content: description },
-    { tagName: "link", rel: "canonical", href: url },
-    { tagName: "link", rel: "alternate", hrefLang: "en", href: url },
-    { tagName: "link", rel: "alternate", hrefLang: "sr", href: url },
+    ...(image ? [{ name: "twitter:image", content: image }] : []),
+    ...(url ? [{ tagName: "link", rel: "canonical", href: url }] : []),
     {
       "script:ld+json": {
         "@context": "https://schema.org",
         "@type": "HairSalon",
         name: salon.business?.name,
-        url: `https://${slug}.${BASE_DOMAIN}`,
+        ...(rootUrl ? { url: rootUrl } : {}),
+        ...(image ? { image } : {}),
         address: {
           "@type": "PostalAddress",
           streetAddress: salon.business?.address_line,

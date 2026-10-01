@@ -7,6 +7,9 @@ const mockPolicy = {
   no_show_after_minutes: 120,
   slot_interval_minutes: 30,
   auto_approve: false,
+  appointment_reminder_enabled: false,
+  appointment_reminder_lead_minutes: 0,
+  staff_notifications_enabled: false,
   working_hours: [
     { day_of_week: 0, start_time: "09:00", end_time: "17:00" },
     { day_of_week: 1, start_time: "09:00", end_time: "17:00" },

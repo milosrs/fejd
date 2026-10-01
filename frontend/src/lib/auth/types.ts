@@ -4,6 +4,19 @@ export interface AuthUserInfo {
   name: string
 }
 
+/** Claims read from the OIDC access token (standard + fejd custom claims). */
+export interface JwtClaims {
+  sub?: string
+  email?: string
+  name?: string
+  preferred_username?: string
+  email_verified?: boolean
+  exp?: number
+  realm_access?: { roles?: string[] }
+  resource_access?: Record<string, { roles?: string[] }>
+  registration_role?: string
+}
+
 /**
  * Platform-agnostic auth surface. The web adapter wraps keycloak-js; the
  * native adapter implements the OIDC authorization-code + PKCE flow via

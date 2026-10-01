@@ -351,7 +351,7 @@ export async function uploadServiceImage(businessId: string, serviceId: string, 
   formData.append("file", file)
   const { data } = await POST(URL_ADMIN_SERVICE_IMAGE, {
     params: { path: { businessID: businessId, serviceID: serviceId } },
-    body: formData as any,
+    body: formData as unknown as { file: string },
   })
   return data
 }
@@ -488,7 +488,7 @@ export async function uploadEmployeeImage(businessId: string, userId: string, fi
   formData.append("file", file)
   const { data } = await POST(URL_ADMIN_EMPLOYEE_IMAGE, {
     params: { path: { businessID: businessId, userID: userId } },
-    body: formData as any,
+    body: formData as unknown as { file: string },
   })
   return data
 }
@@ -497,7 +497,7 @@ export async function uploadAvatar(file: File) {
   const formData = new FormData()
   formData.append("file", file)
   const { data } = await POST(URL_ME_AVATAR, {
-    body: formData as any,
+    body: formData as unknown as { file: string },
   })
   return data
 }
@@ -514,7 +514,7 @@ export async function uploadBusinessImage(
   formData.append("file", file)
   const { data } = await POST(URL_ADMIN_BUSINESS_IMAGES, {
     params: { path: { businessID: businessId } },
-    body: formData as any,
+    body: formData as unknown as { purpose?: string; file: string },
   })
   return data
 }

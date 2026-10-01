@@ -111,6 +111,7 @@ func (h *BusinessHandler) Sitemap(w http.ResponseWriter, r *http.Request) {
 		host := "https://" + biz.Slug + "." + base
 		b.WriteString(urlEntry(host+"/", biz.UpdatedAt))
 		b.WriteString(urlEntry(host+"/services", biz.UpdatedAt))
+		b.WriteString(urlEntry(host+"/barbers", biz.UpdatedAt))
 
 		services, err := h.serviceStore.ListByBusiness(r.Context(), biz.ID)
 		if err != nil {

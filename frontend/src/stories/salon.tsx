@@ -12,6 +12,7 @@ import type { Me } from "../hooks/useMe"
 import type { Service, Employee } from "../hooks/useApi"
 import type { Section } from "../lib/sections"
 import type { BusinessHours, BusinessClosure } from "../lib/salonHours"
+import type { components } from "../lib/api-types"
 
 export const mockSalon: Salon = {
   business: {
@@ -211,7 +212,7 @@ interface SalonProvidersProps {
   sections?: Section[]
   services?: Service[]
   employees?: Employee[]
-  policy?: any
+  policy?: components["schemas"]["handler.SalonPolicyResponse"]
   workingHours?: BusinessHours[]
   closures?: BusinessClosure[]
   children: React.ReactNode

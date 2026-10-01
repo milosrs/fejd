@@ -23,7 +23,7 @@ const SAME_MESSAGE_DELAY_MS = 2500
 const AUTO_DISMISS_MS = 6000
 
 let counter = 0
-let queue: Toast[] = []
+const queue: Toast[] = []
 const lastShownAt = new Map<string, number>()
 
 function scheduleDismiss(id: string) {

@@ -9,8 +9,9 @@
     "dev:spa": "vite --config vite.config.spa.ts",
     "build": "react-router build",
     "build:spa": "tsc -b && vite build --config vite.config.spa.ts",
-    "start": "node server.ts",
-    "preview": "vite preview",
+    "start": "node server.js",
+    "preview": "node server.js",
+    "lint": "eslint .",
     "test": "vitest",
     "storybook": "storybook dev -p 6006",
     "build-storybook": "storybook build"
@@ -48,6 +49,7 @@
     "clsx": "^2.1.1",
     "date-fns": "^4.4.0",
     "firebase": "^12.19.0",
+    "isbot": "^5.2.2",
     "keycloak-js": "latest",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.45.0",
@@ -68,6 +70,7 @@
     "zustand": "latest"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@storybook/addon-a11y": "^10.6.0",
     "@storybook/addon-docs": "^10.6.0",
     "@storybook/addon-vitest": "^10.6.0",
@@ -78,9 +81,13 @@
     "@vitest/browser": "^4.1.11",
     "@vitest/browser-playwright": "^4.1.11",
     "@vitest/coverage-v8": "^5.0.0",
+    "eslint": "^10.11.0",
+    "eslint-plugin-react-hooks": "~5.2.0",
+    "globals": "^17.12.0",
     "playwright": "^1.63.0",
     "storybook": "^10.6.0",
-    "typescript": "latest",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.0",
     "vitest": "^4.1.11"
   }
 }

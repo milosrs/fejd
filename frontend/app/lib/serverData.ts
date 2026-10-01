@@ -2,9 +2,11 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query"
 
 // API origin for server-side prefetch. At runtime (production) the SSR server
 // reaches the backend over the internal network; in local dev it falls back to
-// localhost.
+// localhost. Guarded so it never references `process` in the browser bundle.
 const API_ORIGIN =
-  process.env.API_ORIGIN || import.meta.env.VITE_API_URL || "http://localhost:8080"
+  (typeof process !== "undefined" && process.env?.API_ORIGIN) ||
+  import.meta.env.VITE_API_URL ||
+  "http://localhost:8080"
 
 export async function fetchPublic<T = unknown>(path: string): Promise<T> {
   const res = await fetch(`${API_ORIGIN}${path}`)

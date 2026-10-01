@@ -1,4 +1,9 @@
-import { useLayoutEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
+
+// useLayoutEffect on the client, useEffect on the server, so SSR does not log
+// "useLayoutEffect does nothing on the server" warnings.
+const useIsomorphicLayoutEffect =
+  typeof window !== "undefined" ? useLayoutEffect : useEffect
 
 // useHeaderHeightMeasure publishes the rendered height of the element it is
 // attached to as a CSS variable on <html>, so descendants can size themselves
@@ -7,7 +12,7 @@ import { useLayoutEffect, useState } from "react"
 export function useHeaderHeightMeasure(variable: `--${string}`) {
   const [el, setEl] = useState<HTMLElement | null>(null)
 
-  useLayoutEffect(() => {
+  useIsomorphicLayoutEffect(() => {
     if (!el) return
 
     const update = () => {

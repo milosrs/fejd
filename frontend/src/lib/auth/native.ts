@@ -2,7 +2,7 @@ import { Browser } from "@capacitor/browser"
 import { App } from "@capacitor/app"
 import { SecureStorage } from "@aparajita/capacitor-secure-storage"
 import { parseInviteToken } from "../invite"
-import type { AuthAdapter, AuthUserInfo } from "./types"
+import type { AuthAdapter, AuthUserInfo, JwtClaims } from "./types"
 
 const KEYCLOAK_URL = import.meta.env.VITE_KEYCLOAK_URL || "http://localhost:9090"
 const KEYCLOAK_REALM = import.meta.env.VITE_KEYCLOAK_REALM || "fejd"
@@ -38,11 +38,11 @@ async function generateChallenge(verifier: string): Promise<string> {
   return base64UrlEncode(new Uint8Array(await sha256(verifier)))
 }
 
-function decodeJwt(token: string): Record<string, any> {
+function decodeJwt(token: string): JwtClaims {
   const payload = token.split(".")[1]
   const base64 = payload.replace(/-/g, "+").replace(/_/g, "/")
   const padded = base64.padEnd(Math.ceil(base64.length / 4) * 4, "=")
-  return JSON.parse(atob(padded))
+  return JSON.parse(atob(padded)) as JwtClaims
 }
 
 // rememberReturnTo records the current in-app route so the user can be sent
@@ -290,7 +290,7 @@ export const nativeAdapter: AuthAdapter = {
   async getToken() {
     if (!accessToken) return undefined
     const claims = decodeJwt(accessToken)
-    if (claims.exp * 1000 < Date.now() - 30_000) {
+    if ((claims.exp ?? 0) * 1000 < Date.now() - 30_000) {
       await refreshTokens()
     }
     return accessToken ?? undefined

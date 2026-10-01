@@ -1,3 +1,6 @@
+# pnpm settings (pnpm 12+ reads these from here, not package.json).
+
+# Allow these dependencies to run their install/postinstall build scripts.
 allowBuilds:
   '@firebase/util': true
   esbuild: true
