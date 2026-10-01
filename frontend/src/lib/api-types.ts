@@ -1290,6 +1290,89 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/admin/business/{businessID}/location": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Update salon location
+         * @description Persists the salon's structured location (address, city, geo) for local SEO and JSON-LD. Geocodes via Nominatim when coordinates are omitted.
+         */
+        put: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business UUID */
+                    businessID: string;
+                };
+                cookie?: never;
+            };
+            /** @description Salon location */
+            requestBody: {
+                content: {
+                    "application/json": components["schemas"]["handler.BusinessLocationInput"];
+                };
+            };
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["dto.Business"];
+                    };
+                };
+                /** @description Bad Request */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/admin/business/{businessID}/me/appointments": {
         parameters: {
             query?: never;
@@ -3609,6 +3692,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/business/{slug}/services/{serviceSlug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get a single service by slug
+         * @description Returns a service and its salon context (name, city) by salon slug and service slug.
+         */
+        get: {
+            parameters: {
+                query?: never;
+                header?: never;
+                path: {
+                    /** @description Business slug */
+                    slug: string;
+                    /** @description Service slug */
+                    serviceSlug: string;
+                };
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description OK */
+                200: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ServiceDetailResponse"];
+                    };
+                };
+                /** @description Not Found */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["handler.ErrorResponse"];
+                    };
+                };
+            };
+        };
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/business/{slug}/slots": {
         parameters: {
             query?: never;
@@ -4621,11 +4757,24 @@ export interface components {
             status: string;
         };
         "dto.Business": {
+            /** @description AddressLine is the salon's street address (structured for local SEO). */
+            address_line?: string;
             cancellation_lead_hours: number;
+            /** @description City is the salon's locality (e.g. "Sremska Mitrovica"). */
+            city?: string;
+            /** @description Country is the ISO country code (e.g. "RS"). */
+            country?: string;
             created_at: string;
             id: string;
+            /** @description Latitude/Longitude are the geo coordinates, geocoded from the address. */
+            latitude?: number;
+            longitude?: number;
             name: string;
             no_show_after_minutes: number;
+            /** @description Phone is the salon's public phone number. */
+            phone?: string;
+            /** @description PostalCode is the salon's postal code. */
+            postal_code?: string;
             slot_interval_minutes: number;
             slug: string;
             updated_at: string;
@@ -4723,6 +4872,7 @@ export interface components {
             name: string;
             picture_id?: string;
             price?: number;
+            slug: string;
         };
         "dto.TimeSlot": {
             end_time: string;
@@ -4782,6 +4932,17 @@ export interface components {
             background?: string;
             hero?: string;
             logo?: string;
+        };
+        "handler.BusinessLocationInput": {
+            address_line?: string;
+            /** @example Sremska Mitrovica */
+            city: string;
+            /** @example RS */
+            country?: string;
+            latitude?: number;
+            longitude?: number;
+            phone?: string;
+            postal_code?: string;
         };
         "handler.BusinessResponse": {
             business: components["schemas"]["dto.Business"];
@@ -4921,6 +5082,10 @@ export interface components {
             /** @example true */
             staff_notifications_enabled: boolean;
             working_hours: components["schemas"]["dto.BusinessHours"][];
+        };
+        "handler.ServiceDetailResponse": {
+            business: components["schemas"]["dto.Business"];
+            service: components["schemas"]["dto.Service"];
         };
         "handler.ServiceInput": {
             /** @example true */

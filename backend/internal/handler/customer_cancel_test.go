@@ -67,7 +67,7 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 	emp1, err := buStore.GetByBusinessAndUser(ctx, b.ID, "emp-1")
 	require.NoError(t, err)
 
-	svc := &models.Service{BusinessID: b.ID, Name: "Haircut", DurationMinutes: 30, Active: true}
+	svc := &models.Service{BusinessID: b.ID, Name: "Haircut", Slug: "haircut", DurationMinutes: 30, Active: true}
 	require.NoError(t, serviceStore.Create(ctx, svc))
 	require.NoError(t, employeeServiceStore.Assign(ctx, emp1.ID, svc.ID))
 

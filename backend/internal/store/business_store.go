@@ -20,7 +20,7 @@ func NewBusinessStore(pool *pgxpool.Pool) *BusinessStore {
 
 func (s *BusinessStore) GetBySlug(ctx context.Context, slug string) (*models.Business, error) {
 	sql, args, err := psql.
-		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body").
+		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body", "COALESCE(address_line, '')", "COALESCE(city, '')", "COALESCE(postal_code, '')", "COALESCE(country, '')", "latitude", "longitude", "COALESCE(phone, '')").
 		From("businesses").
 		Where(sq.Eq{"slug": slug}).
 		ToSql()
@@ -29,7 +29,7 @@ func (s *BusinessStore) GetBySlug(ctx context.Context, slug string) (*models.Bus
 	}
 
 	var b models.Business
-	err = s.pool.QueryRow(ctx, sql, args...).Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody)
+	err = s.pool.QueryRow(ctx, sql, args...).Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody, &b.AddressLine, &b.City, &b.PostalCode, &b.Country, &b.Latitude, &b.Longitude, &b.Phone)
 	if err != nil {
 		return nil, fmt.Errorf("business not found: %w", err)
 	}
@@ -38,7 +38,7 @@ func (s *BusinessStore) GetBySlug(ctx context.Context, slug string) (*models.Bus
 
 func (s *BusinessStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Business, error) {
 	sql, args, err := psql.
-		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body").
+		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body", "COALESCE(address_line, '')", "COALESCE(city, '')", "COALESCE(postal_code, '')", "COALESCE(country, '')", "latitude", "longitude", "COALESCE(phone, '')").
 		From("businesses").
 		Where(sq.Eq{"id": id}).
 		ToSql()
@@ -47,7 +47,7 @@ func (s *BusinessStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Busi
 	}
 
 	var b models.Business
-	err = s.pool.QueryRow(ctx, sql, args...).Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody)
+	err = s.pool.QueryRow(ctx, sql, args...).Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody, &b.AddressLine, &b.City, &b.PostalCode, &b.Country, &b.Latitude, &b.Longitude, &b.Phone)
 	if err != nil {
 		return nil, fmt.Errorf("business not found: %w", err)
 	}
@@ -56,7 +56,7 @@ func (s *BusinessStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Busi
 
 func (s *BusinessStore) List(ctx context.Context) ([]models.Business, error) {
 	sql, args, err := psql.
-		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body").
+		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body", "COALESCE(address_line, '')", "COALESCE(city, '')", "COALESCE(postal_code, '')", "COALESCE(country, '')", "latitude", "longitude", "COALESCE(phone, '')").
 		From("businesses").
 		OrderBy("created_at").
 		ToSql()
@@ -73,7 +73,37 @@ func (s *BusinessStore) List(ctx context.Context) ([]models.Business, error) {
 	var businesses []models.Business
 	for rows.Next() {
 		var b models.Business
-		if err := rows.Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody); err != nil {
+		if err := rows.Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody, &b.AddressLine, &b.City, &b.PostalCode, &b.Country, &b.Latitude, &b.Longitude, &b.Phone); err != nil {
+			return nil, fmt.Errorf("failed to scan business: %w", err)
+		}
+		businesses = append(businesses, b)
+	}
+	return businesses, nil
+}
+
+// ListNeedingGeocode returns businesses that have an address but are missing a
+// city or geo coordinates, for the one-time location geocoding backfill.
+func (s *BusinessStore) ListNeedingGeocode(ctx context.Context) ([]models.Business, error) {
+	sql, args, err := psql.
+		Select("id", "name", "slug", "created_at", "updated_at", "cancellation_lead_hours", "no_show_after_minutes", "slot_interval_minutes", "auto_approve", "appointment_reminder_enabled", "appointment_reminder_lead_minutes", "staff_notifications_enabled", "reminder_title", "reminder_body", "COALESCE(address_line, '')", "COALESCE(city, '')", "COALESCE(postal_code, '')", "COALESCE(country, '')", "latitude", "longitude", "COALESCE(phone, '')").
+		From("businesses").
+		Where(sq.Expr("COALESCE(address_line, '') <> ''")).
+		Where(sq.Expr("city IS NULL OR latitude IS NULL OR longitude IS NULL")).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	rows, err := s.pool.Query(ctx, sql, args...)
+	if err != nil {
+		return nil, fmt.Errorf("failed to list businesses needing geocode: %w", err)
+	}
+	defer rows.Close()
+
+	var businesses []models.Business
+	for rows.Next() {
+		var b models.Business
+		if err := rows.Scan(&b.ID, &b.Name, &b.Slug, &b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AutoApprove, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody, &b.AddressLine, &b.City, &b.PostalCode, &b.Country, &b.Latitude, &b.Longitude, &b.Phone); err != nil {
 			return nil, fmt.Errorf("failed to scan business: %w", err)
 		}
 		businesses = append(businesses, b)
@@ -118,13 +148,13 @@ func (s *BusinessStore) Create(ctx context.Context, q Querier, b *models.Busines
 		Insert("businesses").
 		Columns("id", "name", "slug").
 		Values(b.ID, b.Name, b.Slug).
-		Suffix("RETURNING created_at, updated_at, cancellation_lead_hours, no_show_after_minutes, slot_interval_minutes, appointment_reminder_enabled, appointment_reminder_lead_minutes, staff_notifications_enabled, reminder_title, reminder_body").
+		Suffix("RETURNING created_at, updated_at, cancellation_lead_hours, no_show_after_minutes, slot_interval_minutes, appointment_reminder_enabled, appointment_reminder_lead_minutes, staff_notifications_enabled, reminder_title, reminder_body, COALESCE(address_line, ''), COALESCE(city, ''), COALESCE(postal_code, ''), COALESCE(country, ''), latitude, longitude, COALESCE(phone, '')").
 		ToSql()
 	if err != nil {
 		return fmt.Errorf("failed to build query: %w", err)
 	}
 
-	return q.QueryRow(ctx, sql, args...).Scan(&b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody)
+	return q.QueryRow(ctx, sql, args...).Scan(&b.CreatedAt, &b.UpdatedAt, &b.CancellationLeadHours, &b.NoShowAfterMinutes, &b.SlotIntervalMinutes, &b.AppointmentReminderEnabled, &b.AppointmentReminderLeadMinutes, &b.StaffNotificationsEnabled, &b.ReminderTitle, &b.ReminderBody, &b.AddressLine, &b.City, &b.PostalCode, &b.Country, &b.Latitude, &b.Longitude, &b.Phone)
 }
 
 // UpdatePolicy updates a business's cancellation, no-show, slot, automatic
@@ -149,6 +179,38 @@ func (s *BusinessStore) UpdatePolicy(ctx context.Context, businessID uuid.UUID, 
 
 	_, err = s.pool.Exec(ctx, sql, args...)
 	return err
+}
+
+// UpdateLocation persists the salon's structured location. City is required by
+// the caller; the geo coordinates are nullable and set by geocoding.
+func (s *BusinessStore) UpdateLocation(ctx context.Context, businessID uuid.UUID, addressLine, city, postalCode, country, phone string, lat, lon *float64) error {
+	sql, args, err := psql.
+		Update("businesses").
+		Set("address_line", nullIfEmpty(addressLine)).
+		Set("city", nullIfEmpty(city)).
+		Set("postal_code", nullIfEmpty(postalCode)).
+		Set("country", nullIfEmpty(country)).
+		Set("phone", nullIfEmpty(phone)).
+		Set("latitude", lat).
+		Set("longitude", lon).
+		Set("updated_at", sq.Expr("now()")).
+		Where(sq.Eq{"id": businessID}).
+		ToSql()
+	if err != nil {
+		return fmt.Errorf("failed to build query: %w", err)
+	}
+
+	_, err = s.pool.Exec(ctx, sql, args...)
+	return err
+}
+
+// nullIfEmpty maps an empty string to NULL so optional location fields stay
+// NULL rather than empty strings.
+func nullIfEmpty(s string) any {
+	if s == "" {
+		return nil
+	}
+	return s
 }
 
 // Rename updates a business's display name and slug.

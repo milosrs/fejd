@@ -33,10 +33,10 @@ func TestServiceStore_LongestDurationByEmployee(t *testing.T) {
 	long := uuid.New()
 	inactive := uuid.New()
 	_, err = db.pool.Exec(ctx, `
-		INSERT INTO services (id, business_id, name, duration_minutes, active) VALUES
-		($1, $4, 'Haircut', 30, true),
-		($2, $4, 'Coloring', 90, true),
-		($3, $4, 'Retired', 120, false)`,
+		INSERT INTO services (id, business_id, name, slug, duration_minutes, active) VALUES
+		($1, $4, 'Haircut', 'haircut', 30, true),
+		($2, $4, 'Coloring', 'coloring', 90, true),
+		($3, $4, 'Retired', 'retired', 120, false)`,
 		short, long, inactive, businessID,
 	)
 	require.NoError(t, err)

@@ -156,6 +156,19 @@ type ServiceInput struct {
 	PictureID       *uuid.UUID `json:"picture_id,omitempty"`
 }
 
+// BusinessLocationInput is the structured salon location used for local SEO and
+// JSON-LD. City is required; the geo coordinates are normally filled by
+// geocoding but may be supplied explicitly.
+type BusinessLocationInput struct {
+	AddressLine string   `json:"address_line,omitempty"`
+	City        string   `json:"city" validate:"required" example:"Sremska Mitrovica"`
+	PostalCode  string   `json:"postal_code,omitempty"`
+	Country     string   `json:"country,omitempty" example:"RS"`
+	Phone       string   `json:"phone,omitempty"`
+	Latitude    *float64 `json:"latitude,omitempty"`
+	Longitude   *float64 `json:"longitude,omitempty"`
+}
+
 type WorkingHoursOverrideInput struct {
 	OverrideDate time.Time  `json:"override_date" validate:"required" example:"2024-12-25"`
 	StartTime    *time.Time `json:"start_time,omitempty" example:"10:00"`
@@ -206,6 +219,13 @@ type BusinessResponse struct {
 	Services  []dto.Service      `json:"services" validate:"required"`
 	Employees []dto.BusinessUser `json:"employees" validate:"required"`
 	Images    BusinessImages     `json:"images" validate:"required"`
+}
+
+// ServiceDetailResponse pairs a single service with its salon context for the
+// SSR service detail page.
+type ServiceDetailResponse struct {
+	Service  dto.Service  `json:"service" validate:"required"`
+	Business dto.Business `json:"business" validate:"required"`
 }
 
 // BusinessImages exposes the salon's public business images as URLs.

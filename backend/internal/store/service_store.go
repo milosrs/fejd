@@ -40,7 +40,7 @@ func (s *ServiceStore) LongestDurationByEmployee(ctx context.Context, businessUs
 
 func (s *ServiceStore) ListByBusiness(ctx context.Context, businessID uuid.UUID) ([]models.Service, error) {
 	sql, args, err := psql.
-		Select("id", "business_id", "name", "duration_minutes", "price", "active", "COALESCE(description, '')", "picture_id", "created_at").
+		Select("id", "business_id", "name", "slug", "duration_minutes", "price", "active", "COALESCE(description, '')", "picture_id", "created_at").
 		From("services").
 		Where(sq.Eq{"business_id": businessID}).
 		OrderBy("name").
@@ -68,7 +68,7 @@ func (s *ServiceStore) ListByBusiness(ctx context.Context, businessID uuid.UUID)
 
 func (s *ServiceStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Service, error) {
 	sql, args, err := psql.
-		Select("id", "business_id", "name", "duration_minutes", "price", "active", "COALESCE(description, '')", "picture_id", "created_at").
+		Select("id", "business_id", "name", "slug", "duration_minutes", "price", "active", "COALESCE(description, '')", "picture_id", "created_at").
 		From("services").
 		Where(sq.Eq{"id": id}).
 		ToSql()
@@ -79,10 +79,46 @@ func (s *ServiceStore) GetByID(ctx context.Context, id uuid.UUID) (*models.Servi
 	return scanService(s.pool.QueryRow(ctx, sql, args...))
 }
 
+// GetBySlug returns a service by its per-business slug.
+func (s *ServiceStore) GetBySlug(ctx context.Context, businessID uuid.UUID, slug string) (*models.Service, error) {
+	sql, args, err := psql.
+		Select("id", "business_id", "name", "slug", "duration_minutes", "price", "active", "COALESCE(description, '')", "picture_id", "created_at").
+		From("services").
+		Where(sq.Eq{"business_id": businessID, "slug": slug}).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	return scanService(s.pool.QueryRow(ctx, sql, args...))
+}
+
+// SlugTakenWithinBusiness reports whether a service other than excludeID
+// already uses the given slug within the business.
+func (s *ServiceStore) SlugTakenWithinBusiness(ctx context.Context, q Querier, businessID uuid.UUID, slug string, excludeID uuid.UUID) (bool, error) {
+	sql, args, err := psql.
+		Select("1").
+		From("services").
+		Where(sq.Eq{"business_id": businessID, "slug": slug}).
+		Where(sq.NotEq{"id": excludeID}).
+		Prefix("SELECT EXISTS (").
+		Suffix(")").
+		ToSql()
+	if err != nil {
+		return false, fmt.Errorf("failed to build query: %w", err)
+	}
+
+	var exists bool
+	if err := q.QueryRow(ctx, sql, args...).Scan(&exists); err != nil {
+		return false, fmt.Errorf("failed to check service slug: %w", err)
+	}
+	return exists, nil
+}
+
 // ListByBusinessUser returns the active services an employee offers.
 func (s *ServiceStore) ListByBusinessUser(ctx context.Context, businessUserID uuid.UUID) ([]models.Service, error) {
 	sql, args, err := psql.
-		Select("s.id", "s.business_id", "s.name", "s.duration_minutes", "s.price", "s.active", "COALESCE(s.description, '')", "s.picture_id", "s.created_at").
+		Select("s.id", "s.business_id", "s.name", "s.slug", "s.duration_minutes", "s.price", "s.active", "COALESCE(s.description, '')", "s.picture_id", "s.created_at").
 		From("services s").
 		Join("employee_services es ON es.service_id = s.id").
 		Where(sq.Eq{"es.business_user_id": businessUserID, "s.active": true}).
@@ -115,8 +151,8 @@ func (s *ServiceStore) Create(ctx context.Context, svc *models.Service) error {
 	}
 	sql, args, err := psql.
 		Insert("services").
-		Columns("id", "business_id", "name", "duration_minutes", "price", "active", "description", "picture_id").
-		Values(svc.ID, svc.BusinessID, svc.Name, svc.DurationMinutes, svc.Price, svc.Active, svc.Description, nullableUUID(svc.PictureID)).
+		Columns("id", "business_id", "name", "slug", "duration_minutes", "price", "active", "description", "picture_id").
+		Values(svc.ID, svc.BusinessID, svc.Name, svc.Slug, svc.DurationMinutes, svc.Price, svc.Active, svc.Description, nullableUUID(svc.PictureID)).
 		Suffix("RETURNING created_at").
 		ToSql()
 	if err != nil {
@@ -186,7 +222,7 @@ func scanService(row rowScanner) (*models.Service, error) {
 	var svc models.Service
 	var price *float64
 	var pictureID *uuid.UUID
-	if err := row.Scan(&svc.ID, &svc.BusinessID, &svc.Name, &svc.DurationMinutes, &price, &svc.Active, &svc.Description, &pictureID, &svc.CreatedAt); err != nil {
+	if err := row.Scan(&svc.ID, &svc.BusinessID, &svc.Name, &svc.Slug, &svc.DurationMinutes, &price, &svc.Active, &svc.Description, &pictureID, &svc.CreatedAt); err != nil {
 		return nil, fmt.Errorf("service not found: %w", err)
 	}
 	if price != nil {

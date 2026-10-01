@@ -50,7 +50,9 @@ export function ServicesPage() {
   const handleBook = (serviceId: string) => {
     reset()
     setService(serviceId)
-    navigate(`${salonPath(slug, "/book")}?service=${serviceId}`)
+    const svc = (data ?? []).find((s) => s.id === serviceId)
+    const target = svc?.slug ?? serviceId
+    navigate(`${salonPath(slug, "/book")}/${target}`)
   }
 
   const handleSubmit = async (values: ServiceFormValues) => {

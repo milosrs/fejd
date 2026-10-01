@@ -111,6 +111,38 @@ func (h *BusinessHandler) GetBusiness(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// GetService godoc
+// @Summary      Get a single service by slug
+// @Description  Returns a service and its salon context (name, city) by salon slug and service slug.
+// @Tags         public
+// @Produce      json
+// @Param        slug path string true "Business slug"
+// @Param        serviceSlug path string true "Service slug"
+// @Success      200 {object} ServiceDetailResponse
+// @Failure      404 {object} ErrorResponse
+// @Router       /api/business/{slug}/services/{serviceSlug} [get]
+func (h *BusinessHandler) GetService(w http.ResponseWriter, r *http.Request) {
+	slug := chi.URLParam(r, "slug")
+	serviceSlug := chi.URLParam(r, "serviceSlug")
+
+	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+
+	svc, err := h.serviceStore.GetBySlug(r.Context(), b.ID, serviceSlug)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "service not found")
+		return
+	}
+
+	writeJSON(w, http.StatusOK, ServiceDetailResponse{
+		Service:  dto.ServiceFromModel(*svc),
+		Business: dto.BusinessFromModel(*b),
+	})
+}
+
 func (h *BusinessHandler) businessImages(ctx context.Context, businessID uuid.UUID) BusinessImages {
 	links, err := h.imageLinkStore.ListByEntity(ctx, "business", businessID)
 	if err != nil {

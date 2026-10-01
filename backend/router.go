@@ -54,6 +54,7 @@ func newRouter(
 		r.Route("/business/{slug}", func(r chi.Router) {
 			r.Get("/", businessHandler.GetBusiness)
 			r.Get("/services", businessHandler.GetServices)
+			r.Get("/services/{serviceSlug}", businessHandler.GetService)
 			r.Get("/services/{serviceID}/employees", businessHandler.GetServiceEmployees)
 			r.Get("/services/{serviceID}/combinations", businessHandler.GetServiceCombinations)
 			r.Get("/employees", businessHandler.GetEmployees)
@@ -134,6 +135,7 @@ func newRouter(
 				r.Use(customMiddleware.RequireBusinessAdmin(buStore))
 
 				r.Put("/name", adminHandler.RenameBusiness)
+				r.Put("/location", adminHandler.UpdateBusinessLocation)
 				r.Delete("/", adminHandler.DeleteBusiness)
 
 				r.Post("/employees", adminHandler.CreateEmployee)

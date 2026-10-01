@@ -75,7 +75,7 @@ func TestAdminHandler_CreateEmployee(t *testing.T) {
 
 	svcID := uuid.New()
 	_, err := pool.Exec(ctx,
-		`INSERT INTO services (id, business_id, name, duration_minutes, active) VALUES ($1, $2, 'Haircut', 30, true)`,
+		`INSERT INTO services (id, business_id, name, slug, duration_minutes, active) VALUES ($1, $2, 'Haircut', 'haircut', 30, true)`,
 		svcID, b.ID,
 	)
 	require.NoError(t, err)

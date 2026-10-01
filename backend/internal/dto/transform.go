@@ -19,6 +19,13 @@ func BusinessFromModel(m models.Business) Business {
 		CancellationLeadHours: m.CancellationLeadHours,
 		NoShowAfterMinutes:    m.NoShowAfterMinutes,
 		SlotIntervalMinutes:   m.SlotIntervalMinutes,
+		AddressLine:           m.AddressLine,
+		City:                  m.City,
+		PostalCode:            m.PostalCode,
+		Country:               m.Country,
+		Latitude:              m.Latitude,
+		Longitude:             m.Longitude,
+		Phone:                 m.Phone,
 	}
 }
 
@@ -109,6 +116,7 @@ func ServiceFromModel(m models.Service) Service {
 		ID:              m.ID,
 		BusinessID:      m.BusinessID,
 		Name:            m.Name,
+		Slug:            m.Slug,
 		DurationMinutes: m.DurationMinutes,
 		Price:           m.Price,
 		Active:          m.Active,

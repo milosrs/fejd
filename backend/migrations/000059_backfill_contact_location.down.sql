@@ -1,0 +1,2 @@
+-- Reversing the address/phone copy is intentionally a no-op: the source data
+-- still lives in the contact section, and re-running the up migration is safe.

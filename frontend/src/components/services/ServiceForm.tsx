@@ -125,6 +125,7 @@ export function ServiceForm({
     business_id: "",
     created_at: "",
     name: name.trim() || t("services.previewName"),
+    slug: "",
     description: description.trim() || undefined,
     duration_minutes: parseInt(duration) || 0,
     price: price ? parseFloat(price) : undefined,

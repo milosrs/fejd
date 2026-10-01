@@ -16,6 +16,19 @@ type Business struct {
 	CancellationLeadHours int       `json:"cancellation_lead_hours" validate:"required"`
 	NoShowAfterMinutes    int       `json:"no_show_after_minutes" validate:"required"`
 	SlotIntervalMinutes   int       `json:"slot_interval_minutes" validate:"required"`
+	// AddressLine is the salon's street address (structured for local SEO).
+	AddressLine string `json:"address_line,omitempty"`
+	// City is the salon's locality (e.g. "Sremska Mitrovica").
+	City string `json:"city,omitempty"`
+	// PostalCode is the salon's postal code.
+	PostalCode string `json:"postal_code,omitempty"`
+	// Country is the ISO country code (e.g. "RS").
+	Country string `json:"country,omitempty"`
+	// Latitude/Longitude are the geo coordinates, geocoded from the address.
+	Latitude  *float64 `json:"latitude,omitempty"`
+	Longitude *float64 `json:"longitude,omitempty"`
+	// Phone is the salon's public phone number.
+	Phone string `json:"phone,omitempty"`
 }
 
 // Me is the authenticated user's own onboarding state, synthesized from the
@@ -98,6 +111,7 @@ type Service struct {
 	ID              uuid.UUID  `json:"id" validate:"required"`
 	BusinessID      uuid.UUID  `json:"business_id" validate:"required"`
 	Name            string     `json:"name" validate:"required"`
+	Slug            string     `json:"slug" validate:"required"`
 	DurationMinutes int        `json:"duration_minutes" validate:"required"`
 	Price           float64    `json:"price,omitempty"`
 	Active          bool       `json:"active" validate:"required"`

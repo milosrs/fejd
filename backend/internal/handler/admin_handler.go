@@ -266,9 +266,16 @@ func (h *AdminHandler) CreateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	slug, err := h.availableServiceSlug(r.Context(), businessID, body.Name)
+	if err != nil {
+		writeInternalError(w, err)
+		return
+	}
+
 	svc := &models.Service{
 		BusinessID:      businessID,
 		Name:            body.Name,
+		Slug:            slug,
 		DurationMinutes: body.DurationMinutes,
 		Price:           body.Price,
 		Active:          body.Active,
@@ -282,6 +289,27 @@ func (h *AdminHandler) CreateService(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusCreated, dto.ServiceFromModel(*svc))
+}
+
+// availableServiceSlug derives a unique, stable slug for a service within its
+// business, appending a numeric suffix on collision. Slugs are derived from the
+// service name and never change on rename.
+func (h *AdminHandler) availableServiceSlug(ctx context.Context, businessID uuid.UUID, name string) (string, error) {
+	base := strings.Trim(slugify(name), "-")
+	if base == "" {
+		base = "service"
+	}
+	slug := base
+	for i := 2; ; i++ {
+		taken, err := h.serviceStore.SlugTakenWithinBusiness(ctx, h.pool, businessID, slug, uuid.Nil)
+		if err != nil {
+			return "", err
+		}
+		if !taken {
+			return slug, nil
+		}
+		slug = fmt.Sprintf("%s-%d", base, i)
+	}
 }
 
 // UpdateService godoc
@@ -1640,6 +1668,90 @@ func closureFromInput(in BusinessClosureInput) (models.BusinessClosure, error) {
 	}
 
 	return c, nil
+}
+
+// UpdateBusinessLocation godoc
+// @Summary      Update salon location
+// @Description  Persists the salon's structured location (address, city, geo) for local SEO and JSON-LD. Geocodes via Nominatim when coordinates are omitted.
+// @Tags         admin
+// @Accept       json
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Param        body body BusinessLocationInput true "Salon location"
+// @Success      200 {object} dto.Business
+// @Failure      400 {object} ErrorResponse
+// @Failure      401 {object} ErrorResponse
+// @Failure      403 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/location [put]
+func (h *AdminHandler) UpdateBusinessLocation(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	var body BusinessLocationInput
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	city := strings.TrimSpace(body.City)
+	if city == "" {
+		writeError(w, http.StatusBadRequest, "city is required")
+		return
+	}
+
+	addressLine := strings.TrimSpace(body.AddressLine)
+	postalCode := strings.TrimSpace(body.PostalCode)
+	country := strings.TrimSpace(body.Country)
+	phone := strings.TrimSpace(body.Phone)
+
+	lat := body.Latitude
+	lon := body.Longitude
+	// Geocode when coordinates or other structured fields are missing.
+	if lat == nil || lon == nil || postalCode == "" || country == "" {
+		parts := make([]string, 0, 3)
+		if addressLine != "" {
+			parts = append(parts, addressLine)
+		}
+		if city != "" {
+			parts = append(parts, city)
+		}
+		if country != "" {
+			parts = append(parts, country)
+		}
+		if query := strings.Join(parts, ", "); query != "" {
+			if g, ok := service.GeocodeNominatim(r.Context(), query); ok {
+				if lat == nil {
+					lat = &g.Latitude
+				}
+				if lon == nil {
+					lon = &g.Longitude
+				}
+				if postalCode == "" {
+					postalCode = g.Postcode
+				}
+				if country == "" {
+					country = g.Country
+				}
+			}
+		}
+	}
+
+	if err := h.businessStore.UpdateLocation(r.Context(), businessID, addressLine, city, postalCode, country, phone, lat, lon); err != nil {
+		writeInternalError(w, err)
+		return
+	}
+
+	business, err := h.businessStore.GetByID(r.Context(), businessID)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "business not found")
+		return
+	}
+	writeJSON(w, http.StatusOK, dto.BusinessFromModel(*business))
 }
 
 // RenameBusiness godoc

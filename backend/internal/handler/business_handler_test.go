@@ -141,7 +141,7 @@ func TestBusinessHandler_GetServiceEmployees(t *testing.T) {
 	svcA := uuid.New()
 	svcB := uuid.New()
 	_, err = pool.Exec(ctx,
-		`INSERT INTO services (id, business_id, name, duration_minutes, active) VALUES ($1, $2, 'Haircut', 30, true), ($3, $2, 'Beard', 20, true)`,
+		`INSERT INTO services (id, business_id, name, slug, duration_minutes, active) VALUES ($1, $2, 'Haircut', 'haircut', 30, true), ($3, $2, 'Beard', 'beard', 20, true)`,
 		svcA, b.ID, svcB,
 	)
 	require.NoError(t, err)

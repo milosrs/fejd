@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Navigate, useNavigate, useSearchParams } from "react-router-dom"
+import { Navigate, useNavigate, useParams } from "react-router-dom"
 import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today, type DateValue } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"
@@ -35,7 +35,7 @@ function mapBookingError(msg: string, t: (key: string) => string): string {
 
 export function BookingPage() {
   const navigate = useNavigate()
-  const [searchParams] = useSearchParams()
+  const { serviceSlug } = useParams<{ serviceSlug: string }>()
   const { slug, salon } = useSalonContext()
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
@@ -59,16 +59,16 @@ export function BookingPage() {
 
   useTimeSlotStream(slug)
 
-  const urlService = searchParams.get("service")
-  const effectiveServiceId = selectedServiceId ?? urlService
+  const { data: services, isLoading: servicesLoading } = useServices(slug)
+  const service = (services ?? []).find((s) => s.slug === serviceSlug)
+  const effectiveServiceId = service?.id ?? selectedServiceId
 
   useEffect(() => {
-    if (urlService && urlService !== selectedServiceId) {
-      setService(urlService)
+    if (service && service.id !== selectedServiceId) {
+      setService(service.id)
     }
-  }, [urlService, selectedServiceId, setService])
+  }, [service, selectedServiceId, setService])
 
-  const { data: services, isLoading: servicesLoading } = useServices(slug)
   const { data: barbers, isLoading: barbersLoading } = useServiceEmployees(
     slug,
     effectiveServiceId ?? "",
@@ -99,7 +99,6 @@ export function BookingPage() {
   const [error, setError] = useState("")
   const [bookedTime, setBookedTime] = useState<string | null>(null)
 
-  const service = (services ?? []).find((s) => s.id === effectiveServiceId)
   const barber = (barbers ?? []).find((b) => b.id === selectedEmployeeId)
 
   const additionalServices = selectedAdditionalServiceIds

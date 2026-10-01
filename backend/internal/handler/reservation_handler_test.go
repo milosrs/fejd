@@ -53,7 +53,7 @@ func newReservationTestHandler(t *testing.T) (*AdminHandler, *store.BusinessUser
 	emp2, err := buStore.GetByBusinessAndUser(ctx, b.ID, "emp-2")
 	require.NoError(t, err)
 
-	svc := &models.Service{BusinessID: b.ID, Name: "Haircut", DurationMinutes: 30, Active: true}
+	svc := &models.Service{BusinessID: b.ID, Name: "Haircut", Slug: "haircut", DurationMinutes: 30, Active: true}
 	require.NoError(t, serviceStore.Create(ctx, svc))
 	require.NoError(t, employeeServiceStore.Assign(ctx, emp1.ID, svc.ID))
 

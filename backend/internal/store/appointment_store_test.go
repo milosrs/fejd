@@ -30,7 +30,7 @@ func seedBooking(t *testing.T, db *testDB) (businessID, buID, serviceID uuid.UUI
 
 	mustExec(`INSERT INTO businesses (id, name, slug) VALUES ($1, 'Concurrency', 'concurrency')`, businessID)
 	mustExec(`INSERT INTO business_users (id, business_id, user_id, role, display_name) VALUES ($1, $2, 'emp-1', 'employee', 'Emp')`, buID, businessID)
-	mustExec(`INSERT INTO services (id, business_id, name, duration_minutes) VALUES ($1, $2, 'Cut', 30)`, serviceID, businessID)
+	mustExec(`INSERT INTO services (id, business_id, name, slug, duration_minutes) VALUES ($1, $2, 'Cut', 'cut', 30)`, serviceID, businessID)
 	mustExec(`INSERT INTO employee_services (business_user_id, service_id) VALUES ($1, $2)`, buID, serviceID)
 
 	return businessID, buID, serviceID

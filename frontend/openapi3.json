@@ -1439,6 +1439,94 @@
                 }
             }
         },
+        "/api/admin/business/{businessID}/location": {
+            "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Persists the salon's structured location (address, city, geo) for local SEO and JSON-LD. Geocodes via Nominatim when coordinates are omitted.",
+                "tags": [
+                    "admin"
+                ],
+                "summary": "Update salon location",
+                "parameters": [
+                    {
+                        "description": "Business UUID",
+                        "name": "businessID",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/handler.BusinessLocationInput"
+                            }
+                        }
+                    },
+                    "description": "Salon location",
+                    "required": true
+                },
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/dto.Business"
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/admin/business/{businessID}/me/appointments": {
             "get": {
                 "security": [
@@ -3953,6 +4041,57 @@
                 }
             }
         },
+        "/api/business/{slug}/services/{serviceSlug}": {
+            "get": {
+                "description": "Returns a service and its salon context (name, city) by salon slug and service slug.",
+                "tags": [
+                    "public"
+                ],
+                "summary": "Get a single service by slug",
+                "parameters": [
+                    {
+                        "description": "Business slug",
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Service slug",
+                        "name": "serviceSlug",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ServiceDetailResponse"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/handler.ErrorResponse"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/business/{slug}/slots": {
             "get": {
                 "description": "Returns available time slots for a service and employee on a given date.",
@@ -5020,8 +5159,20 @@
                     "updated_at"
                 ],
                 "properties": {
+                    "address_line": {
+                        "description": "AddressLine is the salon's street address (structured for local SEO).",
+                        "type": "string"
+                    },
                     "cancellation_lead_hours": {
                         "type": "integer"
+                    },
+                    "city": {
+                        "description": "City is the salon's locality (e.g. \"Sremska Mitrovica\").",
+                        "type": "string"
+                    },
+                    "country": {
+                        "description": "Country is the ISO country code (e.g. \"RS\").",
+                        "type": "string"
                     },
                     "created_at": {
                         "type": "string"
@@ -5029,11 +5180,26 @@
                     "id": {
                         "type": "string"
                     },
+                    "latitude": {
+                        "description": "Latitude/Longitude are the geo coordinates, geocoded from the address.",
+                        "type": "number"
+                    },
+                    "longitude": {
+                        "type": "number"
+                    },
                     "name": {
                         "type": "string"
                     },
                     "no_show_after_minutes": {
                         "type": "integer"
+                    },
+                    "phone": {
+                        "description": "Phone is the salon's public phone number.",
+                        "type": "string"
+                    },
+                    "postal_code": {
+                        "description": "PostalCode is the salon's postal code.",
+                        "type": "string"
                     },
                     "slot_interval_minutes": {
                         "type": "integer"
@@ -5362,7 +5528,8 @@
                     "created_at",
                     "duration_minutes",
                     "id",
-                    "name"
+                    "name",
+                    "slug"
                 ],
                 "properties": {
                     "active": {
@@ -5391,6 +5558,9 @@
                     },
                     "price": {
                         "type": "number"
+                    },
+                    "slug": {
+                        "type": "string"
                     }
                 }
             },
@@ -5566,6 +5736,37 @@
                         "type": "string"
                     },
                     "logo": {
+                        "type": "string"
+                    }
+                }
+            },
+            "handler.BusinessLocationInput": {
+                "type": "object",
+                "required": [
+                    "city"
+                ],
+                "properties": {
+                    "address_line": {
+                        "type": "string"
+                    },
+                    "city": {
+                        "type": "string",
+                        "example": "Sremska Mitrovica"
+                    },
+                    "country": {
+                        "type": "string",
+                        "example": "RS"
+                    },
+                    "latitude": {
+                        "type": "number"
+                    },
+                    "longitude": {
+                        "type": "number"
+                    },
+                    "phone": {
+                        "type": "string"
+                    },
+                    "postal_code": {
                         "type": "string"
                     }
                 }
@@ -5962,6 +6163,21 @@
                         "items": {
                             "$ref": "#/components/schemas/dto.BusinessHours"
                         }
+                    }
+                }
+            },
+            "handler.ServiceDetailResponse": {
+                "type": "object",
+                "required": [
+                    "business",
+                    "service"
+                ],
+                "properties": {
+                    "business": {
+                        "$ref": "#/components/schemas/dto.Business"
+                    },
+                    "service": {
+                        "$ref": "#/components/schemas/dto.Service"
                     }
                 }
             },

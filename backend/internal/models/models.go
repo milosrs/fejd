@@ -39,6 +39,20 @@ type Business struct {
 	// ReminderBody is the owner's custom reminder description. Empty falls back
 	// to the default body.
 	ReminderBody string
+	// AddressLine is the salon's street address (structured for local SEO).
+	AddressLine string
+	// City is the salon's locality (e.g. "Sremska Mitrovica"); the key local
+	// search signal. Empty until the owner fills the location form.
+	City string
+	// PostalCode is the salon's postal code.
+	PostalCode string
+	// Country is the ISO country code (e.g. "RS").
+	Country string
+	// Latitude/Longitude are the geo coordinates, geocoded from the address.
+	Latitude  *float64
+	Longitude *float64
+	// Phone is the salon's public phone number.
+	Phone string
 }
 
 type BusinessUser struct {
@@ -95,6 +109,9 @@ type Service struct {
 	ID              uuid.UUID
 	BusinessID      uuid.UUID
 	Name            string
+	// Slug is the stable, human-readable identifier used in public URLs
+	// (/services/{slug}). Immutable after creation.
+	Slug            string
 	DurationMinutes int
 	Price           float64
 	Active          bool

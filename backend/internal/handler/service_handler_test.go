@@ -29,7 +29,7 @@ func TestAdminHandler_DeleteService_WithAppointments(t *testing.T) {
 
 	serviceID := uuid.New()
 	_, err = pool.Exec(ctx,
-		`INSERT INTO services (id, business_id, name, duration_minutes, active) VALUES ($1, $2, 'Haircut', 30, true)`,
+		`INSERT INTO services (id, business_id, name, slug, duration_minutes, active) VALUES ($1, $2, 'Haircut', 'haircut', 30, true)`,
 		serviceID, b.ID,
 	)
 	require.NoError(t, err)

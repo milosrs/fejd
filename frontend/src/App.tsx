@@ -8,6 +8,7 @@ import { useHeaderHeightMeasure } from "./hooks/useHeaderHeightMeasure"
 import { HomePage } from "./pages/HomePage"
 import { LandingPage } from "./pages/LandingPage"
 import { ServicesPage } from "./pages/ServicesPage"
+import { ServiceDetailPage } from "./pages/ServiceDetailPage"
 import { BarbersPage } from "./pages/BarbersPage"
 import { BookingPage } from "./pages/BookingPage"
 import { MyAppointmentsPage } from "./pages/MyAppointmentsPage"
@@ -331,8 +332,10 @@ function App() {  // On a salon subdomain the salon site is served from the root
                   <Route path="/" element={<SalonLayout slug={hostSlug} />}>
                     <Route index element={<LandingPage />} />
                     <Route path="services" element={<ServicesPage />} />
+                    <Route path="services/:serviceSlug" element={<ServiceDetailPage />} />
                     <Route path="barbers" element={<BarbersPage />} />
                     <Route path="book" element={<BookingPage />} />
+                    <Route path="book/:serviceSlug" element={<BookingPage />} />
                     <Route path="policy" element={<SalonPolicyPage />} />
                   </Route>
                 ) : (
@@ -341,8 +344,10 @@ function App() {  // On a salon subdomain the salon site is served from the root
                     <Route path="/:slug" element={<SalonLayout />}>
                       <Route index element={<LandingPage />} />
                       <Route path="services" element={<ServicesPage />} />
+                      <Route path="services/:serviceSlug" element={<ServiceDetailPage />} />
                       <Route path="barbers" element={<BarbersPage />} />
                       <Route path="book" element={<BookingPage />} />
+                      <Route path="book/:serviceSlug" element={<BookingPage />} />
                       <Route path="policy" element={<SalonPolicyPage />} />
                     </Route>
                   </>

@@ -30,10 +30,10 @@ func TestServiceCombinationStore_ReplaceAndList(t *testing.T) {
 	fade := uuid.New()
 	dye := uuid.New()
 	_, err = db.pool.Exec(ctx, `
-		INSERT INTO services (id, business_id, name, duration_minutes, active) VALUES
-		($1, $4, 'Beard', 30, true),
-		($2, $4, 'Fade', 45, true),
-		($3, $4, 'Hair Dye', 60, true)`,
+		INSERT INTO services (id, business_id, name, slug, duration_minutes, active) VALUES
+		($1, $4, 'Beard', 'beard', 30, true),
+		($2, $4, 'Fade', 'fade', 45, true),
+		($3, $4, 'Hair Dye', 'hair-dye', 60, true)`,
 		beard, fade, dye, businessID,
 	)
 	require.NoError(t, err)
@@ -83,9 +83,9 @@ func TestServiceCombinationStore_ListByBusiness(t *testing.T) {
 	beard := uuid.New()
 	fade := uuid.New()
 	_, err = db.pool.Exec(ctx, `
-		INSERT INTO services (id, business_id, name, duration_minutes, active) VALUES
-		($1, $3, 'Beard', 30, true),
-		($2, $3, 'Fade', 45, true)`,
+		INSERT INTO services (id, business_id, name, slug, duration_minutes, active) VALUES
+		($1, $3, 'Beard', 'beard', 30, true),
+		($2, $3, 'Fade', 'fade', 45, true)`,
 		beard, fade, businessID,
 	)
 	require.NoError(t, err)
@@ -123,9 +123,9 @@ func TestAppointmentStore_AdditionalServices(t *testing.T) {
 	beard := uuid.New()
 	fade := uuid.New()
 	_, err = db.pool.Exec(ctx, `
-		INSERT INTO services (id, business_id, name, duration_minutes, active) VALUES
-		($1, $3, 'Beard', 30, true),
-		($2, $3, 'Fade', 45, true)`,
+		INSERT INTO services (id, business_id, name, slug, duration_minutes, active) VALUES
+		($1, $3, 'Beard', 'beard', 30, true),
+		($2, $3, 'Fade', 'fade', 45, true)`,
 		beard, fade, businessID,
 	)
 	require.NoError(t, err)

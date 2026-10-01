@@ -200,6 +200,11 @@ func main() {
 		pushHandler,
 	)
 
+	// One-time, best-effort geocoding backfill for salons that already had a
+	// free-text address before structured location existed. Runs in the
+	// background and is idempotent.
+	backfillLocationGeo(context.Background(), businessStore)
+
 	port := getEnv("PORT", "8080")
 	fmt.Printf("backend listening on :%s\n", port)
 
@@ -251,4 +256,65 @@ func getEnv(key, defaultValue string) string {
 		return defaultValue
 	}
 	return value
+}
+
+// backfillLocationGeo geocodes salons that already have an address but are
+// missing a city or geo coordinates. It runs in the background, is rate-limited
+// to respect the Nominatim usage policy, and is idempotent (salons that already
+// have city+geo are skipped). Best-effort: failures are logged, not fatal.
+func backfillLocationGeo(ctx context.Context, businessStore *store.BusinessStore) {
+	go func() {
+		businesses, err := businessStore.ListNeedingGeocode(ctx)
+		if err != nil {
+			log.Printf("location geocode backfill: list failed: %v", err)
+			return
+		}
+		if len(businesses) == 0 {
+			return
+		}
+		log.Printf("location geocode backfill: geocoding %d salon(s)", len(businesses))
+
+		for _, b := range businesses {
+			query := b.AddressLine
+			if b.City != "" {
+				query = b.AddressLine + ", " + b.City
+			}
+			if query == "" {
+				continue
+			}
+
+			g, ok := service.GeocodeNominatim(ctx, query)
+			if !ok {
+				continue
+			}
+
+			city := b.City
+			if city == "" {
+				city = g.City
+			}
+			postal := b.PostalCode
+			if postal == "" {
+				postal = g.Postcode
+			}
+			country := b.Country
+			if country == "" {
+				country = g.Country
+			}
+			lat := b.Latitude
+			lon := b.Longitude
+			if lat == nil {
+				lat = &g.Latitude
+			}
+			if lon == nil {
+				lon = &g.Longitude
+			}
+
+			if err := businessStore.UpdateLocation(ctx, b.ID, b.AddressLine, city, postal, country, b.Phone, lat, lon); err != nil {
+				log.Printf("location geocode backfill: update %s failed: %v", b.Slug, err)
+			}
+
+			// Nominatim policy: at most ~1 request per second.
+			time.Sleep(1100 * time.Millisecond)
+		}
+	}()
 }

@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /my/
+Disallow: /admin/
+Disallow: /invite/
+Disallow: /api/
+Disallow: /book
+
+Sitemap: https://fejd.fyi/sitemap.xml
