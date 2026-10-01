@@ -776,12 +776,14 @@
       "redirectUris": [
         "https://*.fejd.fyi/*",
         "https://fejd.fyi/*",
-        "http://localhost:5173/*"
+        "http://localhost:5173/*",
+        "http://172.20.0.191:5173/*"
       ],
       "webOrigins": [
         "https://*.fejd.fyi",
         "https://fejd.fyi",
-        "http://localhost:5173"
+        "http://localhost:5173",
+        "http://172.20.0.191:5173"
       ],
       "notBefore": 0,
       "bearerOnly": false,

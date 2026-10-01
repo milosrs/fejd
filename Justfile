@@ -73,6 +73,11 @@ dev-frontend:
 # Run backend, Keycloak and DB in docker-compose, and the frontend locally with hot reload
 dev: up-backend dev-frontend
 
+# Detect the current LAN IP and write it into frontend/.env and the Keycloak
+# realm config so phones/tablets on the same network can reach the app + login.
+ip-update:
+    @./scripts/update-lan-ip.sh
+
 # Start ngrok tunnel to expose Keycloak for identity provider testing
 ngrok-keycloak:
     ngrok http 9090 --domain=stimulate-uniquely-abide.ngrok-free.dev
