@@ -4,6 +4,45 @@ fejd.fyi {
     handle /api/* {
         reverse_proxy backend:8080
     }
+    handle /api {
+        reverse_proxy backend:8080
+    }
+
+    handle /sitemap.xml {
+        reverse_proxy backend:8080
+    }
+
+    # Static files (robots.txt and PWA/assets) are served by the frontend.
+    handle /robots.txt {
+        reverse_proxy frontend:80
+    }
+    handle /assets/* {
+        reverse_proxy frontend:80
+    }
+
+    # Reserved app-shell paths must not be treated as salon slugs.
+    handle /my {
+        reverse_proxy frontend:80
+    }
+    handle /my/* {
+        reverse_proxy frontend:80
+    }
+    handle /admin {
+        reverse_proxy frontend:80
+    }
+    handle /admin/* {
+        reverse_proxy frontend:80
+    }
+    handle /invite {
+        reverse_proxy frontend:80
+    }
+    handle /invite/* {
+        reverse_proxy frontend:80
+    }
+
+    # Canonical salon URL: fejd.fyi/{slug}[/path] -> {slug}.fejd.fyi[/path]
+    @salonPath path_regexp salon ^/([a-z0-9][a-z0-9-]*)(/.*)?$
+    redir @salonPath https://{re.salon.1}.fejd.fyi{re.salon.2} permanent
 
     handle {
         reverse_proxy frontend:80

@@ -47,6 +47,8 @@ func newRouter(
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
+	r.Get("/sitemap.xml", businessHandler.Sitemap)
+
 	r.Route("/api", func(r chi.Router) {
 		// Public.
 		r.Get("/businesses", businessHandler.ListBusinesses)

@@ -5,6 +5,7 @@ import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonCont
 import { Button } from "./ui/button"
 import { RenameSalonDialog } from "./RenameSalonDialog"
 import { DeleteSalonDialog } from "./DeleteSalonDialog"
+import { LocationDialog } from "./LocationDialog"
 import { salonPath } from "../lib/salonDomain"
 import { useCanWrite } from "../hooks/useCanWrite"
 import { useDisabledReason } from "../hooks/useDisabledReason"
@@ -29,6 +30,7 @@ function SalonShell() {
   const { pickLocalized, t } = useI18n()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [locationOpen, setLocationOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const salonHeaderRef = useHeaderHeightMeasure("--salon-header-height")
 
@@ -106,6 +108,14 @@ function SalonShell() {
                 onClick={() => navigate(salonPath(slug, "/policy"))}
               >
                 {t("salon.policy")}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setLocationOpen(true)}
+                isDisabled={!canWrite}
+              >
+                {t("location.open")}
               </Button>
               <Button
                 variant="outline"
@@ -191,6 +201,22 @@ function SalonShell() {
               const btn = (
                 <button
                   type="button"
+                  className={`${ownerActionClassName} disabled:opacity-50`}
+                  disabled={!canWrite}
+                  onClick={() => {
+                    setMenuOpen(false)
+                    setLocationOpen(true)
+                  }}
+                >
+                  {t("location.open")}
+                </button>
+              )
+              return disabledReason ? <DisabledTooltip reason={disabledReason} className="w-full">{btn}</DisabledTooltip> : btn
+            })()}
+            {(() => {
+              const btn = (
+                <button
+                  type="button"
                   className={`${ownerActionClassName} text-destructive disabled:opacity-50`}
                   disabled={!canWrite}
                   onClick={() => {
@@ -232,6 +258,21 @@ function SalonShell() {
           slug={slug}
           salonName={salon.business.name}
           onClose={() => setDeleteOpen(false)}
+        />
+      )}
+
+      {locationOpen && (
+        <LocationDialog
+          businessId={salon.business.id}
+          slug={slug}
+          initial={{
+            address_line: salon.business.address_line,
+            city: salon.business.city,
+            postal_code: salon.business.postal_code,
+            country: salon.business.country,
+            phone: salon.business.phone,
+          }}
+          onClose={() => setLocationOpen(false)}
         />
       )}
     </div>

@@ -2,7 +2,6 @@ import { Input } from "../../ui/input"
 import { Textarea } from "../../ui/textarea"
 import { Label } from "../../ui/label"
 import { ImageUploadButton } from "../../ui/image-upload-button"
-import { PlacesAutocompleteInput } from "../../ui/places-autocomplete-input"
 import { resolveImageUrl } from "../../../lib/images"
 import { useI18n } from "../../../lib/i18n"
 import type {
@@ -211,13 +210,6 @@ export function ContactSectionForm({
         <Input
           value={value.email ?? ""}
           onChange={(e) => onChange({ ...value, email: e.target.value })}
-        />
-      </Field>
-      <Field label={t("sections.form.address")}>
-        <PlacesAutocompleteInput
-          value={value.address ?? ""}
-          onChange={(address) => onChange({ ...value, address })}
-          placeholder={t("sections.form.addressPlaceholder")}
         />
       </Field>
       <Field label={t("sections.form.googleReviewUrl")}>

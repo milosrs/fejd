@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"html"
 	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"fejd-backend/internal/dto"
@@ -31,6 +33,7 @@ type BusinessHandler struct {
 	businessClosureStore *store.BusinessClosureStore
 	businessHoursStore   *store.BusinessHoursStore
 	slotService          *service.SlotService
+	appDomain            string
 }
 
 func NewBusinessHandler(
@@ -45,6 +48,7 @@ func NewBusinessHandler(
 	businessClosureStore *store.BusinessClosureStore,
 	businessHoursStore *store.BusinessHoursStore,
 	slotService *service.SlotService,
+	appDomain string,
 ) *BusinessHandler {
 	return &BusinessHandler{
 		businessStore:        businessStore,
@@ -58,6 +62,7 @@ func NewBusinessHandler(
 		businessClosureStore: businessClosureStore,
 		businessHoursStore:   businessHoursStore,
 		slotService:          slotService,
+		appDomain:            appDomain,
 	}
 }
 
@@ -80,6 +85,60 @@ func (h *BusinessHandler) ListBusinesses(w http.ResponseWriter, r *http.Request)
 	}
 
 	writeJSON(w, http.StatusOK, dto.DirectoryBusinessesFromModels(businesses))
+}
+
+// Sitemap writes a sitemap.xml listing the app home plus every salon's public
+// subdomain URLs (landing, services, and each service detail page).
+func (h *BusinessHandler) Sitemap(w http.ResponseWriter, r *http.Request) {
+	businesses, err := h.businessStore.List(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to list businesses")
+		return
+	}
+
+	base := strings.TrimSuffix(strings.TrimSpace(h.appDomain), "/")
+	if base == "" {
+		base = "fejd.fyi"
+	}
+
+	var b strings.Builder
+	b.WriteString(xmlHeader)
+	b.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
+
+	b.WriteString(urlEntry("https://"+base+"/", time.Time{}))
+
+	for _, biz := range businesses {
+		host := "https://" + biz.Slug + "." + base
+		b.WriteString(urlEntry(host+"/", biz.UpdatedAt))
+		b.WriteString(urlEntry(host+"/services", biz.UpdatedAt))
+
+		services, err := h.serviceStore.ListByBusiness(r.Context(), biz.ID)
+		if err != nil {
+			continue
+		}
+		for _, svc := range services {
+			if svc.Slug == "" || !svc.Active {
+				continue
+			}
+			b.WriteString(urlEntry(host+"/services/"+svc.Slug, svc.CreatedAt))
+		}
+	}
+
+	b.WriteString(`</urlset>`)
+
+	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>` + "\n"
+
+func urlEntry(loc string, mod time.Time) string {
+	entry := "<url><loc>" + html.EscapeString(loc) + "</loc>"
+	if !mod.IsZero() {
+		entry += "<lastmod>" + mod.UTC().Format(time.RFC3339) + "</lastmod>"
+	}
+	return entry + "</url>"
 }
 
 // GetBusiness godoc

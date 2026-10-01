@@ -1,0 +1,27 @@
+-- Labels for the salon location form (structured location for local SEO).
+
+INSERT INTO translations (key, locale, value) VALUES
+    ('location.title',          'en', 'Salon location'),
+    ('location.title',          'rs', 'Lokacija salona'),
+    ('location.help',           'en', 'Your address and city help customers find your salon in search results.'),
+    ('location.help',           'rs', 'Vaša adresa i grad pomažu da vaš salon bude pronađen u pretrazi.'),
+    ('location.city',           'en', 'City'),
+    ('location.city',           'rs', 'Grad'),
+    ('location.cityPlaceholder','en', 'Sremska Mitrovica'),
+    ('location.cityPlaceholder','rs', 'Sremska Mitrovica'),
+    ('location.cityRequired',   'en', 'City is required.'),
+    ('location.cityRequired',   'rs', 'Grad je obavezan.'),
+    ('location.addressLine',    'en', 'Address'),
+    ('location.addressLine',    'rs', 'Adresa'),
+    ('location.postalCode',     'en', 'Postal code'),
+    ('location.postalCode',     'rs', 'Poštanski broj'),
+    ('location.country',        'en', 'Country'),
+    ('location.country',        'rs', 'Država'),
+    ('location.phone',          'en', 'Phone'),
+    ('location.phone',          'rs', 'Telefon'),
+    ('location.save',           'en', 'Save location'),
+    ('location.save',           'rs', 'Sačuvaj lokaciju'),
+    ('location.failed',         'en', 'Failed to save location.'),
+    ('location.failed',         'rs', 'Neuspelo čuvanje lokacije.'),
+    ('location.open',           'en', 'Location'),
+    ('location.open',           'rs', 'Lokacija');

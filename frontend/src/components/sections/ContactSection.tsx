@@ -3,19 +3,36 @@ import type { ContactContent } from "../../lib/sections"
 import { instagramHandle, instagramUrl } from "../../lib/instagram"
 import { openExternalUrl } from "../../lib/externalUrl"
 import { useI18n } from "../../lib/i18n"
+import { useSalonContext } from "../../context/SalonContext"
 import { InstagramIcon } from "../icons/InstagramIcon"
 import { MapEmbed } from "./MapEmbed"
 
+// Address shown in the Contact section. Prefers the structured salon location
+// (set via the Location dialog), falling back to the legacy contact-section
+// address for salons that have not been migrated yet.
+function addressFor(content: ContactContent, salon: { business: { address_line?: string; city?: string; country?: string } } | undefined): string {
+  const structured = [
+    salon?.business.address_line,
+    salon?.business.city,
+    salon?.business.country,
+  ]
+    .filter(Boolean)
+    .join(", ")
+  return structured || content.address || ""
+}
+
 export function ContactSection({ content }: { content: ContactContent }) {
   const { t } = useI18n()
+  const { salon } = useSalonContext()
   const igUrl = content.instagram_url ? instagramUrl(content.instagram_url) : ""
   const igHandle = content.instagram_url ? instagramHandle(content.instagram_url) : ""
+  const address = addressFor(content, salon)
 
   const hasContent = Boolean(
     content.heading ||
       content.phone ||
       content.email ||
-      content.address ||
+      address ||
       content.rating_url ||
       igUrl,
   )
@@ -41,15 +58,15 @@ export function ContactSection({ content }: { content: ContactContent }) {
                 <a href={`mailto:${content.email}`}>{content.email}</a>
               </li>
             )}
-            {content.address && (
+            {address && (
               <li className="flex items-center gap-2">
                 <MapPin className="size-4" />
                 <a
-                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(content.address)}`}
+                  href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`}
                   target="_blank"
                   rel="noreferrer"
                 >
-                  {content.address}
+                  {address}
                 </a>
               </li>
             )}
@@ -82,9 +99,9 @@ export function ContactSection({ content }: { content: ContactContent }) {
             </a>
           )}
         </div>
-        {content.address && (
+        {address && (
           <div className="w-full md:min-w-[50%] md:flex-1">
-            <MapEmbed address={content.address} />
+            <MapEmbed address={address} />
           </div>
         )}
       </div>
