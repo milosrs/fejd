@@ -1,4 +1,7 @@
 # syntax=docker/dockerfile:1
+# React Router v8 framework-mode (SSR) runtime. Serves the web app with
+# server-rendered public pages + SEO metadata.
+
 FROM node:26.0.0-alpine3.22 AS build
 WORKDIR /app
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
@@ -33,10 +36,25 @@ ENV VITE_API_URL=$VITE_API_URL \
     VITE_FIREBASE_API_KEY=$VITE_FIREBASE_API_KEY \
     VITE_FIREBASE_APP_ID=$VITE_FIREBASE_APP_ID \
     VITE_FIREBASE_VAPID_KEY=$VITE_FIREBASE_VAPID_KEY
+# Framework-mode build produces build/client (static assets) + build/server (SSR).
 RUN pnpm build
 
-FROM nginx:1.30.4-alpine-perl
-COPY --from=build /app/dist /usr/share/nginx/html
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+FROM node:26.0.0-alpine3.22 AS runtime
+WORKDIR /app
+ENV NODE_ENV=production \
+    PORT=80 \
+    FEJD_DOMAIN=fejd.fyi \
+    APP_HOST=fejd.fyi \
+    API_ORIGIN=http://backend:8080
+RUN npm install -g pnpm@v12.8.1
+COPY --from=build /app/package.json /app/pnpm-lock.yaml /app/pnpm-workspace.yaml ./
+RUN pnpm install --prod --frozen-lockfile --reporter=append-only \
+    --network-concurrency=4 --fetch-retries=8 --fetch-retry-factor=2 \
+    --fetch-retry-mintimeout=10000 --fetch-retry-maxtimeout=120000 \
+    --fetch-timeout=120000
+COPY --from=build /app/build ./build
+COPY --from=build /app/server.ts ./server.ts
+COPY --from=build /app/app ./app
 EXPOSE 80
-CMD ["nginx", "-g", "daemon off;"]
+# Serve the SSR app via the custom Node server (provides the query-client load context).
+CMD ["node", "server.ts"]

@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate } from "react-router"
 import { format } from "date-fns"
 import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"

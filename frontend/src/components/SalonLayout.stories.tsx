@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from "@storybook/react-vite"
-import { MemoryRouter, Route, Routes } from "react-router-dom"
+import { MemoryRouter, Route, Routes } from "react-router"
 import { SalonLayout } from "./SalonLayout"
 import { LandingPage } from "../pages/LandingPage"
 import { ServicesPage } from "../pages/ServicesPage"

@@ -1,5 +1,5 @@
 import { useLayoutEffect, useMemo } from "react"
-import { MemoryRouter, Route, Routes } from "react-router-dom"
+import { MemoryRouter, Route, Routes } from "react-router"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ThemeProvider } from "../components/theme-provider"
 import { I18nProvider } from "../lib/i18n"

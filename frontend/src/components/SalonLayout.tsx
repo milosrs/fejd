@@ -1,4 +1,4 @@
-import { Link, NavLink, Outlet, useNavigate } from "react-router-dom"
+import { Link, NavLink, Outlet, useNavigate } from "react-router"
 import { useState } from "react"
 import { Menu as MenuIcon } from "lucide-react"
 import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonContext"

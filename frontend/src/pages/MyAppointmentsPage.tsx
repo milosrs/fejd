@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 import { useAuthStore } from "../stores/authStore"
 import { useMyAppointments } from "../hooks/useApi"
 import { MyAppointmentsList } from "../components/MyAppointmentsList"

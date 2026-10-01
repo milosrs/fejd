@@ -49,6 +49,7 @@ go.work.sum
 node_modules/
 frontend/node_modules/
 frontend/dist/
+frontend/build/
 frontend/.vite/
 frontend/.capacitor/
 frontend/android/

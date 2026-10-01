@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 import { useSalon } from "../hooks/useSalon"
 import { resolveImageUrl } from "../lib/images"
 import { openSalon } from "../lib/salonDomain"

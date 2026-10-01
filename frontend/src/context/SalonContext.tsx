@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from "react"
-import { useParams } from "react-router-dom"
+import { useParams } from "react-router"
 import { useSalon, type Salon } from "../hooks/useSalon"
 import { useMe } from "../hooks/useMe"
 import { useAuthStore } from "../stores/authStore"

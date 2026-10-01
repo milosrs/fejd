@@ -1,4 +1,4 @@
-import { Link, Navigate, useNavigate, useParams } from "react-router-dom"
+import { Link, Navigate, useNavigate, useParams } from "react-router"
 import { Clock } from "lucide-react"
 import { useSalonContext } from "../context/SalonContext"
 import { useServices } from "../hooks/useApi"

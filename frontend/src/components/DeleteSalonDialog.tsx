@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { deleteBusiness } from "../hooks/useApi"
 import { useCanWrite } from "../hooks/useCanWrite"

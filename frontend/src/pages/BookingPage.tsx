@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { Navigate, useNavigate, useParams } from "react-router-dom"
+import { Navigate, useNavigate, useParams } from "react-router"
 import { format } from "date-fns"
 import { parseDate, getLocalTimeZone, today, type DateValue } from "@internationalized/date"
 import { useQueryClient } from "@tanstack/react-query"

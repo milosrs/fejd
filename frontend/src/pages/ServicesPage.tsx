@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 import { useSalonContext, useIsOwner } from "../context/SalonContext"
 import { useServices, useAdminEmployees, useServiceEmployeesAdmin, useServiceCombinationsAdmin, type Service } from "../hooks/useApi"
 import { useServiceMutations } from "../hooks/useServiceMutations"

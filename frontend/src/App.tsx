@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from "react-router-dom"
+import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from "react-router"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { Menu as MenuIcon } from "lucide-react"
@@ -36,13 +36,17 @@ import { consumeReturnTo, auth } from "./lib/auth"
 import { claimRegistrationRole } from "./lib/api"
 import { registerPush, setNotificationTapHandler } from "./lib/push"
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: { retry: 1, staleTime: 30000 },
-  },
-})
+export function makeQueryClient() {
+  return new QueryClient({
+    defaultOptions: {
+      queries: { retry: 1, staleTime: 30000 },
+    },
+  })
+}
 
-function AppInit({ children }: { children: React.ReactNode }) {
+const queryClient = makeQueryClient()
+
+export function AppInit({ children }: { children: React.ReactNode }) {
   const init = useAuthStore((s) => s.init)
   const initialized = useAuthStore((s) => s.initialized)
   const authenticated = useAuthStore((s) => s.authenticated)
@@ -67,7 +71,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
     init()
   }, [init])
 
-  const [appReady, setAppReady] = useState(false)
+  const [appReady, setAppReady] = useState(() => typeof window === "undefined")
 
   useEffect(() => {
     if (!initialized) return
@@ -274,7 +278,7 @@ function AppInit({ children }: { children: React.ReactNode }) {
   )
 }
 
-function ProtectedRoute({ children }: { children: React.ReactNode }) {
+export function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const initialized = useAuthStore((s) => s.initialized)
   const authenticated = useAuthStore((s) => s.authenticated)
   const login = useAuthStore((s) => s.login)
@@ -300,7 +304,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 // PushNavigationHandler routes native notification taps to the salon's
 // reservation list. Web taps are handled by the firebase-messaging service
 // worker (which opens the link directly).
-function PushNavigationHandler() {
+export function PushNavigationHandler() {
   const navigate = useNavigate()
 
   useEffect(() => {

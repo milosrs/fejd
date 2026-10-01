@@ -1,5 +1,5 @@
 import { useEffect } from "react"
-import { useParams } from "react-router-dom"
+import { useParams } from "react-router"
 import { useAuthStore } from "../../stores/authStore"
 import { useInvitation } from "../../hooks/useInvitations"
 import { useI18n } from "../../lib/i18n"

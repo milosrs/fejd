@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 import type { HeroContent } from "../../lib/sections"
 import { resolveImageUrl } from "../../lib/images"
 import { salonPath } from "../../lib/salonDomain"

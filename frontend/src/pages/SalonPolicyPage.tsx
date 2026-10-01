@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { parseDate, getLocalTimeZone, today, Time } from "@internationalized/date"
 import { ArrowLeft } from "lucide-react"

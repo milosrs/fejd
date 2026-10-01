@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useParams, useNavigate } from "react-router-dom"
+import { useParams, useNavigate } from "react-router"
 import { useAuthStore } from "../stores/authStore"
 import { useServices, createService, updateService, deleteService } from "../hooks/useApi"
 import { useCanWrite } from "../hooks/useCanWrite"

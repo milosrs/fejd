@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate } from "react-router"
 import { useOnboardingStore } from "../stores/onboardingStore"
 import { openSalon } from "../lib/salonDomain"
 import { useCanWrite } from "../hooks/useCanWrite"
