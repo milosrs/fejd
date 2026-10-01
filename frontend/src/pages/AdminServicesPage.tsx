@@ -60,12 +60,15 @@ export function AdminServicesPage() {
     }
   }
 
-  const handleUpdate = async (serviceId: string) => {
+  const handleUpdate = async (svc: any) => {
     try {
-      await updateService(businessId!, serviceId, {
+      await updateService(businessId!, svc.id, {
         name: editName,
         duration_minutes: parseInt(editDuration),
         price: editPrice ? parseFloat(editPrice) : 0,
+        active: svc.active,
+        description: svc.description,
+        picture_id: svc.picture_id,
       })
       setEditingId(null)
       setMessage(t("admin.services.updated"))
@@ -138,7 +141,7 @@ export function AdminServicesPage() {
                         <Input type="number" value={editDuration} onChange={(e) => setEditDuration(e.target.value)} placeholder={t("services.fields.duration")} />
                         <Input type="number" step="0.01" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} placeholder={t("services.fields.price")} />
                         <div className="flex gap-2">
-                          <Button size="sm" onClick={() => handleUpdate(svc.id)} isDisabled={!canWrite}>{t("common.save")}</Button>
+                          <Button size="sm" onClick={() => handleUpdate(svc)} isDisabled={!canWrite}>{t("common.save")}</Button>
                           <Button size="sm" variant="ghost" onClick={() => setEditingId(null)}>{t("common.cancel")}</Button>
                         </div>
                       </div>

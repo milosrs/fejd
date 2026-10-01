@@ -80,6 +80,7 @@ export function ServicesPage() {
             duration_minutes: values.duration_minutes,
             price: values.price,
             active: form.service.active,
+            picture_id: form.service.picture_id,
           },
         })
       }

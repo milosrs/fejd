@@ -11,6 +11,7 @@ import (
 	"fejd-backend/internal/service"
 	"fejd-backend/internal/store"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strings"
@@ -310,29 +311,56 @@ func (h *AdminHandler) UpdateService(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var body ServiceInput
-	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
 		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
 		return
 	}
 
-	svc := &models.Service{
-		ID:              serviceID,
-		BusinessID:      businessID,
-		Name:            body.Name,
-		DurationMinutes: body.DurationMinutes,
-		Price:           body.Price,
-		Active:          body.Active,
-		Description:     body.Description,
-		PictureID:       body.PictureID,
+	var body ServiceInput
+	if err := json.Unmarshal(bodyBytes, &body); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
 	}
 
-	if err := h.serviceStore.Update(r.Context(), svc); err != nil {
+	var provided map[string]json.RawMessage
+	if err := json.Unmarshal(bodyBytes, &provided); err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidRequestBody.Error())
+		return
+	}
+
+	existing, err := h.serviceStore.GetByID(r.Context(), serviceID)
+	if err != nil || existing.BusinessID != businessID {
+		writeError(w, http.StatusNotFound, "service not found")
+		return
+	}
+
+	svc := *existing
+	if _, ok := provided["name"]; ok {
+		svc.Name = body.Name
+	}
+	if _, ok := provided["duration_minutes"]; ok {
+		svc.DurationMinutes = body.DurationMinutes
+	}
+	if _, ok := provided["price"]; ok {
+		svc.Price = body.Price
+	}
+	if _, ok := provided["active"]; ok {
+		svc.Active = body.Active
+	}
+	if _, ok := provided["description"]; ok {
+		svc.Description = body.Description
+	}
+	if _, ok := provided["picture_id"]; ok {
+		svc.PictureID = body.PictureID
+	}
+
+	if err := h.serviceStore.Update(r.Context(), &svc); err != nil {
 		writeInternalError(w, err)
 		return
 	}
 
-	writeJSON(w, http.StatusOK, dto.ServiceFromModel(*svc))
+	writeJSON(w, http.StatusOK, dto.ServiceFromModel(svc))
 }
 
 // DeleteService godoc
