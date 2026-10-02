@@ -165,19 +165,27 @@ func (h *MeHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if !authutil.HasRole(r, auth.RoleOwner) {
+	// Realm administrators may create salons via their Keycloak permission
+	// (visible in the token) without holding the Owner role; the created salon
+	// is flagged so it stays hidden from the public directory. Regular owners
+	// keep the existing Owner-role and single-salon checks.
+	isRealmAdmin := auth.IsRealmAdmin(auth.GetClaimsFromRequest(r))
+
+	if !isRealmAdmin && !authutil.HasRole(r, auth.RoleOwner) {
 		writeError(w, http.StatusForbidden, "owner role required")
 		return
 	}
 
-	hasSalon, err := h.buStore.HasAdminBusiness(r.Context(), h.pool, userID)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, "failed to check salon")
-		return
-	}
-	if hasSalon {
-		writeError(w, http.StatusConflict, "already has a business")
-		return
+	if !isRealmAdmin {
+		hasSalon, err := h.buStore.HasAdminBusiness(r.Context(), h.pool, userID)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "failed to check salon")
+			return
+		}
+		if hasSalon {
+			writeError(w, http.StatusConflict, "already has a business")
+			return
+		}
 	}
 
 	slug, err := availableSlug(r.Context(), h.businessStore, h.pool, name)
@@ -193,7 +201,7 @@ func (h *MeHandler) CreateBusiness(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	business := &models.Business{Name: name, Slug: slug}
+	business := &models.Business{Name: name, Slug: slug, RealmAdminCreated: isRealmAdmin}
 	err = db.WithTx(r.Context(), h.pool, func(tx pgx.Tx) error {
 		if err := h.businessStore.Create(r.Context(), tx, business); err != nil {
 			return err

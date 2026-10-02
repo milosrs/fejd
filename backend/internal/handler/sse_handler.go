@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fejd-backend/auth"
 	"fejd-backend/internal/sse"
 	"fejd-backend/internal/store"
 	"fmt"
@@ -24,6 +25,13 @@ func (h *SSEHandler) StreamSlots(w http.ResponseWriter, r *http.Request) {
 
 	b, err := h.business.GetBySlug(r.Context(), businessSlug)
 	if err != nil {
+		http.Error(w, "business not found", http.StatusNotFound)
+		return
+	}
+
+	// Realm-admin-created salons are hidden from non-realm-administrators, so
+	// their slot stream must not leak to those callers either.
+	if b.RealmAdminCreated && !auth.IsRealmAdmin(auth.GetClaimsFromRequest(r)) {
 		http.Error(w, "business not found", http.StatusNotFound)
 		return
 	}

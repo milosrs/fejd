@@ -53,6 +53,10 @@ type Business struct {
 	Longitude *float64
 	// Phone is the salon's public phone number.
 	Phone string
+	// RealmAdminCreated marks a salon created by a Keycloak realm
+	// administrator. These salons are hidden from the public directory and
+	// public routes for everyone except realm administrators.
+	RealmAdminCreated bool
 }
 
 type BusinessUser struct {
@@ -106,9 +110,9 @@ type Translation struct {
 }
 
 type Service struct {
-	ID              uuid.UUID
-	BusinessID      uuid.UUID
-	Name            string
+	ID         uuid.UUID
+	BusinessID uuid.UUID
+	Name       string
 	// Slug is the stable, human-readable identifier used in public URLs
 	// (/services/{slug}). Immutable after creation.
 	Slug            string

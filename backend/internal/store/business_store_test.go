@@ -4,10 +4,32 @@ import (
 	"context"
 	"testing"
 
+	"fejd-backend/internal/models"
+
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestBusinessStore_RealmAdminCreated(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.teardown()
+
+	ctx := context.Background()
+	store := NewBusinessStore(db.pool)
+
+	b := &models.Business{Name: "Hidden Salon", Slug: "hidden-salon", RealmAdminCreated: true}
+	require.NoError(t, store.Create(ctx, db.pool, b))
+
+	got, err := store.GetBySlug(ctx, "hidden-salon")
+	require.NoError(t, err)
+	assert.True(t, got.RealmAdminCreated)
+
+	all, err := store.List(ctx)
+	require.NoError(t, err)
+	require.Len(t, all, 1)
+	assert.True(t, all[0].RealmAdminCreated)
+}
 
 func TestBusinessStore_SlugExists(t *testing.T) {
 	db := setupTestDB(t)

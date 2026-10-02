@@ -6,6 +6,7 @@ import { useI18n } from "../lib/i18n"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Label } from "./ui/label"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card"
 import { PhotonAutocomplete, type PhotonPlace } from "./ui/photon-autocomplete"
 
 export interface SalonLocation {
@@ -16,20 +17,20 @@ export interface SalonLocation {
   phone?: string
 }
 
-// LocationDialog lets the salon owner maintain the structured location (city,
-// address, postal code, country, phone) that powers local SEO and JSON-LD. The
-// address and city fields autocomplete via Photon (OpenStreetMap, keyless) and
-// fill the coordinates so no backend geocoding is needed.
-export function LocationDialog({
+// SalonLocationForm is the inline (non-modal) structured location editor for the
+// salon settings page. The address and city fields autocomplete via Photon
+// (OpenStreetMap, keyless) and fill the coordinates so no backend geocoding is
+// needed.
+export function SalonLocationForm({
   businessId,
   slug,
   initial,
-  onClose,
+  onSaved,
 }: {
   businessId: string
   slug: string
   initial: SalonLocation
-  onClose: () => void
+  onSaved?: () => void
 }) {
   const queryClient = useQueryClient()
   const canWrite = useCanWrite()
@@ -84,7 +85,7 @@ export function LocationDialog({
       })
       await queryClient.invalidateQueries({ queryKey: ["salon", slug] })
       await queryClient.invalidateQueries({ queryKey: ["businesses"] })
-      onClose()
+      onSaved?.()
     } catch {
       setError(t("location.failed"))
     } finally {
@@ -93,76 +94,66 @@ export function LocationDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-sm rounded-2xl border border-border bg-background p-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-lg font-semibold text-foreground">{t("location.title")}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{t("location.help")}</p>
+    <Card>
+      <CardHeader>
+        <CardTitle>{t("location.title")}</CardTitle>
+        <CardDescription>{t("location.help")}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="space-y-1">
+          <Label htmlFor="location-address">{t("location.addressLine")}</Label>
+          <PhotonAutocomplete
+            value={addressLine}
+            onChange={setAddressLine}
+            onSelect={(place) => applyPlace(place, true)}
+          />
+        </div>
 
-        <div className="mt-4 space-y-3">
+        <div className="space-y-1">
+          <Label htmlFor="location-city">{t("location.city")}</Label>
+          <PhotonAutocomplete
+            value={city}
+            onChange={setCity}
+            onSelect={(place) => {
+              const chosenCity = place.city || place.addressLine || place.label
+              if (chosenCity) setCity(chosenCity)
+              applyPlace(place, false)
+            }}
+            placeholder={t("location.cityPlaceholder")}
+          />
+        </div>
+
+        <div className="grid grid-cols-2 gap-2">
           <div className="space-y-1">
-            <Label htmlFor="location-address">{t("location.addressLine")}</Label>
-            <PhotonAutocomplete
-              value={addressLine}
-              onChange={setAddressLine}
-              onSelect={(place) => applyPlace(place, true)}
-            />
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="location-city">{t("location.city")}</Label>
-            <PhotonAutocomplete
-              value={city}
-              onChange={setCity}
-              onSelect={(place) => {
-                const chosenCity = place.city || place.addressLine || place.label
-                if (chosenCity) setCity(chosenCity)
-                applyPlace(place, false)
-              }}
-              placeholder={t("location.cityPlaceholder")}
-            />
-          </div>
-
-          <div className="grid grid-cols-2 gap-2">
-            <div className="space-y-1">
-              <Label htmlFor="location-postal">{t("location.postalCode")}</Label>
-              <Input
-                id="location-postal"
-                value={postalCode}
-                onChange={(e) => setPostalCode(e.target.value)}
-              />
-            </div>
-            <div className="space-y-1">
-              <Label htmlFor="location-country">{t("location.country")}</Label>
-              <Input
-                id="location-country"
-                value={country}
-                onChange={(e) => setCountry(e.target.value)}
-              />
-            </div>
-          </div>
-
-          <div className="space-y-1">
-            <Label htmlFor="location-phone">{t("location.phone")}</Label>
+            <Label htmlFor="location-postal">{t("location.postalCode")}</Label>
             <Input
-              id="location-phone"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
+              id="location-postal"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="location-country">{t("location.country")}</Label>
+            <Input
+              id="location-country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
             />
           </div>
         </div>
 
-        {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
+        <div className="space-y-1">
+          <Label htmlFor="location-phone">{t("location.phone")}</Label>
+          <Input
+            id="location-phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+          />
+        </div>
 
-        <div className="mt-6 flex justify-end gap-2">
-          <Button variant="outline" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
+        {error && <p className="text-sm text-red-500">{error}</p>}
+
+        <div className="flex justify-end">
           <Button
             onClick={handleSave}
             isDisabled={saving || !city.trim() || !canWrite}
@@ -170,7 +161,7 @@ export function LocationDialog({
             {saving ? t("common.saving") : t("location.save")}
           </Button>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

@@ -229,7 +229,9 @@ func (m *Middleware) RequireApproved(next http.Handler) http.Handler {
 			http.Error(w, "unauthorized: missing claims", http.StatusUnauthorized)
 			return
 		}
-		if claims.ApprovalStatus != "approved" {
+		// Realm administrators are super-admins and are not subject to the
+		// owner-onboarding approval flag.
+		if claims.ApprovalStatus != "approved" && !IsRealmAdmin(claims) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(`{"error":"account pending approval"}`))

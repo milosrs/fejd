@@ -47,13 +47,15 @@ func newRouter(
 
 	r.Get("/swagger/*", httpSwagger.WrapHandler)
 
-	r.Get("/sitemap.xml", businessHandler.Sitemap)
+	r.With(optionalAuthenticate).Get("/sitemap.xml", businessHandler.Sitemap)
 
 	r.Route("/api", func(r chi.Router) {
-		// Public.
-		r.Get("/businesses", businessHandler.ListBusinesses)
+		// Public directory and salon routes. Optionally authenticated so realm
+		// administrators can still see salons that are hidden from everyone
+		// else.
+		r.With(optionalAuthenticate).Get("/businesses", businessHandler.ListBusinesses)
 
-		r.Route("/business/{slug}", func(r chi.Router) {
+		r.With(optionalAuthenticate).Route("/business/{slug}", func(r chi.Router) {
 			r.Get("/", businessHandler.GetBusiness)
 			r.Get("/services", businessHandler.GetServices)
 			r.Get("/services/{serviceSlug}", businessHandler.GetService)
@@ -221,7 +223,7 @@ func newRouter(
 
 		r.With(optionalAuthenticate).Get("/images/{imageID}", imageHandler.GetImage)
 
-		r.Get("/sse/business/{slug}/slots", sseHandler.StreamSlots)
+		r.With(optionalAuthenticate).Get("/sse/business/{slug}/slots", sseHandler.StreamSlots)
 	})
 
 	return r

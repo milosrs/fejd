@@ -21,6 +21,8 @@ export const mockI18nEn: Record<string, string> = {
   "common.name": "Name",
   "common.email": "Email",
   "common.more": "+{count} more",
+  "common.previous": "Previous",
+  "common.next": "Next",
 
   "app.welcome": "Welcome {name}",
   "app.allSalons": "All salons",
@@ -38,7 +40,8 @@ export const mockI18nEn: Record<string, string> = {
   "nav.barbers": "Barbers",
   "nav.book": "Book",
   "nav.myAppointments": "My appointments",
-  "nav.myReservations": "My reservations",
+  "nav.mySalon": "My Salon",
+  "nav.myReservations": "My salon appointments",
   "nav.reserveMyTime": "Reserve my time",
 
   "home.intro": "Book haircut appointments. Open a salon by its link, or manage your appointments below.",
@@ -184,6 +187,7 @@ export const mockI18nEn: Record<string, string> = {
   "booking.error.generic": "Booking failed. Please try again.",
 
   "appointments.title": "My Appointments",
+  "appointments.history": "Appointment history",
   "appointments.loginPrompt": "Please log in to view your appointments.",
   "appointments.empty": "No appointments yet.",
   "appointments.cancelled": "Appointment cancelled.",
@@ -349,7 +353,8 @@ export const mockI18nEn: Record<string, string> = {
   "deleteSalon.failed": "Failed to delete salon.",
   "deleteSalon.deleting": "Deleting…",
 
-  "policy.title": "Salon policy",
+  "policy.title": "Salon Policy",
+  "policy.description": "Manage your working time, days off, no-show policy and more",
   "policy.help": "Booking rules, time slots and default working hours.",
   "policy.cancellationNotice": "Cancellation notice (hours before)",
   "policy.noShowGrace": "No-show grace (optional)",
@@ -361,6 +366,7 @@ export const mockI18nEn: Record<string, string> = {
   "policy.autoApprove": "Automatic appointment approval",
   "policy.autoApproveHelp": "Approve new appointments automatically.",
   "policy.appointments": "Appointments",
+  "policy.appointmentsHelp": "Control approvals, reminders, cancellation notice and time slots.",
   "policy.workingHoursHelp": "Set when the salon is open. Days marked as non-working are closed every week.",
   "policy.workingHoursNonWorking": "Non-working",
   "policy.nonWorkingDaysPolicyHelp": "Pick days from the calendar. Mark a day as repeating to close it every year.",

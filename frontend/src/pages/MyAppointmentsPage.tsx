@@ -1,7 +1,11 @@
+import { useState } from "react"
 import { useNavigate } from "react-router"
+import { CalendarDate, getLocalTimeZone, today } from "@internationalized/date"
 import { useAuthStore } from "../stores/authStore"
 import { useMyAppointments } from "../hooks/useApi"
 import { MyAppointmentsList } from "../components/MyAppointmentsList"
+import { CalendarGrid } from "../components/reservations/CalendarGrid"
+import { toneFor, type ReservationTag } from "../components/reservations/types"
 import { Button } from "../components/ui/button"
 import { useI18n } from "../lib/i18n"
 
@@ -11,6 +15,22 @@ export function MyAppointmentsPage() {
   const login = useAuthStore((s) => s.login)
   const { data: appointments, isLoading } = useMyAppointments()
   const { t } = useI18n()
+
+  const todayDate = today(getLocalTimeZone())
+  const [month, setMonth] = useState(() => new CalendarDate(todayDate.year, todayDate.month, 1))
+  const [selected, setSelected] = useState<CalendarDate>(() => todayDate)
+
+  const eventsByDay: Record<string, ReservationTag[]> = {}
+  for (const a of appointments ?? []) {
+    const d = new Date(a.start_time)
+    const key = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`
+    ;(eventsByDay[key] ??= []).push({
+      id: a.id,
+      label: a.business_name || t("appointments.title"),
+      tone: toneFor(a.business_name || a.id),
+      muted: a.status === "cancelled",
+    })
+  }
 
   if (!authenticated) {
     return (
@@ -32,8 +52,20 @@ export function MyAppointmentsPage() {
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-4 py-8">
-        <MyAppointmentsList appointments={appointments} isLoading={isLoading} />
+      <main className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+        <CalendarGrid
+          month={month}
+          onMonthChange={setMonth}
+          selected={selected}
+          onSelect={setSelected}
+          today={todayDate}
+          eventsByDay={eventsByDay}
+        />
+
+        <section className="space-y-4">
+          <h2 className="text-lg font-semibold text-foreground">{t("appointments.history")}</h2>
+          <MyAppointmentsList appointments={appointments} isLoading={isLoading} />
+        </section>
       </main>
     </div>
   )

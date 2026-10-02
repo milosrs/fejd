@@ -218,6 +218,50 @@ func TestBusinessHandler_GetClosures_Empty(t *testing.T) {
 	assert.JSONEq(t, "[]", rr.Body.String())
 }
 
+func TestBusinessHandler_ListBusinesses_FiltersRealmAdminSalons(t *testing.T) {
+	h, businessStore, pool := newTestBusinessHandler(t)
+	ctx := context.Background()
+
+	require.NoError(t, businessStore.Create(ctx, pool, &models.Business{Name: "Public", Slug: "public"}))
+	require.NoError(t, businessStore.Create(ctx, pool, &models.Business{Name: "Hidden", Slug: "hidden", RealmAdminCreated: true}))
+
+	req := httptest.NewRequest(http.MethodGet, "/api/businesses", nil)
+	rr := httptest.NewRecorder()
+	h.ListBusinesses(rr, req)
+
+	require.Equal(t, http.StatusOK, rr.Code)
+	var anonymous []dto.DirectoryBusiness
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &anonymous))
+	require.Len(t, anonymous, 1)
+	assert.Equal(t, "public", anonymous[0].Slug)
+
+	reqAdmin := withRealmAdmin(httptest.NewRequest(http.MethodGet, "/api/businesses", nil))
+	rrAdmin := httptest.NewRecorder()
+	h.ListBusinesses(rrAdmin, reqAdmin)
+
+	require.Equal(t, http.StatusOK, rrAdmin.Code)
+	var admins []dto.DirectoryBusiness
+	require.NoError(t, json.Unmarshal(rrAdmin.Body.Bytes(), &admins))
+	require.Len(t, admins, 2)
+}
+
+func TestBusinessHandler_GetBusiness_HidesRealmAdminSalon(t *testing.T) {
+	h, businessStore, pool := newTestBusinessHandler(t)
+	ctx := context.Background()
+
+	require.NoError(t, businessStore.Create(ctx, pool, &models.Business{Name: "Hidden", Slug: "hidden", RealmAdminCreated: true}))
+
+	req := withSlug(httptest.NewRequest(http.MethodGet, "/api/business/hidden", nil), "hidden")
+	rr := httptest.NewRecorder()
+	h.GetBusiness(rr, req)
+	require.Equal(t, http.StatusNotFound, rr.Code)
+
+	reqAdmin := withRealmAdmin(withSlug(httptest.NewRequest(http.MethodGet, "/api/business/hidden", nil), "hidden"))
+	rrAdmin := httptest.NewRecorder()
+	h.GetBusiness(rrAdmin, reqAdmin)
+	require.Equal(t, http.StatusOK, rrAdmin.Code)
+}
+
 func TestBusinessHandler_GetWorkingHours(t *testing.T) {
 	h, businessStore, pool := newTestBusinessHandler(t)
 	ctx := context.Background()

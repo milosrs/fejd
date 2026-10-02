@@ -2,11 +2,13 @@ import { useMemo, useState } from "react"
 import { SectionForm } from "./SectionForm"
 import { SectionRenderer } from "../SectionRenderer"
 import { Button } from "../../ui/button"
+import { useSalonContext } from "../../../context/SalonContext"
 import { DEFAULT_LOCALE, useI18n } from "../../../lib/i18n"
 import {
   getLocalizedContent,
   isSectionType,
   setLocalizedContent,
+  type ContactContent,
   type Section,
   type SectionContent,
 } from "../../../lib/sections"
@@ -32,10 +34,20 @@ export function SectionEditor({
 }) {
   const type = isSectionType(section.type) ? section.type : "hero"
   const { t } = useI18n()
+  const { salon } = useSalonContext()
 
-  const [content, setContent] = useState<SectionContent>(() =>
-    getLocalizedContent(section.content, DEFAULT_LOCALE),
-  )
+  const [content, setContent] = useState<SectionContent>(() => {
+    const localized = getLocalizedContent(section.content, DEFAULT_LOCALE)
+    // When the salon already has a structured location, pre-fill the contact
+    // section's phone so the owner doesn't have to type it again.
+    if (type === "contact") {
+      const c = localized as ContactContent
+      if (!c.phone?.trim() && salon?.business.phone) {
+        return { ...c, phone: salon.business.phone }
+      }
+    }
+    return localized
+  })
 
   const previewSection = useMemo<Section>(
     () => ({

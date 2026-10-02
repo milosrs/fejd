@@ -69,6 +69,15 @@ func withRoles(r *http.Request, roles ...string) *http.Request {
 	return r.WithContext(ctx)
 }
 
+// withRealmAdmin marks a request as coming from a Keycloak realm administrator
+// (realm-level "admin" role), which auth.IsRealmAdmin recognises.
+func withRealmAdmin(r *http.Request) *http.Request {
+	ctx := context.WithValue(r.Context(), auth.ContextKeyClaims, &auth.Claims{
+		RealmAccess: map[string][]string{"roles": {"admin"}},
+	})
+	return r.WithContext(ctx)
+}
+
 func TestMeHandler_GetMe_NoSalon(t *testing.T) {
 	h, _, _, _ := newTestMeHandler(t)
 
@@ -250,6 +259,26 @@ func TestMeHandler_CreateBusiness_DoubleCreate(t *testing.T) {
 	h.CreateBusiness(rr, req)
 
 	require.Equal(t, http.StatusConflict, rr.Code)
+}
+
+func TestMeHandler_CreateBusiness_RealmAdmin(t *testing.T) {
+	h, businessStore, _, _ := newTestMeHandler(t)
+	ctx := context.Background()
+
+	body := `{"name":"Admin Salon"}`
+	req := withRealmAdmin(withUser(httptest.NewRequest(http.MethodPost, "/api/me/business", bytes.NewBufferString(body)), "admin-1", "pending"))
+	rr := httptest.NewRecorder()
+
+	h.CreateBusiness(rr, req)
+
+	require.Equal(t, http.StatusCreated, rr.Code)
+	var b dto.Business
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &b))
+	assert.Equal(t, "admin-salon", b.Slug)
+
+	got, err := businessStore.GetBySlug(ctx, "admin-salon")
+	require.NoError(t, err)
+	assert.True(t, got.RealmAdminCreated)
 }
 
 func TestMeHandler_TwoTierAuth(t *testing.T) {

@@ -53,6 +53,24 @@ func TestRequireApprovedMissingClaims(t *testing.T) {
 	assert.Equal(t, http.StatusUnauthorized, rr.Code)
 }
 
+func TestRequireApprovedRealmAdminBypassesApproval(t *testing.T) {
+	m := &Middleware{}
+	handler := m.RequireApproved(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+
+	ctx := context.WithValue(context.Background(), ContextKeyClaims, &Claims{
+		ApprovalStatus: "pending",
+		RealmAccess:    map[string][]string{"roles": {"admin"}},
+	})
+	req := httptest.NewRequest(http.MethodPost, "/", nil).WithContext(ctx)
+	rr := httptest.NewRecorder()
+
+	handler.ServeHTTP(rr, req)
+
+	assert.Equal(t, http.StatusOK, rr.Code)
+}
+
 func TestRequireVerifiedEmail(t *testing.T) {
 	cases := []struct {
 		name       string

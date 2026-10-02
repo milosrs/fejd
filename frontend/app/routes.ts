@@ -1,5 +1,12 @@
 import { type RouteConfig, index, layout, route } from "@react-router/dev/routes"
 
+// Salon settings subpages (menu on the left, content on the right).
+const salonSettingsRoutes = [
+  index("routes/salon-settings-index.tsx"),
+  route("general", "routes/salon-settings-general.tsx"),
+  route("policy", "routes/salon-settings-policy.tsx"),
+]
+
 // Salon site routes. The salon layout resolves the slug from the request host
 // (subdomain mode) or the :slug param (path mode / local dev).
 const salonRoutes = [
@@ -10,10 +17,17 @@ const salonRoutes = [
   route("book", "routes/salon-booking.tsx"),
   route("book/:serviceSlug", "routes/salon-booking.tsx", { id: "routes/salon-booking-service" }),
   route("policy", "routes/salon-policy.tsx"),
+  route("settings", "routes/salon-settings.tsx", salonSettingsRoutes),
 ]
 
 // Path-mode copy of the salon routes (/{slug}/*) used on local dev / hosts
 // without wildcard subdomains. Distinct ids avoid clashing with subdomain mode.
+const salonPathSettingsRoutes = [
+  index("routes/salon-settings-index.tsx", { id: "routes/salon-settings-path-index" }),
+  route("general", "routes/salon-settings-general.tsx", { id: "routes/salon-settings-path-general" }),
+  route("policy", "routes/salon-settings-policy.tsx", { id: "routes/salon-settings-path-policy" }),
+]
+
 const salonPathRoutes = [
   index("routes/salon-index.tsx", { id: "routes/salon-path-index" }),
   route("services", "routes/salon-services.tsx", { id: "routes/salon-path-services" }),
@@ -22,6 +36,7 @@ const salonPathRoutes = [
   route("book", "routes/salon-booking.tsx", { id: "routes/salon-path-booking" }),
   route("book/:serviceSlug", "routes/salon-booking.tsx", { id: "routes/salon-path-booking-service" }),
   route("policy", "routes/salon-policy.tsx", { id: "routes/salon-path-policy" }),
+  route("settings", "routes/salon-settings.tsx", { id: "routes/salon-settings-path" }, salonPathSettingsRoutes),
 ]
 
 export default [
@@ -38,4 +53,7 @@ export default [
   route("admin/business/:businessId/services", "routes/admin-services.tsx"),
   route("admin/business/:businessId/my-schedule", "routes/admin-my-schedule.tsx"),
   route("admin/business/:businessId/my-reservations", "routes/admin-my-reservations.tsx"),
+
+  // Catch-all 404 page, rendered inside the app shell (with the top nav bar).
+  route("*", "routes/not-found.tsx"),
 ] satisfies RouteConfig

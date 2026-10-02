@@ -1534,11 +1534,11 @@
                         "BearerAuth": []
                     }
                 ],
-                "description": "Returns the authenticated member's reservations (appointments) for a given date, with status and service name.",
+                "description": "Returns the authenticated member's reservations (appointments) for a single date or a date range, with status and service name. Pass either `date`, or both `from` and `to` (half-open range, `to` exclusive).",
                 "tags": [
                     "admin"
                 ],
-                "summary": "List my reservations for a date",
+                "summary": "List my reservations",
                 "parameters": [
                     {
                         "description": "Business UUID",
@@ -1553,7 +1553,22 @@
                         "description": "Date (YYYY-MM-DD)",
                         "name": "date",
                         "in": "query",
-                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Range start (YYYY-MM-DD, inclusive)",
+                        "name": "from",
+                        "in": "query",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "description": "Range end (YYYY-MM-DD, exclusive)",
+                        "name": "to",
+                        "in": "query",
                         "schema": {
                             "type": "string"
                         }

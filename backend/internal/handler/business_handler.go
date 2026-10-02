@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"fejd-backend/auth"
 	"fejd-backend/internal/dto"
 	"fejd-backend/internal/models"
 	"fejd-backend/internal/service"
@@ -66,6 +67,48 @@ func NewBusinessHandler(
 	}
 }
 
+// isRealmAdmin reports whether the request carries a Keycloak realm
+// administrator token (see auth.IsRealmAdmin). Anonymous requests and regular
+// users return false.
+func (h *BusinessHandler) isRealmAdmin(r *http.Request) bool {
+	return auth.IsRealmAdmin(auth.GetClaimsFromRequest(r))
+}
+
+// publicBusiness resolves a salon by slug and returns it only when the caller
+// is allowed to see it. Salons created by realm administrators are hidden from
+// everyone except realm administrators, so a disallowed caller gets the same
+// "not found" error a missing slug produces.
+func (h *BusinessHandler) publicBusiness(r *http.Request, slug string) (*models.Business, error) {
+	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	if err != nil {
+		return nil, err
+	}
+	if b.RealmAdminCreated && !h.isRealmAdmin(r) {
+		return nil, errBusinessHidden
+	}
+	return b, nil
+}
+
+// visibleBusinesses filters out realm-admin-created salons unless the caller is
+// a realm administrator. It preserves the input slice order and never returns
+// nil for an empty result.
+func visibleBusinesses(businesses []models.Business, isRealmAdmin bool) []models.Business {
+	if isRealmAdmin {
+		return businesses
+	}
+	out := make([]models.Business, 0, len(businesses))
+	for _, b := range businesses {
+		if !b.RealmAdminCreated {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
+// errBusinessHidden marks a salon that exists but is hidden from the caller; it
+// is surfaced as 404 so hidden salons are indistinguishable from missing ones.
+var errBusinessHidden = errors.New("business not found")
+
 // ListBusinesses godoc
 // @Summary      List salons
 // @Description  Returns all salons for the public directory.
@@ -80,6 +123,7 @@ func (h *BusinessHandler) ListBusinesses(w http.ResponseWriter, r *http.Request)
 		writeError(w, http.StatusInternalServerError, "failed to list businesses")
 		return
 	}
+	businesses = visibleBusinesses(businesses, h.isRealmAdmin(r))
 	if businesses == nil {
 		businesses = []models.Business{}
 	}
@@ -95,6 +139,7 @@ func (h *BusinessHandler) Sitemap(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to list businesses")
 		return
 	}
+	businesses = visibleBusinesses(businesses, h.isRealmAdmin(r))
 
 	base := strings.TrimSuffix(strings.TrimSpace(h.appDomain), "/")
 	if base == "" {
@@ -153,7 +198,7 @@ func urlEntry(loc string, mod time.Time) string {
 // @Router       /api/business/{slug} [get]
 func (h *BusinessHandler) GetBusiness(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -185,7 +230,7 @@ func (h *BusinessHandler) GetService(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
 	serviceSlug := chi.URLParam(r, "serviceSlug")
 
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -235,7 +280,7 @@ func (h *BusinessHandler) businessImages(ctx context.Context, businessID uuid.UU
 // @Router       /api/business/{slug}/sections [get]
 func (h *BusinessHandler) GetSections(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -270,7 +315,7 @@ func (h *BusinessHandler) GetSections(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/business/{slug}/closures [get]
 func (h *BusinessHandler) GetClosures(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -304,7 +349,7 @@ func (h *BusinessHandler) GetClosures(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/business/{slug}/working-hours [get]
 func (h *BusinessHandler) GetWorkingHours(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -338,7 +383,7 @@ func (h *BusinessHandler) GetWorkingHours(w http.ResponseWriter, r *http.Request
 // @Router       /api/business/{slug}/services [get]
 func (h *BusinessHandler) GetServices(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -364,7 +409,7 @@ func (h *BusinessHandler) GetServices(w http.ResponseWriter, r *http.Request) {
 // @Router       /api/business/{slug}/employees [get]
 func (h *BusinessHandler) GetEmployees(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -455,7 +500,7 @@ func (h *BusinessHandler) displayName(ctx context.Context, bu models.BusinessUse
 // @Router       /api/business/{slug}/services/{serviceID}/employees [get]
 func (h *BusinessHandler) GetServiceEmployees(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -522,7 +567,7 @@ func (h *BusinessHandler) GetServiceEmployees(w http.ResponseWriter, r *http.Req
 // @Router       /api/business/{slug}/slots [get]
 func (h *BusinessHandler) GetAvailableSlots(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return
@@ -582,7 +627,7 @@ func (h *BusinessHandler) GetAvailableSlots(w http.ResponseWriter, r *http.Reque
 // @Router       /api/business/{slug}/services/{serviceID}/combinations [get]
 func (h *BusinessHandler) GetServiceCombinations(w http.ResponseWriter, r *http.Request) {
 	slug := chi.URLParam(r, "slug")
-	b, err := h.businessStore.GetBySlug(r.Context(), slug)
+	b, err := h.publicBusiness(r, slug)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "business not found")
 		return

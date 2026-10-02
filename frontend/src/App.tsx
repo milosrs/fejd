@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Link, useLocation, useNavigate } from "react-router"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
-import { Menu as MenuIcon } from "lucide-react"
+import { Home as HomeIcon, Menu as MenuIcon, Scissors as ScissorsIcon } from "lucide-react"
 import { useAuthStore } from "./stores/authStore"
 import { useMe } from "./hooks/useMe"
 import { useHeaderHeightMeasure } from "./hooks/useHeaderHeightMeasure"
@@ -17,7 +17,9 @@ import { AdminServicesPage } from "./pages/AdminServicesPage"
 import { MySchedulePage } from "./pages/MySchedulePage"
 import { MyReservationsPage } from "./pages/MyReservationsPage"
 import { SalonPolicyPage } from "./pages/SalonPolicyPage"
+import { SalonSettingsPage, SalonGeneralSettings, SalonSettingsIndex } from "./pages/SalonSettingsPage"
 import { InvitedCustomersPage } from "./pages/InvitedCustomersPage"
+import { NotFoundPage } from "./pages/NotFoundPage"
 import { SalonLayout } from "./components/SalonLayout"
 import { Toaster } from "./components/ui/toaster"
 import { Button } from "./components/ui/button"
@@ -31,7 +33,7 @@ import { EmailVerificationBanner } from "./components/EmailVerificationBanner"
 import { SideDrawer } from "./components/ui/drawer"
 import { InviteLandingPage } from "./components/invite/InviteLandingPage"
 import { InviteAcceptHandler } from "./components/invite/InviteAcceptHandler"
-import { subdomainSlug, openAppHome } from "./lib/salonDomain"
+import { subdomainSlug, openAppHome, openSalon } from "./lib/salonDomain"
 import { consumeReturnTo, auth } from "./lib/auth"
 import { claimRegistrationRole } from "./lib/api"
 import { registerPush, setNotificationTapHandler } from "./lib/push"
@@ -106,12 +108,6 @@ export function AppInit({ children }: { children: React.ReactNode }) {
     registerPush().catch(() => {})
   }, [initialized, authenticated])
 
-  const isSalonView = (() => {
-    if (subdomainSlug()) return true
-    const first = location.pathname.split("/").filter(Boolean)[0]
-    return !!first && !["invite", "my", "admin"].includes(first)
-  })()
-
   return (
     <div className="animate-fade-in">
       <InviteAcceptHandler />
@@ -149,13 +145,22 @@ export function AppInit({ children }: { children: React.ReactNode }) {
             {initialized ? (
               authenticated && (
                 <div className="hidden min-w-0 items-center gap-2 md:flex">
-                  {isSalonView && (
+                  <button
+                    type="button"
+                    onClick={() => openAppHome(navigate)}
+                    className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                  >
+                    <HomeIcon className="size-4" />
+                    {t("nav.home")}
+                  </button>
+                  {hasSalon && primaryBusiness && (
                     <button
                       type="button"
-                      onClick={() => openAppHome(navigate)}
-                      className="shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                      onClick={() => openSalon(navigate, primaryBusiness.slug)}
+                      className="flex shrink-0 items-center gap-1.5 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
                     >
-                      {t("app.allSalons")}
+                      <ScissorsIcon className="size-4" />
+                      {t("nav.mySalon")}
                     </button>
                   )}
                   <nav className="flex items-center gap-1">
@@ -231,16 +236,28 @@ export function AppInit({ children }: { children: React.ReactNode }) {
           title={t("app.navigation")}
         >
           <nav className="flex flex-col gap-1 p-2">
-            {isSalonView && (
+            <button
+              type="button"
+              onClick={() => {
+                setNavOpen(false)
+                openAppHome(navigate)
+              }}
+              className="flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted"
+            >
+              <HomeIcon className="size-4" />
+              {t("nav.home")}
+            </button>
+            {hasSalon && primaryBusiness && (
               <button
                 type="button"
                 onClick={() => {
                   setNavOpen(false)
-                  openAppHome(navigate)
+                  openSalon(navigate, primaryBusiness.slug)
                 }}
-                className="rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted"
               >
-                {t("app.allSalons")}
+                <ScissorsIcon className="size-4" />
+                {t("nav.mySalon")}
               </button>
             )}
             <Link
@@ -349,6 +366,11 @@ function App() {  // On a salon subdomain the salon site is served from the root
                     <Route path="book" element={<BookingPage />} />
                     <Route path="book/:serviceSlug" element={<BookingPage />} />
                     <Route path="policy" element={<SalonPolicyPage />} />
+                    <Route path="settings" element={<SalonSettingsPage />}>
+                      <Route index element={<SalonSettingsIndex />} />
+                      <Route path="general" element={<SalonGeneralSettings />} />
+                      <Route path="policy" element={<SalonPolicyPage />} />
+                    </Route>
                   </Route>
                 ) : (
                   <>
@@ -361,6 +383,11 @@ function App() {  // On a salon subdomain the salon site is served from the root
                       <Route path="book" element={<BookingPage />} />
                       <Route path="book/:serviceSlug" element={<BookingPage />} />
                       <Route path="policy" element={<SalonPolicyPage />} />
+                      <Route path="settings" element={<SalonSettingsPage />}>
+                        <Route index element={<SalonSettingsIndex />} />
+                        <Route path="general" element={<SalonGeneralSettings />} />
+                        <Route path="policy" element={<SalonPolicyPage />} />
+                      </Route>
                     </Route>
                   </>
                 )}
@@ -373,6 +400,7 @@ function App() {  // On a salon subdomain the salon site is served from the root
                 <Route path="/admin/business/:businessId/services" element={<ProtectedRoute><OnboardingGate><AdminServicesPage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/my-schedule" element={<ProtectedRoute><OnboardingGate><MySchedulePage /></OnboardingGate></ProtectedRoute>} />
                 <Route path="/admin/business/:businessId/my-reservations" element={<ProtectedRoute><OnboardingGate><MyReservationsPage /></OnboardingGate></ProtectedRoute>} />
+                <Route path="*" element={<NotFoundPage />} />
               </Routes>
             </AppInit>
           </BrowserRouter>

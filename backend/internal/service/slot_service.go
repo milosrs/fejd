@@ -642,17 +642,15 @@ func (s *SlotService) DeleteEmployeeUnavailability(ctx context.Context, business
 }
 
 // ListOwnAppointments returns the staff member's own reservations (appointments
-// where they are the provider) for the given UTC day, in chronological order.
-func (s *SlotService) ListOwnAppointments(ctx context.Context, businessID uuid.UUID, userID string, date time.Time) ([]models.Appointment, error) {
+// where they are the provider) whose start time falls within the given
+// half-open [from, to) UTC interval, in chronological order.
+func (s *SlotService) ListOwnAppointments(ctx context.Context, businessID uuid.UUID, userID string, from, to time.Time) ([]models.Appointment, error) {
 	bu, err := s.businessUser.GetByBusinessAndUser(ctx, businessID, userID)
 	if err != nil {
 		return nil, fmt.Errorf("target user not found in business: %w", err)
 	}
 
-	dayStart := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
-	dayEnd := dayStart.AddDate(0, 0, 1)
-
-	return s.appointments.ListByBusinessUser(ctx, bu.ID, dayStart, dayEnd)
+	return s.appointments.ListByBusinessUser(ctx, bu.ID, from, to)
 }
 
 // CancelOwnAppointment cancels one of the caller's own active reservations with

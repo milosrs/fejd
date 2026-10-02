@@ -982,12 +982,14 @@ func (h *AdminHandler) DeleteMyUnavailability(w http.ResponseWriter, r *http.Req
 }
 
 // ListMyReservations godoc
-// @Summary      List my reservations for a date
-// @Description  Returns the authenticated member's reservations (appointments) for a given date, with status and service name.
+// @Summary      List my reservations
+// @Description  Returns the authenticated member's reservations (appointments) for a single date or a date range, with status and service name. Pass either `date`, or both `from` and `to` (half-open range, `to` exclusive).
 // @Tags         admin
 // @Produce      json
 // @Param        businessID path string true "Business UUID"
-// @Param        date query string true "Date (YYYY-MM-DD)"
+// @Param        date query string false "Date (YYYY-MM-DD)"
+// @Param        from query string false "Range start (YYYY-MM-DD, inclusive)"
+// @Param        to query string false "Range end (YYYY-MM-DD, exclusive)"
 // @Success      200 {array} dto.Appointment
 // @Failure      400 {object} ErrorResponse
 // @Failure      401 {object} ErrorResponse
@@ -1007,13 +1009,38 @@ func (h *AdminHandler) ListMyReservations(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	date, err := time.Parse(time.DateOnly, r.URL.Query().Get("date"))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "invalid date format, use YYYY-MM-DD")
-		return
+	q := r.URL.Query()
+	var from, to time.Time
+	if fromStr, toStr := q.Get("from"), q.Get("to"); fromStr != "" || toStr != "" {
+		if fromStr == "" || toStr == "" {
+			writeError(w, http.StatusBadRequest, "both from and to are required")
+			return
+		}
+		from, err = time.Parse(time.DateOnly, fromStr)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid from format, use YYYY-MM-DD")
+			return
+		}
+		to, err = time.Parse(time.DateOnly, toStr)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid to format, use YYYY-MM-DD")
+			return
+		}
+		if !to.After(from) {
+			writeError(w, http.StatusBadRequest, "to must be after from")
+			return
+		}
+	} else {
+		date, err := time.Parse(time.DateOnly, q.Get("date"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid date format, use YYYY-MM-DD")
+			return
+		}
+		from = time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, time.UTC)
+		to = from.AddDate(0, 0, 1)
 	}
 
-	appointments, err := h.slotService.ListOwnAppointments(r.Context(), businessID, userID, date)
+	appointments, err := h.slotService.ListOwnAppointments(r.Context(), businessID, userID, from, to)
 	if err != nil {
 		writeInternalError(w, err)
 		return

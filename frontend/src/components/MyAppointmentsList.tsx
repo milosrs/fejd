@@ -48,6 +48,8 @@ function StatusBadge({ status }: { status: string }) {
 
 // MyAppointmentsList renders the appointments the current user booked
 // themselves (as a customer), shared by the account and staff views.
+const PAGE_SIZE = 10
+
 export function MyAppointmentsList({
   appointments,
   isLoading,
@@ -62,6 +64,7 @@ export function MyAppointmentsList({
   const [reason, setReason] = useState("")
   const [cancelling, setCancelling] = useState(false)
   const [message, setMessage] = useState("")
+  const [page, setPage] = useState(0)
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ["my-appointments"] })
 
@@ -83,6 +86,9 @@ export function MyAppointmentsList({
   }
 
   const list = Array.isArray(appointments) ? appointments : []
+  const totalPages = Math.max(1, Math.ceil(list.length / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages - 1)
+  const pageItems = list.slice(currentPage * PAGE_SIZE, (currentPage + 1) * PAGE_SIZE)
 
   return (
     <>
@@ -92,7 +98,7 @@ export function MyAppointmentsList({
         <p className="text-muted-foreground">{t("appointments.empty")}</p>
       ) : (
         <div className="space-y-4">
-          {list.map((apt: Appointment) => {
+          {pageItems.map((apt: Appointment) => {
             const logoUrl = resolveImageUrl(apt.business_logo)
             const fallback = (apt.business_name ?? "?").charAt(0).toUpperCase()
             return (
@@ -153,6 +159,29 @@ export function MyAppointmentsList({
               </Card>
             )
           })}
+          {list.length > PAGE_SIZE && (
+            <div className="flex items-center justify-between gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                isDisabled={currentPage === 0}
+                onClick={() => setPage(currentPage - 1)}
+              >
+                {t("common.previous")}
+              </Button>
+              <span className="text-sm text-muted-foreground">
+                {currentPage + 1} / {totalPages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                isDisabled={currentPage >= totalPages - 1}
+                onClick={() => setPage(currentPage + 1)}
+              >
+                {t("common.next")}
+              </Button>
+            </div>
+          )}
           {message && (
             <p className={`text-sm ${message.startsWith("Failed") ? "text-red-500" : "text-green-600"}`}>
               {message}

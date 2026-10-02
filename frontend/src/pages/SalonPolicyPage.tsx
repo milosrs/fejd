@@ -1,18 +1,16 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router"
 import { useQueryClient } from "@tanstack/react-query"
 import { parseDate, getLocalTimeZone, today, Time } from "@internationalized/date"
-import { ArrowLeft } from "lucide-react"
+import { Save } from "lucide-react"
 import { useSalonContext, useIsOwner } from "../context/SalonContext"
-import { useSalonPolicy, updateSalonPolicy } from "../hooks/useApi"
+import { useSalonPolicy, updateSalonPolicy, type SalonPolicyInput } from "../hooks/useApi"
 import { useCanWrite } from "../hooks/useCanWrite"
 import { useI18n } from "../lib/i18n"
-import { salonPath } from "../lib/salonDomain"
 import { WEEKDAY_ORDER } from "../lib/calendar"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
 import { Label } from "../components/ui/label"
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "../components/ui/card"
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "../components/ui/card"
 import { Calendar, RangeCalendar } from "../components/ui/calendar"
 import { TimeField, TimeFieldInput, TimeFieldSegment } from "../components/ui/time-field"
 
@@ -93,7 +91,6 @@ function isValidDate(value: string): boolean {
 export function SalonPolicyPage() {
   const { slug, salon } = useSalonContext()
   const isOwner = useIsOwner()
-  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const canWrite = useCanWrite()
   const { t } = useI18n()
@@ -129,7 +126,9 @@ export function SalonPolicyPage() {
   const [rangeStart, setRangeStart] = useState("")
   const [rangeEnd, setRangeEnd] = useState("")
   const [rangeReason, setRangeReason] = useState("")
-  const [saving, setSaving] = useState(false)
+  const [savingHours, setSavingHours] = useState(false)
+  const [savingAppointments, setSavingAppointments] = useState(false)
+  const [savingClosures, setSavingClosures] = useState(false)
   const [error, setError] = useState("")
 
   useEffect(() => {
@@ -199,14 +198,7 @@ export function SalonPolicyPage() {
 
   if (!isOwner) {
     return (
-      <div className="space-y-4">
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="sm" onClick={() => navigate(salonPath(slug))}>
-            <ArrowLeft className="size-4" /> {t("common.back")}
-          </Button>
-        </div>
-        <p className="text-muted-foreground">{t("policy.notAuthorized")}</p>
-      </div>
+      <p className="text-muted-foreground">{t("policy.notAuthorized")}</p>
     )
   }
 
@@ -266,7 +258,64 @@ export function SalonPolicyPage() {
     setDateClosures((prev) => prev.filter((c) => c.key !== key))
   }
 
-  const handleSave = async () => {
+  const buildPolicyInput = (): SalonPolicyInput => {
+    const lead = parseInt(leadHours, 10)
+    const interval = parseInt(slotInterval, 10)
+    const noShow = noShowTime ? noShowTime.hour * 60 + noShowTime.minute : 0
+    const reminderLeadMinutes = reminderLead ? reminderLead.hour * 60 + reminderLead.minute : 0
+
+    return {
+      cancellation_lead_hours: Number.isNaN(lead) ? 0 : lead,
+      no_show_after_minutes: noShow,
+      slot_interval_minutes: Number.isNaN(interval) ? 30 : interval,
+      auto_approve: autoApprove,
+      appointment_reminder_enabled: reminderEnabled,
+      appointment_reminder_lead_minutes: reminderLeadMinutes,
+      staff_notifications_enabled: staffNotifications,
+      reminder_title: reminderTitle.trim(),
+      reminder_body: reminderBody.trim(),
+      timezone: getLocalTimeZone(),
+      working_hours: schedule
+        .filter((d) => !d.non_working)
+        .map((d) => ({
+          day_of_week: d.day_of_week,
+          start_time: d.start_time,
+          end_time: d.end_time,
+        })),
+      closures: [
+        ...schedule
+          .filter((d) => d.non_working)
+          .map((d) => ({ type: "weekly" as const, day_of_week: d.day_of_week })),
+        ...dateClosures.map(({ key: _key, ...c }) => ({
+          type: c.type,
+          start_date: c.start_date,
+          end_date: c.end_date,
+          day_of_week: c.day_of_week,
+          month: c.month,
+          day: c.day,
+          reason: c.reason || undefined,
+        })),
+      ],
+    }
+  }
+
+  const persistPolicy = async (setSaving: (v: boolean) => void) => {
+    setError("")
+    setSaving(true)
+    try {
+      await updateSalonPolicy(businessId, buildPolicyInput())
+      await queryClient.invalidateQueries({ queryKey: ["salon", slug] })
+      await queryClient.invalidateQueries({ queryKey: ["slots"] })
+    } catch {
+      setError(t("policy.failed"))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const saveWorkingHours = () => void persistPolicy(setSavingHours)
+
+  const saveAppointments = () => {
     const lead = parseInt(leadHours, 10)
     const interval = parseInt(slotInterval, 10)
     if (Number.isNaN(lead) || lead < 0) {
@@ -277,65 +326,16 @@ export function SalonPolicyPage() {
       setError(t("policy.intervalInvalid"))
       return
     }
-    const noShow = noShowTime ? noShowTime.hour * 60 + noShowTime.minute : 0
-    const reminderLeadMinutes = reminderLead ? reminderLead.hour * 60 + reminderLead.minute : 0
-    setSaving(true)
-    setError("")
-    try {
-      await updateSalonPolicy(businessId, {
-        cancellation_lead_hours: lead,
-        no_show_after_minutes: noShow,
-        slot_interval_minutes: interval,
-        auto_approve: autoApprove,
-        appointment_reminder_enabled: reminderEnabled,
-        appointment_reminder_lead_minutes: reminderLeadMinutes,
-        staff_notifications_enabled: staffNotifications,
-        reminder_title: reminderTitle.trim(),
-        reminder_body: reminderBody.trim(),
-        timezone: getLocalTimeZone(),
-        working_hours: schedule
-          .filter((d) => !d.non_working)
-          .map((d) => ({
-            day_of_week: d.day_of_week,
-            start_time: d.start_time,
-            end_time: d.end_time,
-          })),
-        closures: [
-          ...schedule
-            .filter((d) => d.non_working)
-            .map((d) => ({ type: "weekly" as const, day_of_week: d.day_of_week })),
-          ...dateClosures.map(({ key: _key, ...c }) => ({
-            type: c.type,
-            start_date: c.start_date,
-            end_date: c.end_date,
-            day_of_week: c.day_of_week,
-            month: c.month,
-            day: c.day,
-            reason: c.reason || undefined,
-          })),
-        ],
-      })
-      await queryClient.invalidateQueries({ queryKey: ["salon", slug] })
-      await queryClient.invalidateQueries({ queryKey: ["salon-policy", businessId] })
-      await queryClient.invalidateQueries({ queryKey: ["slots"] })
-      navigate(salonPath(slug))
-    } catch {
-      setError(t("policy.failed"))
-    } finally {
-      setSaving(false)
-    }
+    void persistPolicy(setSavingAppointments)
   }
+
+  const saveNonWorkingDays = () => void persistPolicy(setSavingClosures)
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between gap-2">
-        <Button variant="ghost" size="sm" onClick={() => navigate(salonPath(slug))}>
-          <ArrowLeft className="size-4" /> {t("common.back")}
-        </Button>
-        <h1 className="text-lg font-semibold text-foreground">{t("policy.title")}</h1>
-        <Button size="sm" onClick={handleSave} isDisabled={saving || !canWrite}>
-          {saving ? t("common.saving") : t("common.save")}
-        </Button>
+      <div className="space-y-1">
+        <h1 className="text-xl font-semibold text-foreground">{t("policy.title")}</h1>
+        <p className="text-sm text-muted-foreground">{t("policy.description")}</p>
       </div>
 
       <Card>
@@ -377,11 +377,17 @@ export function SalonPolicyPage() {
             </div>
           ))}
         </CardContent>
+        <CardFooter className="justify-end">
+          <Button size="sm" onClick={saveWorkingHours} isDisabled={savingHours || !canWrite}>
+            <Save /> {savingHours ? t("common.saving") : t("common.save")}
+          </Button>
+        </CardFooter>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>{t("policy.appointments")}</CardTitle>
+          <CardDescription>{t("policy.appointmentsHelp")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <label className="flex items-start gap-3 rounded-xl border border-border p-3">
@@ -509,12 +515,17 @@ export function SalonPolicyPage() {
             />
           </div>
         </CardContent>
+        <CardFooter className="justify-end">
+          <Button size="sm" onClick={saveAppointments} isDisabled={savingAppointments || !canWrite}>
+            <Save /> {savingAppointments ? t("common.saving") : t("common.save")}
+          </Button>
+        </CardFooter>
       </Card>
 
       <Card>
         <CardHeader>
           <CardTitle>{t("policy.nonWorkingDays")}</CardTitle>
-          <CardDescription>{t("policy.nonWorkingDaysPolicyHelp")}</CardDescription>
+          <CardDescription>{t("policy.nonWorkingDaysHelp")}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           {dateClosures.length === 0 && (
@@ -626,15 +637,14 @@ export function SalonPolicyPage() {
             </div>
           )}
         </CardContent>
+        <CardFooter className="justify-end">
+          <Button size="sm" onClick={saveNonWorkingDays} isDisabled={savingClosures || !canWrite}>
+            <Save /> {savingClosures ? t("common.saving") : t("common.save")}
+          </Button>
+        </CardFooter>
       </Card>
 
       {error && <p className="text-sm text-red-500">{error}</p>}
-
-      <div className="flex justify-end">
-        <Button onClick={handleSave} isDisabled={saving || !canWrite}>
-          {saving ? t("common.saving") : t("common.save")}
-        </Button>
-      </div>
     </div>
   )
 }

@@ -1381,14 +1381,18 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * List my reservations for a date
-         * @description Returns the authenticated member's reservations (appointments) for a given date, with status and service name.
+         * List my reservations
+         * @description Returns the authenticated member's reservations (appointments) for a single date or a date range, with status and service name. Pass either `date`, or both `from` and `to` (half-open range, `to` exclusive).
          */
         get: {
             parameters: {
-                query: {
+                query?: {
                     /** @description Date (YYYY-MM-DD) */
-                    date: string;
+                    date?: string;
+                    /** @description Range start (YYYY-MM-DD, inclusive) */
+                    from?: string;
+                    /** @description Range end (YYYY-MM-DD, exclusive) */
+                    to?: string;
                 };
                 header?: never;
                 path: {

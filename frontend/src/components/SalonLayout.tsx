@@ -3,19 +3,14 @@ import { useState } from "react"
 import { Menu as MenuIcon } from "lucide-react"
 import { SalonProvider, useSalonContext, useIsOwner } from "../context/SalonContext"
 import { Button } from "./ui/button"
-import { RenameSalonDialog } from "./RenameSalonDialog"
-import { DeleteSalonDialog } from "./DeleteSalonDialog"
-import { LocationDialog } from "./LocationDialog"
 import { salonPath } from "../lib/salonDomain"
-import { useCanWrite } from "../hooks/useCanWrite"
-import { useDisabledReason } from "../hooks/useDisabledReason"
 import { useHeaderHeightMeasure } from "../hooks/useHeaderHeightMeasure"
 import { useSections } from "../hooks/useSections"
 import { useI18n } from "../lib/i18n"
 import type { HeroContent } from "../lib/sections"
 import { Loader } from "./Loader"
 import { SideDrawer } from "./ui/drawer"
-import { DisabledTooltip } from "./ui/disabled-tooltip"
+import { NotFoundPage } from "../pages/NotFoundPage"
 
 const ownerActionClassName =
   "w-full rounded-lg px-3 py-2.5 text-left text-sm font-medium text-foreground hover:bg-muted"
@@ -24,13 +19,8 @@ function SalonShell() {
   const { slug, salon, isLoading, editing, setEditing } = useSalonContext()
   const isOwner = useIsOwner()
   const navigate = useNavigate()
-  const canWrite = useCanWrite()
-  const disabledReason = useDisabledReason()
   const { data: sections } = useSections(slug)
   const { pickLocalized, t } = useI18n()
-  const [renameOpen, setRenameOpen] = useState(false)
-  const [deleteOpen, setDeleteOpen] = useState(false)
-  const [locationOpen, setLocationOpen] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const salonHeaderRef = useHeaderHeightMeasure("--salon-header-height")
 
@@ -39,11 +29,7 @@ function SalonShell() {
   }
 
   if (!salon) {
-    return (
-      <div className="min-h-app flex items-center justify-center bg-background">
-        <p className="text-muted-foreground">{t("salon.notFound")}</p>
-      </div>
-    )
+    return <NotFoundPage />
   }
 
   const nav = [
@@ -111,33 +97,9 @@ function SalonShell() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => navigate(salonPath(slug, "/policy"))}
+                onClick={() => navigate(salonPath(slug, "/settings"))}
               >
-                {t("salon.policy")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setLocationOpen(true)}
-                isDisabled={!canWrite}
-              >
-                {t("location.open")}
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setRenameOpen(true)}
-                isDisabled={!canWrite}
-              >
-                {t("salon.rename")}
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => setDeleteOpen(true)}
-                isDisabled={!canWrite}
-              >
-                {t("salon.delete")}
+                {t("salon.settings")}
               </Button>
               <Button
                 variant="outline"
@@ -189,59 +151,11 @@ function SalonShell() {
               className={ownerActionClassName}
               onClick={() => {
                 setMenuOpen(false)
-                navigate(salonPath(slug, "/policy"))
+                navigate(salonPath(slug, "/settings"))
               }}
             >
-              {t("salon.policy")}
+              {t("salon.settings")}
             </button>
-            {(() => {
-              const btn = (
-                <button
-                  type="button"
-                  className={`${ownerActionClassName} disabled:opacity-50`}
-                  disabled={!canWrite}
-                  onClick={() => {
-                    setMenuOpen(false)
-                    setRenameOpen(true)
-                  }}
-                >
-                  {t("salon.rename")}
-                </button>
-              )
-              return disabledReason ? <DisabledTooltip reason={disabledReason} className="w-full">{btn}</DisabledTooltip> : btn
-            })()}
-            {(() => {
-              const btn = (
-                <button
-                  type="button"
-                  className={`${ownerActionClassName} disabled:opacity-50`}
-                  disabled={!canWrite}
-                  onClick={() => {
-                    setMenuOpen(false)
-                    setLocationOpen(true)
-                  }}
-                >
-                  {t("location.open")}
-                </button>
-              )
-              return disabledReason ? <DisabledTooltip reason={disabledReason} className="w-full">{btn}</DisabledTooltip> : btn
-            })()}
-            {(() => {
-              const btn = (
-                <button
-                  type="button"
-                  className={`${ownerActionClassName} text-destructive disabled:opacity-50`}
-                  disabled={!canWrite}
-                  onClick={() => {
-                    setMenuOpen(false)
-                    setDeleteOpen(true)
-                  }}
-                >
-                  {t("salon.delete")}
-                </button>
-              )
-              return disabledReason ? <DisabledTooltip reason={disabledReason} className="w-full">{btn}</DisabledTooltip> : btn
-            })()}
             <button
               type="button"
               className={ownerActionClassName}
@@ -255,39 +169,6 @@ function SalonShell() {
           </div>
         ) : null}
       </SideDrawer>
-
-      {renameOpen && (
-        <RenameSalonDialog
-          businessId={salon.business.id}
-          slug={slug}
-          currentName={salon.business.name}
-          onClose={() => setRenameOpen(false)}
-        />
-      )}
-
-      {deleteOpen && (
-        <DeleteSalonDialog
-          businessId={salon.business.id}
-          slug={slug}
-          salonName={salon.business.name}
-          onClose={() => setDeleteOpen(false)}
-        />
-      )}
-
-      {locationOpen && (
-        <LocationDialog
-          businessId={salon.business.id}
-          slug={slug}
-          initial={{
-            address_line: salon.business.address_line,
-            city: salon.business.city,
-            postal_code: salon.business.postal_code,
-            country: salon.business.country,
-            phone: salon.business.phone,
-          }}
-          onClose={() => setLocationOpen(false)}
-        />
-      )}
     </div>
   )
 }

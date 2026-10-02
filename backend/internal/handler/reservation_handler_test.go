@@ -171,3 +171,43 @@ func TestAdminHandler_MyReservations_NonMemberForbidden(t *testing.T) {
 
 	require.Equal(t, http.StatusForbidden, rr.Code)
 }
+
+func TestAdminHandler_MyReservations_ListRange(t *testing.T) {
+	h, buStore, businessID, _, _, _, apptID := newReservationTestHandler(t)
+
+	day := time.Now().UTC().AddDate(0, 0, 1)
+	from := day.Format("2006-01-02")
+	to := day.AddDate(0, 0, 1).Format("2006-01-02")
+
+	listReq := withPathParams(
+		httptest.NewRequest(http.MethodGet, "/api/admin/business/"+businessID.String()+"/me/appointments?from="+from+"&to="+to, nil),
+		map[string]string{"businessID": businessID.String()},
+	)
+	listReq = withUser(listReq, "emp-1", "approved")
+	rr := httptest.NewRecorder()
+	memberGuard(buStore, http.HandlerFunc(h.ListMyReservations)).ServeHTTP(rr, listReq)
+	require.Equal(t, http.StatusOK, rr.Code)
+
+	var reservations []dto.Appointment
+	require.NoError(t, json.Unmarshal(rr.Body.Bytes(), &reservations))
+	require.Len(t, reservations, 1)
+	assert.Equal(t, apptID, reservations[0].ID)
+	assert.Equal(t, "Haircut", reservations[0].ServiceName)
+}
+
+func TestAdminHandler_MyReservations_RangeRequiresBothBounds(t *testing.T) {
+	h, buStore, businessID, _, _, _, _ := newReservationTestHandler(t)
+
+	day := time.Now().UTC().AddDate(0, 0, 1)
+	from := day.Format("2006-01-02")
+
+	listReq := withPathParams(
+		httptest.NewRequest(http.MethodGet, "/api/admin/business/"+businessID.String()+"/me/appointments?from="+from, nil),
+		map[string]string{"businessID": businessID.String()},
+	)
+	listReq = withUser(listReq, "emp-1", "approved")
+	rr := httptest.NewRecorder()
+	memberGuard(buStore, http.HandlerFunc(h.ListMyReservations)).ServeHTTP(rr, listReq)
+
+	require.Equal(t, http.StatusBadRequest, rr.Code)
+}
