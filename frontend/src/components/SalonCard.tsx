@@ -6,7 +6,7 @@ import { useI18n } from "../lib/i18n"
 
 interface SalonCardProps {
   business: { id: string; name: string; slug: string }
-  isOwner: boolean
+  isOwner?: boolean
 }
 
 export function SalonCard({ business, isOwner }: SalonCardProps) {
@@ -48,11 +48,13 @@ export function SalonCard({ business, isOwner }: SalonCardProps) {
         {business.name}
       </span>
 
-      {isOwner && (
+      {isOwner === undefined ? (
+        <span className="absolute right-3 top-3 z-10 h-5 w-16 animate-pulse rounded-full bg-muted" />
+      ) : isOwner ? (
         <span className="absolute right-3 top-3 z-10 rounded-full bg-green-600 px-2.5 py-1 text-xs font-medium text-white">
           {t("salon.owner")}
         </span>
-      )}
+      ) : null}
     </button>
   )
 }

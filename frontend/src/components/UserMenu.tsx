@@ -5,9 +5,9 @@ import {
   Header,
   Menu,
   MenuItem,
+  MenuSection,
   MenuTrigger,
   Popover,
-  Section,
   Separator,
 } from "react-aria-components"
 import { Check, ImagePlus, LogOut, Monitor, Moon, QrCode, Sun } from "lucide-react"
@@ -306,7 +306,7 @@ export function UserMenu() {
           className="min-w-56 rounded-xl bg-popover p-1 text-popover-foreground shadow-lg ring-1 ring-foreground/5 dark:ring-foreground/10"
         >
           <Menu className="outline-none" onAction={(key) => handleAction(String(key))}>
-            <Section className="px-1">
+            <MenuSection className="px-1">
               <Header className={sectionHeaderClassName}>
                 {t("app.welcome", { name })}
               </Header>
@@ -316,25 +316,30 @@ export function UserMenu() {
                   {t("app.changePicture")}
                 </MenuItemContent>
               </MenuItem>
-            </Section>
+            </MenuSection>
             <Separator className="my-1 h-px bg-border" />
             {invites.options.length > 0 && (
               <>
-                <Section className="px-1">
+                <MenuSection className="px-1">
                   <Header className={sectionHeaderClassName}>{t("invite.menu.section")}</Header>
                   {invites.options.map((o) => (
-                    <MenuItem id={`invite-${o.kind}`} className={menuItemClassName} isDisabled={!canWrite}>
+                    <MenuItem
+                      key={o.kind}
+                      id={`invite-${o.kind}`}
+                      className={menuItemClassName}
+                      isDisabled={!canWrite}
+                    >
                       <MenuItemContent reason={disabledReason}>
                         <QrCode className="size-4" />
                         {t(o.labelKey)}
                       </MenuItemContent>
                     </MenuItem>
                   ))}
-                </Section>
+                </MenuSection>
                 <Separator className="my-1 h-px bg-border" />
               </>
             )}
-          <Section className="px-1">
+          <MenuSection className="px-1">
             <Header className={sectionHeaderClassName}>{t("app.theme")}</Header>
             <MenuItem id="theme-light" className={menuItemClassName}>
               <Sun className="size-4" />
@@ -351,9 +356,9 @@ export function UserMenu() {
               <span className="flex-1">{t("theme.system")}</span>
               {theme === "system" && <Check className="size-4" />}
             </MenuItem>
-          </Section>
+          </MenuSection>
           <Separator className="my-1 h-px bg-border" />
-          <Section className="px-1">
+          <MenuSection className="px-1">
             <Header className={sectionHeaderClassName}>{t("app.language")}</Header>
             <MenuItem id="lang-en" className={menuItemClassName}>
               <EnglandFlag />
@@ -365,14 +370,14 @@ export function UserMenu() {
               <span className="flex-1">{t("language.serbian")}</span>
               {locale === "rs" && <Check className="size-4" />}
             </MenuItem>
-          </Section>
+          </MenuSection>
           <Separator className="my-1 h-px bg-border" />
-          <Section className="px-1">
+          <MenuSection className="px-1">
             <MenuItem id="logout" className={`${menuItemClassName} text-destructive`}>
               <LogOut className="size-4" />
               {t("app.logout")}
             </MenuItem>
-          </Section>
+          </MenuSection>
         </Menu>
       </Popover>
       </MenuTrigger>

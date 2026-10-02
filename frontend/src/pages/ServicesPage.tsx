@@ -33,7 +33,7 @@ export function ServicesPage() {
   const [deleteError, setDeleteError] = useState("")
   const [formError, setFormError] = useState("")
 
-  const editingOn = editing && isOwner
+  const editingOn = editing && isOwner === true
 
   const editingServiceId = form?.mode === "edit" ? form.service.id : ""
   const { data: staffData } = useAdminEmployees(editingOn ? businessId : "")

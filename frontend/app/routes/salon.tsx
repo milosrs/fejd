@@ -3,6 +3,7 @@ import { SalonLayout } from "../../src/components/SalonLayout"
 import { APP_HOST, BASE_DOMAIN, resolveSubdomainSlug } from "../../src/lib/salonDomain"
 import { fetchPublic, prefetchPublic } from "../lib/serverData"
 import { resolveQueryClient } from "../lib/context"
+import { readLocaleCookie } from "../lib/locale"
 
 type SalonData = {
   business?: {
@@ -32,11 +33,12 @@ export async function loader({
   const hostname = new URL(request.url).hostname
   const slug = resolveSubdomainSlug(hostname, BASE_DOMAIN, APP_HOST) ?? params.slug ?? ""
   const qc = resolveQueryClient(context)
+  const locale = readLocaleCookie(request)
 
   let salon: SalonData | null = null
   let sections: unknown | null = null
 
-  await prefetchPublic(qc, ["i18n", "en"], "/api/i18n/en")
+  await prefetchPublic(qc, ["i18n", locale], `/api/i18n/${locale}`)
   if (slug) {
     ;[salon, sections] = await Promise.all([
       fetchPublic<SalonData>(`/api/business/${slug}`).catch(() => null),
@@ -83,9 +85,19 @@ export function meta({
   const salon = loaderData?.salon ?? null
 
   if (!slug || !salon) {
+    const homeUrl = `https://${BASE_DOMAIN || "fejd.fyi"}`
     return [
       { title: "fejd - Book haircut appointments" },
       { name: "description", content: "Book haircut appointments at salons near you." },
+      {
+        "script:ld+json": {
+          "@context": "https://schema.org",
+          "@type": "WebSite",
+          name: "fejd",
+          url: homeUrl,
+          publisher: { "@type": "Organization", name: "fejd", url: homeUrl },
+        },
+      },
     ]
   }
 

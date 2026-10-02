@@ -8,6 +8,7 @@ import { SalonCard } from "../components/SalonCard"
 
 export function HomePage() {
   const authenticated = useAuthStore((s) => s.authenticated)
+  const initialized = useAuthStore((s) => s.initialized)
   const roles = useAuthStore((s) => s.roles)
   const { data: me, isLoading: meLoading } = useMe()
   const { data: directory, isLoading: directoryLoading } = useBusinesses()
@@ -25,18 +26,26 @@ export function HomePage() {
     <div className="min-h-app flex flex-col items-center justify-center gap-4 bg-background p-8">
       <img src="/logo-white.jpg" alt="fejd" className="h-36 w-auto dark:hidden" />
       <img src="/logo_dark.jpg" alt="fejd" className="hidden h-36 w-auto dark:block" />
-      <p className="text-muted-foreground text-center max-w-sm">
-        {isOwner
-          ? t("home.owner.label")
-          : t("home.intro")}
-      </p>
+      {initialized ? (
+        <p className="text-muted-foreground text-center max-w-sm">
+          {isOwner
+            ? t("home.owner.label")
+            : t("home.intro")}
+        </p>
+      ) : (
+        <div className="h-4 w-56 animate-pulse rounded bg-muted" />
+      )}
 
-      {authenticated && isOwner && !hasSalon && <CreateSalonForm />}
+      {initialized && !meLoading && authenticated && isOwner && !hasSalon && <CreateSalonForm />}
 
-      {directoryLoading || meLoading ? null : (
+      {directoryLoading ? null : (
         <div className="grid w-full max-w-4xl grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {(directory ?? []).map((b) => (
-            <SalonCard key={b.id} business={b} isOwner={ownedBusinessIds.has(b.id)} />
+            <SalonCard
+              key={b.id}
+              business={b}
+              isOwner={initialized && !meLoading ? ownedBusinessIds.has(b.id) : undefined}
+            />
           ))}
         </div>
       )}

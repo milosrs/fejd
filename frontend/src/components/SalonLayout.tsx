@@ -100,7 +100,13 @@ function SalonShell() {
               </NavLink>
             ))}
           </nav>
-          {isOwner && (
+          {isOwner === undefined ? (
+            <div className="hidden md:flex items-center gap-2">
+              <div className="h-8 w-20 animate-pulse rounded-2xl bg-muted" />
+              <div className="h-8 w-20 animate-pulse rounded-2xl bg-muted" />
+              <div className="h-8 w-20 animate-pulse rounded-2xl bg-muted" />
+            </div>
+          ) : isOwner ? (
             <div className="hidden md:flex items-center gap-2">
               <Button
                 variant="outline"
@@ -141,7 +147,7 @@ function SalonShell() {
                 {editing ? t("common.done") : t("common.edit")}
               </Button>
             </div>
-          )}
+          ) : null}
         </div>
       </header>
 
@@ -169,7 +175,14 @@ function SalonShell() {
             </NavLink>
           ))}
         </nav>
-        {isOwner && (
+        {isOwner === undefined ? (
+          <div className="mt-2 flex flex-col gap-1 border-t border-border p-2">
+            <div className="h-9 w-full animate-pulse rounded-lg bg-muted" />
+            <div className="h-9 w-full animate-pulse rounded-lg bg-muted" />
+            <div className="h-9 w-full animate-pulse rounded-lg bg-muted" />
+            <div className="h-9 w-full animate-pulse rounded-lg bg-muted" />
+          </div>
+        ) : isOwner ? (
           <div className="mt-2 flex flex-col gap-1 border-t border-border p-2">
             <button
               type="button"
@@ -240,7 +253,7 @@ function SalonShell() {
               {editing ? t("common.done") : t("common.edit")}
             </button>
           </div>
-        )}
+        ) : null}
       </SideDrawer>
 
       {renameOpen && (

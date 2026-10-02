@@ -121,15 +121,21 @@ export function AppInit({ children }: { children: React.ReactNode }) {
       >
         <div className="flex items-center justify-between gap-3 px-4 pt-[calc(0.75rem+env(safe-area-inset-top))] pb-3 sm:px-6">
           <div className="flex min-w-0 items-center gap-2">
-            {authenticated && (
-              <button
-                type="button"
-                onClick={() => setNavOpen(true)}
-                aria-label={t("app.menu")}
-                className="shrink-0 rounded-md p-1.5 text-foreground hover:bg-muted md:hidden"
-              >
-                <MenuIcon className="size-5" />
-              </button>
+            {initialized ? (
+              authenticated && (
+                <button
+                  type="button"
+                  onClick={() => setNavOpen(true)}
+                  aria-label={t("app.menu")}
+                  className="shrink-0 rounded-md p-1.5 text-foreground hover:bg-muted md:hidden"
+                >
+                  <MenuIcon className="size-5" />
+                </button>
+              )
+            ) : (
+              <span className="shrink-0 rounded-md p-1.5 md:hidden">
+                <div className="size-5 animate-pulse rounded bg-muted" />
+              </span>
             )}
             <button
               type="button"
@@ -140,62 +146,76 @@ export function AppInit({ children }: { children: React.ReactNode }) {
               <img src="/logo-white.jpg" alt="fejd" className="h-7 w-auto dark:hidden" />
               <img src="/logo_dark.jpg" alt="fejd" className="hidden h-7 w-auto dark:block" />
             </button>
-            {authenticated && (
-              <div className="hidden min-w-0 items-center gap-2 md:flex">
-                {isSalonView && (
-                  <button
-                    type="button"
-                    onClick={() => openAppHome(navigate)}
-                    className="shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
-                  >
-                    {t("app.allSalons")}
-                  </button>
-                )}
-                <nav className="flex items-center gap-1">
-                  <Link
-                    to="/my/appointments"
-                    className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                  >
-                    {t("nav.myAppointments")}
-                  </Link>
-                  {isRealmAdmin && (
+            {initialized ? (
+              authenticated && (
+                <div className="hidden min-w-0 items-center gap-2 md:flex">
+                  {isSalonView && (
+                    <button
+                      type="button"
+                      onClick={() => openAppHome(navigate)}
+                      className="shrink-0 rounded-md border border-border px-3 py-1.5 text-sm font-medium text-foreground hover:bg-muted"
+                    >
+                      {t("app.allSalons")}
+                    </button>
+                  )}
+                  <nav className="flex items-center gap-1">
                     <Link
-                      to="/admin/invited-customers"
+                      to="/my/appointments"
                       className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                     >
-                      {t("nav.invitedCustomers")}
+                      {t("nav.myAppointments")}
                     </Link>
-                  )}
-                  {hasSalon && primaryBusiness && (
-                    <>
+                    {isRealmAdmin && (
                       <Link
-                        to={`/admin/business/${primaryBusiness.id}/my-reservations`}
+                        to="/admin/invited-customers"
                         className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
                       >
-                        {t("nav.myReservations")}
+                        {t("nav.invitedCustomers")}
                       </Link>
-                      <Link
-                        to={`/admin/business/${primaryBusiness.id}/my-schedule`}
-                        className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                      >
-                        {t("nav.reserveMyTime")}
-                      </Link>
-                    </>
-                  )}
-                </nav>
+                    )}
+                    {hasSalon && primaryBusiness && (
+                      <>
+                        <Link
+                          to={`/admin/business/${primaryBusiness.id}/my-reservations`}
+                          className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          {t("nav.myReservations")}
+                        </Link>
+                        <Link
+                          to={`/admin/business/${primaryBusiness.id}/my-schedule`}
+                          className="rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                        >
+                          {t("nav.reserveMyTime")}
+                        </Link>
+                      </>
+                    )}
+                  </nav>
+                </div>
+              )
+            ) : (
+              <div className="hidden min-w-0 items-center gap-2 md:flex">
+                <div className="h-5 w-20 animate-pulse rounded bg-muted" />
+                <div className="h-5 w-24 animate-pulse rounded bg-muted" />
               </div>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <LanguageToggle />
-            {authenticated ? (
-              <UserMenu />
+            {initialized ? (
+              authenticated ? (
+                <UserMenu />
+              ) : (
+                <>
+                  <Button variant="outline" onClick={login}>
+                    {t("common.logIn")}
+                  </Button>
+                  <Button onClick={() => register()}>{t("common.register")}</Button>
+                </>
+              )
             ) : (
               <>
-                <Button variant="outline" onClick={login}>
-                  {t("common.logIn")}
-                </Button>
-                <Button onClick={() => register()}>{t("common.register")}</Button>
+                <div className="h-8 w-16 animate-pulse rounded-2xl bg-muted" />
+                <div className="h-8 w-20 animate-pulse rounded-2xl bg-muted" />
               </>
             )}
           </div>

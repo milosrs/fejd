@@ -8,15 +8,16 @@ interface MapEmbedProps {
 
 const defaultClass = "h-64 w-full overflow-hidden rounded-xl border border-border"
 
-// CARTO Voyager is a free, keyless, stylized basemap built on OpenStreetMap
-// data. It looks much cleaner than the stock OSM "mapnik" layer.
+// CARTO Voyager is a stylized basemap built on OpenStreetMap data. It looks
+// much cleaner than the stock OSM "mapnik" layer. The `key` parameter removes
+// the "API key required" watermark from the raster tiles.
 const cartoTiles =
-  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png"
+  "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png?key=cb1_46vv_1_79a692582006f18d454e4f20"
 
 const attribution =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
 
-// MapEmbed renders a keyless, interactive map centered on the given address.
+// MapEmbed renders an interactive map centered on the given address.
 // Leaflet is imported lazily inside the effect so it never loads server-side
 // (Leaflet reads `window` at module load and would crash SSR).
 export function MapEmbed({ address, className }: MapEmbedProps) {
@@ -88,5 +89,5 @@ export function MapEmbed({ address, className }: MapEmbedProps) {
     }
   }, [])
 
-  return <div ref={containerRef} className={className ?? defaultClass} />
+  return <div ref={containerRef} className={`isolate ${className ?? defaultClass}`} />
 }

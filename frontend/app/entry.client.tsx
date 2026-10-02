@@ -1,7 +1,7 @@
 import { startTransition, StrictMode } from "react"
 import { hydrateRoot } from "react-dom/client"
 import { HydratedRouter } from "react-router/dom"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
+import { QueryClient, QueryClientProvider, hydrate } from "@tanstack/react-query"
 
 declare global {
   interface Window {
@@ -16,7 +16,7 @@ const queryClient = new QueryClient({
 })
 
 if (typeof window !== "undefined" && window.__REACT_QUERY_STATE__) {
-  queryClient.hydrate(window.__REACT_QUERY_STATE__)
+  hydrate(queryClient, window.__REACT_QUERY_STATE__)
 }
 
 startTransition(() => {

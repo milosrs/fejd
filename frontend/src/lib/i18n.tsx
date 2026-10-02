@@ -1,10 +1,22 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react"
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react"
 import { useQuery } from "@tanstack/react-query"
 import { GET } from "./api"
 
 export const DEFAULT_LOCALE = "en"
 export const SUPPORTED_LOCALES = ["en", "rs"]
 const LOCALE_STORAGE_KEY = "fejd-locale"
+const LOCALE_COOKIE = "fejd-locale"
+
+function readLocaleCookie(): string | undefined {
+  if (typeof document === "undefined") return undefined
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${LOCALE_COOKIE}=([^;]+)`))
+  return match?.[1]
+}
+
+function writeLocaleCookie(locale: string) {
+  if (typeof document === "undefined") return
+  document.cookie = `${LOCALE_COOKIE}=${locale}; path=/; max-age=31536000; SameSite=Lax`
+}
 
 interface I18nContextValue {
   locale: string
@@ -41,18 +53,34 @@ const fallbackI18n: I18nContextValue = {
   },
 }
 
-export function I18nProvider({ children }: { children: ReactNode }) {
-  const [locale, setLocaleState] = useState(() => {
+export function I18nProvider({
+  children,
+  initialLocale,
+}: {
+  children: ReactNode
+  initialLocale?: string
+}) {
+  // Start from the server-resolved locale (read from the cookie by the loader)
+  // so SSR and the first client render match. Persisted-but-uncached locales
+  // are applied in a client-only effect.
+  const [locale, setLocaleState] = useState(
+    initialLocale && SUPPORTED_LOCALES.includes(initialLocale) ? initialLocale : DEFAULT_LOCALE,
+  )
+
+  useEffect(() => {
     try {
-      const stored = localStorage.getItem(LOCALE_STORAGE_KEY)
-      if (stored && SUPPORTED_LOCALES.includes(stored)) return stored
+      const stored = readLocaleCookie() ?? localStorage.getItem(LOCALE_STORAGE_KEY)
+      if (stored && SUPPORTED_LOCALES.includes(stored) && stored !== locale) {
+        setLocaleState(stored)
+      }
     } catch {
-      // localStorage unavailable (private/strict mode) — fall back to default.
+      // localStorage unavailable (private/strict mode) — keep default.
     }
-    return DEFAULT_LOCALE
-  })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const setLocale = useCallback((next: string) => {
+    writeLocaleCookie(next)
     try {
       localStorage.setItem(LOCALE_STORAGE_KEY, next)
     } catch {
@@ -70,6 +98,9 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       return data ?? {}
     },
     staleTime: Infinity,
+    // Keep the previous locale's strings on screen while the new locale loads,
+    // so switching languages never flashes raw i18n keys.
+    placeholderData: (previousData) => previousData,
   })
 
   const value = useMemo<I18nContextValue>(

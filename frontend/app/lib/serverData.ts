@@ -8,8 +8,14 @@ const API_ORIGIN =
   import.meta.env.VITE_API_URL ||
   "http://localhost:8080"
 
+// Prefetch must never hang the SSR render: abort after a short window so the
+// server streams the shell even if the backend is slow/unreachable.
+const FETCH_TIMEOUT_MS = 5_000
+
 export async function fetchPublic<T = unknown>(path: string): Promise<T> {
-  const res = await fetch(`${API_ORIGIN}${path}`)
+  const res = await fetch(`${API_ORIGIN}${path}`, {
+    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+  })
   if (!res.ok) {
     throw new Error(`fetch ${path} failed: ${res.status}`)
   }

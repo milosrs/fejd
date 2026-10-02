@@ -14,8 +14,8 @@ export default function handleRequest(
   loadContext: unknown,
 ) {
   const queryClient = resolveQueryClient(loadContext)
-  // Crawlers get the fully-rendered HTML (meta + JSON-LD resolved); browsers
-  // get the shell early for faster TTFB.
+  // Crawlers get the fully-rendered HTML (meta + JSON-LD); browsers get the
+  // shell early so a slow backend can't block the initial paint.
   const readyOption: "onShellReady" | "onAllReady" = isbot(request.headers.get("user-agent"))
     ? "onAllReady"
     : "onShellReady"

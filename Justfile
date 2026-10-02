@@ -70,13 +70,15 @@ dev-backend:
 dev-frontend:
     cd frontend && pnpm dev
 
+# Clear Vite's dependency cache and frontend build output. Use when the dev
+# server serves stale/wrong modules (e.g. "disallowed MIME type" errors) after
+# dependencies change.
+clean-cache:
+    rm -rf frontend/node_modules/.vite frontend/dist frontend/build
+    @echo "Cleared Vite cache and frontend build output."
+
 # Run backend, Keycloak and DB in docker-compose, and the frontend locally with hot reload
 dev: up-backend dev-frontend
-
-# Detect the current LAN IP and write it into frontend/.env and the Keycloak
-# realm config so phones/tablets on the same network can reach the app + login.
-ip-update:
-    @./scripts/update-lan-ip.sh
 
 # Start ngrok tunnel to expose Keycloak for identity provider testing
 ngrok-keycloak:

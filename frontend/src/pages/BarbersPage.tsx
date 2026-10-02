@@ -52,7 +52,7 @@ export function BarbersPage() {
   const [inviteRole, setInviteRole] = useState<"employee" | "customer">("employee")
   const [notice, setNotice] = useState("")
 
-  const editingOn = editing && isOwner
+  const editingOn = editing && isOwner === true
   const employees = data ?? []
   const services = (servicesData ?? []).filter((s) => s.active)
 
@@ -100,7 +100,12 @@ export function BarbersPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold text-foreground">{t("barbers.title")}</h2>
         <div className="flex items-center gap-2">
-          {isMember && (
+          {isMember === undefined ? (
+            <>
+              <div className="h-8 w-24 animate-pulse rounded-2xl bg-muted" />
+              <div className="h-8 w-32 animate-pulse rounded-2xl bg-muted" />
+            </>
+          ) : isMember ? (
             <>
               <Button size="sm" variant="outline" onClick={() => handleInviteClick("employee")} isDisabled={!canWrite}>
                 <QrCode className="size-3" /> {t("barbers.invite")}
@@ -109,7 +114,7 @@ export function BarbersPage() {
                 <QrCode className="size-3" /> {t("barbers.inviteCustomer")}
               </Button>
             </>
-          )}
+          ) : null}
           {editingOn && (
             <Button size="sm" onClick={() => setForm({ mode: "create" })} isDisabled={!canWrite}>
               <Plus className="size-3" /> {t("barbers.add")}

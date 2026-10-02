@@ -74,6 +74,7 @@ result-*
 
 backend/fejd-backend
 backend/google-service.json
+frontend/.react-router/
 # Editor/IDE
 # .idea/
 # .vscode/

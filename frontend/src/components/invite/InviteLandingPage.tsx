@@ -9,6 +9,7 @@ export function InviteLandingPage() {
   const { token = "" } = useParams<{ token: string }>()
   const setToken = useAuthStore((s) => s.setPendingInviteToken)
   const authenticated = useAuthStore((s) => s.authenticated)
+  const initialized = useAuthStore((s) => s.initialized)
   const login = useAuthStore((s) => s.login)
   const register = useAuthStore((s) => s.register)
   const { data: invitation, isLoading, isError } = useInvitation(token || null)
@@ -41,6 +42,15 @@ export function InviteLandingPage() {
           <p className="text-muted-foreground text-center max-w-sm">
             {t("invite.landing.invalid")}
           </p>
+        </>
+      ) : !initialized ? (
+        <>
+          <div className="h-6 w-64 animate-pulse rounded bg-muted" />
+          <div className="h-4 w-80 animate-pulse rounded bg-muted" />
+          <div className="flex gap-3">
+            <div className="h-9 w-20 animate-pulse rounded-2xl bg-muted" />
+            <div className="h-9 w-24 animate-pulse rounded-2xl bg-muted" />
+          </div>
         </>
       ) : authenticated ? (
         <>

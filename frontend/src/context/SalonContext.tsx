@@ -48,23 +48,32 @@ export function useSalonContext() {
   return ctx
 }
 
-export function useIsOwner() {
+// useIsOwner returns undefined while the auth state (and the current user's
+// businesses) are still resolving, so callers can render a skeleton instead of
+// flashing the non-owner variant before the real value is known.
+export function useIsOwner(): boolean | undefined {
   const { slug } = useSalonContext()
+  const initialized = useAuthStore((s) => s.initialized)
   const authenticated = useAuthStore((s) => s.authenticated)
   const roles = useAuthStore((s) => s.roles)
-  const { data: me } = useMe()
+  const { data: me, isLoading } = useMe()
 
+  if (!initialized) return undefined
   if (!authenticated || !hasRole(roles, "Owner")) return false
+  if (isLoading || !me) return undefined
   return isOwnerOfBusiness(me, slug)
 }
 
 // useIsMember is true for any active member of the current salon (owner or
 // employee). Member-level actions like generating invite links rely on it.
-export function useIsMember() {
+export function useIsMember(): boolean | undefined {
   const { slug } = useSalonContext()
+  const initialized = useAuthStore((s) => s.initialized)
   const authenticated = useAuthStore((s) => s.authenticated)
-  const { data: me } = useMe()
+  const { data: me, isLoading } = useMe()
 
-  if (!authenticated || !me) return false
+  if (!initialized) return undefined
+  if (!authenticated) return false
+  if (isLoading || !me) return undefined
   return me.businesses.some((b) => b.slug === slug)
 }

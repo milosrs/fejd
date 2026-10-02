@@ -162,7 +162,7 @@ export function LandingPage() {
 
   if (isLoading || !ready) return null
 
-  const editingOn = editing && isOwner
+  const editingOn = editing && isOwner === true
 
   return (
     <section className="space-y-8">

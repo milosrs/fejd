@@ -27,6 +27,12 @@ function notify() {
   for (const listener of listeners) listener()
 }
 
+// keycloak.init() may only be called once per page load. Cache the in-flight
+// promise so React StrictMode's double-invocation of the init effect reuses the
+// same attempt instead of resolving early with a premature `authenticated=false`
+// (which briefly flashed the app as logged-out before Keycloak finished).
+let keycloakInitPromise: Promise<boolean> | null = null
+
 export const webAdapter: AuthAdapter = {
   async init() {
     // keycloak-js drives its own auth lifecycle (silent SSO check, token
@@ -43,11 +49,14 @@ export const webAdapter: AuthAdapter = {
         .catch(() => notify())
     }
 
-    return keycloak.init({
-      onLoad: "check-sso",
-      pkceMethod: "S256",
-      silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
-    })
+    if (!keycloakInitPromise) {
+      keycloakInitPromise = keycloak.init({
+        onLoad: "check-sso",
+        pkceMethod: "S256",
+        silentCheckSsoRedirectUri: `${window.location.origin}/silent-check-sso.html`,
+      })
+    }
+    return keycloakInitPromise
   },
 
   async login() {

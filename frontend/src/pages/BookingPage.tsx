@@ -38,6 +38,7 @@ export function BookingPage() {
   const { serviceSlug } = useParams<{ serviceSlug: string }>()
   const { slug, salon } = useSalonContext()
   const authenticated = useAuthStore((s) => s.authenticated)
+  const initialized = useAuthStore((s) => s.initialized)
   const login = useAuthStore((s) => s.login)
   const canWrite = useCanWrite()
   const { t, ready } = useI18n()
@@ -348,11 +349,15 @@ export function BookingPage() {
                   </dl>
                   {error && <p className="text-sm text-destructive">{error}</p>}
                   <Button onClick={handleBook} isDisabled={booking || !ready || !canWrite} className="w-full">
-                    {!authenticated
-                      ? t("booking.loginToComplete")
-                      : booking
-                        ? t("booking.booking")
-                        : t("booking.confirm.button")}
+                    {initialized ? (
+                      !authenticated
+                        ? t("booking.loginToComplete")
+                        : booking
+                          ? t("booking.booking")
+                          : t("booking.confirm.button")
+                    ) : (
+                      <span className="inline-block h-4 w-24 animate-pulse rounded bg-muted-foreground/30" />
+                    )}
                   </Button>
                 </CardContent>
               </Card>

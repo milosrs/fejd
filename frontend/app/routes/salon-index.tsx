@@ -23,30 +23,7 @@ export async function loader({
   return { slug }
 }
 
-const homeJsonLd = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  name: "fejd",
-  url: `https://${BASE_DOMAIN || "fejd.fyi"}`,
-  publisher: {
-    "@type": "Organization",
-    name: "fejd",
-    url: `https://${BASE_DOMAIN || "fejd.fyi"}`,
-  },
-}
-
 export default function SalonIndex() {
   const { slug } = useLoaderData<typeof loader>()
-  if (slug) {
-    return <LandingPage />
-  }
-  return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeJsonLd) }}
-      />
-      <HomePage />
-    </>
-  )
+  return slug ? <LandingPage /> : <HomePage />
 }

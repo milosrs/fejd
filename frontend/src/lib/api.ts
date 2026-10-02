@@ -20,13 +20,14 @@ const errorMiddleware: Middleware = {
   async onResponse({ response }) {
     if (response.status === 401) {
       // A 401 usually means a stale token, not a dead session: refresh it and
-      // let the query retry with the fresh token. Only fall back to a full
-      // login redirect when the refresh fails, which terminates the loop.
+      // let the query retry with the fresh token. If the refresh fails, just
+      // mark the user unauthenticated — the ProtectedRoute will prompt for login
+      // when the user actually tries to reach a protected page. Auto-redirecting
+      // here causes a full-page bounce on the initial load.
       const refreshed = await auth.refresh().catch(() => false)
       if (!refreshed) {
-        console.warn("[api] 401 from", response.url, "- session expired, re-authenticating")
+        console.warn("[api] 401 from", response.url, "- session expired")
         useAuthStore.setState({ authenticated: false, userInfo: null, roles: [] })
-        auth.login().catch(() => {})
       }
     }
     if (!response.ok) {
