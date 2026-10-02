@@ -2,8 +2,9 @@ import { defineConfig } from "vite"
 import { reactRouter } from "@react-router/dev/vite"
 import tailwindcss from "@tailwindcss/vite"
 
-// Framework-mode (SSR) build for the web. Native/Capacitor and Storybook use
-// vite.config.spa.ts (client-only, react() + VitePWA).
+// Framework-mode (SSR) build for the web. Native/Capacitor uses
+// vite.config.spa.ts (client-only, react() + VitePWA); Storybook uses
+// vite.config.storybook.ts (client-only, react() + Tailwind).
 export default defineConfig({
   plugins: [reactRouter(), tailwindcss()],
   server: {

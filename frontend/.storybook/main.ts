@@ -9,7 +9,13 @@ const config: StorybookConfig = {
   ],
   framework: {
     name: "@storybook/react-vite",
-    options: {},
+    options: {
+      builder: {
+        // Storybook must not load vite.config.ts (React Router SSR) nor
+        // vite.config.spa.ts (VitePWA); it uses a minimal client-only config.
+        viteConfigPath: "vite.config.storybook.ts",
+      },
+    },
   },
 }
 

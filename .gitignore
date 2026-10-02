@@ -80,3 +80,5 @@ frontend/.react-router/
 # .vscode/
 cert
 cert.pub
+# Storybook debug log
+frontend/debug-storybook.log
