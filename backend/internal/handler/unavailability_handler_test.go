@@ -39,7 +39,7 @@ func newUnavailabilityTestHandler(t *testing.T) (*AdminHandler, *store.BusinessS
 		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, nil, hub, pool,
 	)
 
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, nil, appointmentStore, slotService, nil, nil, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, nil, appointmentStore, slotService, nil, nil, nil, pool)
 
 	ctx := context.Background()
 	b := &models.Business{Name: "Salon", Slug: "salon"}

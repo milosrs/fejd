@@ -211,6 +211,13 @@ type MessageResponse struct {
 	Message string `json:"message" validate:"required" example:"operation complete"`
 }
 
+// PublishSalonResponse reports the outcome of a publish request. Status is
+// "published" when the salon was submitted, or "no_changes" when the salon's
+// public content is unchanged since the last publish.
+type PublishSalonResponse struct {
+	Status string `json:"status" validate:"required" example:"published"`
+}
+
 // Translations is a flat map of translation key -> localized value.
 type Translations map[string]string
 

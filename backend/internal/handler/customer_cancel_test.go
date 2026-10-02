@@ -99,7 +99,7 @@ func newCancelTestEnv(t *testing.T) *cancelTestEnv {
 
 	return &cancelTestEnv{
 		apptHandler:      NewAppointmentHandler(appointmentStore, serviceStore, businessStore, buStore, slotService, imageLinkStore),
-		adminHandler:     NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, businessClosureStore, nil, appointmentStore, slotService, nil, nil, pool),
+		adminHandler:     NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, businessClosureStore, nil, appointmentStore, slotService, nil, nil, nil, pool),
 		appointmentStore: appointmentStore,
 		businessStore:    businessStore,
 		buStore:          buStore,

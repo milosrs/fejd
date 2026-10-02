@@ -93,8 +93,12 @@ export function MySchedulePage() {
       <header className="border-b border-border">
         <div className="max-w-4xl mx-auto px-4 py-4 flex gap-4 items-center">
           <h1 className="text-xl font-semibold text-foreground">{t("schedule.title")}</h1>
-          <Button variant="outline" size="sm" onClick={() => navigate("/my/appointments")}>
-            {t("nav.myAppointments")}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => navigate(`/admin/business/${businessId}/my-reservations`)}
+          >
+            {t("nav.myReservations")}
           </Button>
         </div>
       </header>

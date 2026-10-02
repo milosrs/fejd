@@ -14,6 +14,7 @@ import {
   useMyUnavailability,
   useBusinessAppointments,
   useBusinessUnavailability,
+  useBusinessClosures,
   useAdminEmployees,
   useCustomers,
   cancelReservation,
@@ -27,6 +28,7 @@ import {
 } from "../hooks/useApi"
 import { useI18n } from "../lib/i18n"
 import { formatCancellationReason } from "../lib/cancellation"
+import { closureDateKeys } from "../lib/calendar"
 import { resolveImageUrl } from "../lib/images"
 import { Button } from "../components/ui/button"
 import { Label } from "../components/ui/label"
@@ -115,7 +117,9 @@ export function MyReservationsPage() {
   const { data: businessUnavailability } = useBusinessUnavailability(isOwner ? businessId! : "")
   const { data: employees } = useAdminEmployees(isOwner ? businessId! : "")
   const { data: customers } = useCustomers(businessId!)
+  const { data: closures } = useBusinessClosures(slug ?? "")
   const { t } = useI18n()
+  const closedDays = closureDateKeys(closures)
 
   const [cancelTarget, setCancelTarget] = useState<Appointment | null>(null)
   const [reason, setReason] = useState("")
@@ -473,6 +477,7 @@ export function MyReservationsPage() {
             onSelect={goToDate}
             today={todayDate}
             eventsByDay={eventsByDay}
+            closedDays={closedDays}
           />
           <div className="relative lg:min-h-0">
             <ScheduledPanel

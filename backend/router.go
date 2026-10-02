@@ -141,6 +141,7 @@ func newRouter(
 				r.Put("/name", adminHandler.RenameBusiness)
 				r.Put("/location", adminHandler.UpdateBusinessLocation)
 				r.Delete("/", adminHandler.DeleteBusiness)
+				r.Post("/publish", adminHandler.PublishSalon)
 
 				r.Post("/employees", adminHandler.CreateEmployee)
 				r.Get("/employees", adminHandler.GetEmployees)

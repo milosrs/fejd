@@ -39,7 +39,7 @@ func newReservationTestHandler(t *testing.T) (*AdminHandler, *store.BusinessUser
 		appointmentStore, workingHoursStore, businessHoursStore, overrideStore, nil,
 		serviceStore, businessStore, buStore, employeeServiceStore, unavailabilityStore, nil, hub, pool,
 	)
-	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, nil, appointmentStore, slotService, nil, nil, pool)
+	h := NewAdminHandler(businessStore, buStore, serviceStore, nil, nil, businessHoursStore, nil, nil, appointmentStore, slotService, nil, nil, nil, pool)
 
 	b := &models.Business{Name: "Salon", Slug: "salon"}
 	require.NoError(t, businessStore.Create(ctx, pool, b))

@@ -389,6 +389,7 @@ export const mockI18nEn: Record<string, string> = {
   "policy.nonWorkingDayRangeEnd": "To",
   "policy.nonWorkingDayEveryYear": "every year",
   "policy.failed": "Failed to save policy.",
+  "policy.saved": "Policy saved.",
   "policy.savePolicy": "Save policy",
 
   "onboarding.pending": "Your account is awaiting approval. Check back shortly.",

@@ -28,6 +28,7 @@ import (
 	"fejd-backend/internal/db"
 	"fejd-backend/internal/email"
 	"fejd-backend/internal/handler"
+	"fejd-backend/internal/indexing"
 	"fejd-backend/internal/jobs"
 	"fejd-backend/internal/keycloak"
 	"fejd-backend/internal/push"
@@ -86,6 +87,7 @@ func main() {
 	pageStore := store.NewPageStore(pool)
 	translationStore := store.NewTranslationStore(pool)
 	pushTokenStore := store.NewPushTokenStore(pool)
+	salonPublishStore := store.NewSalonPublishStore(pool)
 
 	var imageStorage storage.ImageStorage
 	if cfg.ImageStorage.Backend != config.BackendPostgres {
@@ -109,8 +111,14 @@ func main() {
 		slotService, businessStore,
 	)
 
+	sitemapCache := service.NewSitemapCache(10 * time.Minute)
+	indexer := indexing.NoopIndexer{}
+	publishService := service.NewSalonPublishService(
+		businessStore, serviceStore, buStore, employeeServiceStore, pageStore, sectionStore, userStore, imageLinkStore, salonPublishStore, indexer, sitemapCache, pool, cfg.AppDomain,
+	)
+
 	businessHandler := handler.NewBusinessHandler(
-		businessStore, buStore, userStore, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, businessClosureStore, businessHoursStore, slotService, cfg.AppDomain,
+		businessStore, buStore, userStore, serviceStore, pageStore, sectionStore, imageLinkStore, employeeServiceStore, businessClosureStore, businessHoursStore, slotService, sitemapCache, cfg.AppDomain,
 	)
 
 	appointmentHandler := handler.NewAppointmentHandler(
@@ -128,7 +136,7 @@ func main() {
 	invitationHandler := handler.NewInvitationHandler(invitationService, time.Duration(cfg.Jobs.InviteExpiryHours)*time.Hour)
 
 	adminHandler := handler.NewAdminHandler(
-		businessStore, buStore, serviceStore, pageStore, sectionStore, businessHoursStore, businessClosureStore, workingHoursService, appointmentStore, slotService, imageService, employeeService, pool,
+		businessStore, buStore, serviceStore, pageStore, sectionStore, businessHoursStore, businessClosureStore, workingHoursService, appointmentStore, slotService, imageService, employeeService, publishService, pool,
 	)
 
 	sseHandler := handler.NewSSEHandler(hub, businessStore)

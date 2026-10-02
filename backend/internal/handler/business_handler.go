@@ -34,6 +34,7 @@ type BusinessHandler struct {
 	businessClosureStore *store.BusinessClosureStore
 	businessHoursStore   *store.BusinessHoursStore
 	slotService          *service.SlotService
+	sitemapCache         *service.SitemapCache
 	appDomain            string
 }
 
@@ -49,6 +50,7 @@ func NewBusinessHandler(
 	businessClosureStore *store.BusinessClosureStore,
 	businessHoursStore *store.BusinessHoursStore,
 	slotService *service.SlotService,
+	sitemapCache *service.SitemapCache,
 	appDomain string,
 ) *BusinessHandler {
 	return &BusinessHandler{
@@ -63,6 +65,7 @@ func NewBusinessHandler(
 		businessClosureStore: businessClosureStore,
 		businessHoursStore:   businessHoursStore,
 		slotService:          slotService,
+		sitemapCache:         sitemapCache,
 		appDomain:            appDomain,
 	}
 }
@@ -132,8 +135,18 @@ func (h *BusinessHandler) ListBusinesses(w http.ResponseWriter, r *http.Request)
 }
 
 // Sitemap writes a sitemap.xml listing the app home plus every salon's public
-// subdomain URLs (landing, services, and each service detail page).
+// subdomain URLs (landing, services, and each service detail page). The result
+// is cached briefly and invalidated when a salon is published.
 func (h *BusinessHandler) Sitemap(w http.ResponseWriter, r *http.Request) {
+	if h.sitemapCache != nil {
+		if body, ok := h.sitemapCache.Get(); ok {
+			w.Header().Set("Content-Type", "application/xml; charset=utf-8")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write(body)
+			return
+		}
+	}
+
 	businesses, err := h.businessStore.List(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "failed to list businesses")
@@ -172,9 +185,14 @@ func (h *BusinessHandler) Sitemap(w http.ResponseWriter, r *http.Request) {
 
 	b.WriteString(`</urlset>`)
 
+	body := []byte(b.String())
+	if h.sitemapCache != nil {
+		h.sitemapCache.Set(body)
+	}
+
 	w.Header().Set("Content-Type", "application/xml; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(b.String()))
+	_, _ = w.Write(body)
 }
 
 const xmlHeader = `<?xml version="1.0" encoding="UTF-8"?>` + "\n"

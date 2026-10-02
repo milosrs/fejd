@@ -43,6 +43,7 @@ type AdminHandler struct {
 	slotService          *service.SlotService
 	imageService         *service.ImageService
 	employeeService      *service.EmployeeService
+	publishService       *service.SalonPublishService
 	pool                 *pgxpool.Pool
 }
 
@@ -59,6 +60,7 @@ func NewAdminHandler(
 	slotService *service.SlotService,
 	imageService *service.ImageService,
 	employeeService *service.EmployeeService,
+	publishService *service.SalonPublishService,
 	pool *pgxpool.Pool,
 ) *AdminHandler {
 	return &AdminHandler{
@@ -74,6 +76,7 @@ func NewAdminHandler(
 		slotService:          slotService,
 		imageService:         imageService,
 		employeeService:      employeeService,
+		publishService:       publishService,
 		pool:                 pool,
 	}
 }
@@ -1851,6 +1854,41 @@ func (h *AdminHandler) RenameBusiness(w http.ResponseWriter, r *http.Request) {
 	business.Name = name
 	business.Slug = newSlug
 	writeJSON(w, http.StatusOK, dto.BusinessFromModel(*business))
+}
+
+// PublishSalon godoc
+// @Summary      Publish salon to search engines
+// @Description  Detects whether the salon's public content changed since its last publish and, when it did, submits its URLs to the search engine and refreshes the sitemap.
+// @Tags         admin
+// @Produce      json
+// @Param        businessID path string true "Business UUID"
+// @Success      200 {object} PublishSalonResponse
+// @Failure      400 {object} ErrorResponse
+// @Failure      404 {object} ErrorResponse
+// @Failure      502 {object} ErrorResponse
+// @Security     BearerAuth
+// @Router       /api/admin/business/{businessID}/publish [post]
+func (h *AdminHandler) PublishSalon(w http.ResponseWriter, r *http.Request) {
+	businessID, err := uuid.Parse(chi.URLParam(r, "businessID"))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, errInvalidBusinessID.Error())
+		return
+	}
+
+	status, err := h.publishService.Publish(r.Context(), businessID)
+	if err != nil {
+		switch {
+		case errors.Is(err, service.ErrBusinessNotFound):
+			writeError(w, http.StatusNotFound, "business not found")
+		case errors.Is(err, service.ErrIndexingUnavailable):
+			writeError(w, http.StatusBadGateway, "could not reach the search engine")
+		default:
+			writeInternalError(w, err)
+		}
+		return
+	}
+
+	writeJSON(w, http.StatusOK, PublishSalonResponse{Status: string(status)})
 }
 
 // DeleteBusiness godoc

@@ -59,6 +59,15 @@ type Business struct {
 	RealmAdminCreated bool
 }
 
+// SalonPublish records the last content hash a salon was published to search
+// engines with. Comparing the current salon snapshot hash against ContentHash
+// tells whether a new publish would change anything.
+type SalonPublish struct {
+	BusinessID  uuid.UUID
+	ContentHash string
+	PublishedAt time.Time
+}
+
 type BusinessUser struct {
 	ID          uuid.UUID
 	BusinessID  uuid.UUID

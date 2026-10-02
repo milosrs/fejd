@@ -46,6 +46,7 @@ export interface CalendarGridProps {
   onSelect: (date: CalendarDate) => void
   today?: CalendarDate
   eventsByDay?: Record<string, ReservationTag[]>
+  closedDays?: ReadonlySet<string>
   minValue?: DateValue
   maxValue?: DateValue
   className?: string
@@ -66,6 +67,7 @@ export function CalendarGrid({
   onSelect,
   today,
   eventsByDay,
+  closedDays,
   minValue,
   maxValue,
   className,
@@ -161,6 +163,7 @@ export function CalendarGrid({
           const tags = eventsByDay?.[key] ?? []
           const isToday = !!today && cell.date.compare(today) === 0
           const isSelected = !!selected && cell.date.compare(selected) === 0
+          const isClosed = !!closedDays?.has(key)
           const isDisabled =
             (!!minValue && cell.date.compare(minValue) < 0) ||
             (!!maxValue && cell.date.compare(maxValue) > 0)
@@ -179,7 +182,9 @@ export function CalendarGrid({
                 isDisabled && "opacity-40",
                 isToday
                   ? "bg-blue-600 text-white"
-                  : "bg-muted hover:bg-accent",
+                  : isClosed
+                    ? "bg-rose-500/10 hover:bg-rose-500/15"
+                    : "bg-muted hover:bg-accent",
                 isSelected &&
                   (isToday ? "ring-2 ring-blue-400" : "ring-2 ring-blue-500/70"),
                 !isDisabled && !isToday && "cursor-pointer",
@@ -188,11 +193,22 @@ export function CalendarGrid({
               <span
                 className={cn(
                   "text-sm font-semibold leading-none",
-                  isToday ? "text-white" : "text-foreground",
+                  isToday ? "text-white" : isClosed ? "text-rose-600 dark:text-rose-400" : "text-foreground",
                 )}
               >
                 {cell.date.day}
               </span>
+
+              {isClosed && (
+                <span
+                  className={cn(
+                    "text-[11px] font-medium leading-tight",
+                    isToday ? "text-blue-100" : "text-rose-600 dark:text-rose-400",
+                  )}
+                >
+                  {t("calendar.closed")}
+                </span>
+              )}
 
               <div className="flex w-full flex-col gap-0.5">
                 {tags.slice(0, 2).map((tag) => (

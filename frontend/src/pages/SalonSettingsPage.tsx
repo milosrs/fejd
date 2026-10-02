@@ -1,15 +1,24 @@
 import { useState } from "react"
 import { NavLink, Outlet, Navigate } from "react-router"
-import { Pencil, Trash2, Settings } from "lucide-react"
+import { Pencil, Trash2, Settings, Globe } from "lucide-react"
 import { useSalonContext, useIsOwner } from "../context/SalonContext"
 import { useI18n } from "../lib/i18n"
 import { salonPath } from "../lib/salonDomain"
 import { useCanWrite } from "../hooks/useCanWrite"
+import { publishSalon } from "../lib/api"
 import { SalonLocationForm } from "../components/SalonLocationForm"
 import { RenameSalonDialog } from "../components/RenameSalonDialog"
 import { DeleteSalonDialog } from "../components/DeleteSalonDialog"
 import { Button } from "../components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card"
+
+const publishMessageStyles: Record<"success" | "warning" | "error", string> = {
+  success:
+    "rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400",
+  warning:
+    "rounded-xl border border-orange-500/40 bg-orange-500/15 p-3 text-sm text-orange-600 dark:text-orange-400",
+  error: "rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive",
+}
 
 export function SalonSettingsPage() {
   const { slug, salon } = useSalonContext()
@@ -74,8 +83,30 @@ export function SalonGeneralSettings() {
   const canWrite = useCanWrite()
   const [renameOpen, setRenameOpen] = useState(false)
   const [deleteOpen, setDeleteOpen] = useState(false)
+  const [publishing, setPublishing] = useState(false)
+  const [publishMessage, setPublishMessage] = useState<{
+    kind: "success" | "warning" | "error"
+    text: string
+  } | null>(null)
 
   if (!salon) return null
+
+  const handlePublish = async () => {
+    setPublishing(true)
+    setPublishMessage(null)
+    try {
+      const res = await publishSalon(salon.business.id)
+      setPublishMessage(
+        res.status === "no_changes"
+          ? { kind: "warning", text: t("publish.noChanges") }
+          : { kind: "success", text: t("publish.success") },
+      )
+    } catch {
+      setPublishMessage({ kind: "error", text: t("publish.error") })
+    } finally {
+      setPublishing(false)
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -109,6 +140,23 @@ export function SalonGeneralSettings() {
               <Trash2 /> {t("salon.delete")}
             </Button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t("publish.title")}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-sm text-muted-foreground">{t("publish.help")}</p>
+          <Button onClick={handlePublish} isDisabled={publishing || !canWrite}>
+            <Globe /> {publishing ? t("common.saving") : t("publish.button")}
+          </Button>
+          {publishMessage && (
+            <p className={publishMessageStyles[publishMessage.kind]}>
+              {publishMessage.text}
+            </p>
+          )}
         </CardContent>
       </Card>
 

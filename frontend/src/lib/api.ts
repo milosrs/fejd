@@ -85,3 +85,22 @@ export async function claimRegistrationRole(): Promise<boolean> {
   const body = await res.json().catch(() => ({}))
   return Boolean(body?.claimed)
 }
+
+export type PublishResult = { status: "published" | "no_changes" }
+
+/**
+ * Publish a salon's public pages to search engines. Uses raw fetch because the
+ * endpoint is not part of the generated openapi-types client surface yet.
+ */
+export async function publishSalon(businessId: string): Promise<PublishResult> {
+  const token = await auth.getToken()
+  const res = await fetch(`${API_BASE_URL}/api/admin/business/${businessId}/publish`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  })
+  if (!res.ok) {
+    const body = await res.json().catch(() => undefined)
+    throw new Error(body?.error ?? `publish failed: ${res.status}`)
+  }
+  return res.json() as Promise<PublishResult>
+}

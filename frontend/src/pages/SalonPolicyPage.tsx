@@ -45,6 +45,14 @@ const defaultSchedule = (): DaySchedule[] =>
 const dateInputClass =
   "h-8 rounded-2xl border border-border bg-input/50 px-2.5 text-sm text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
 
+type Feedback = { kind: "success" | "error"; text: string } | null
+
+const feedbackStyles: Record<"success" | "error", string> = {
+  success:
+    "rounded-xl border border-green-500/40 bg-green-500/10 p-3 text-sm text-green-600 dark:text-green-400",
+  error: "rounded-xl border border-destructive/40 bg-destructive/10 p-3 text-sm text-destructive",
+}
+
 // utcWallClockToLocal converts a UTC "HH:MM" wall-clock string (as stored by the
 // server) into the browser's local "HH:MM" for display in a time input.
 function utcWallClockToLocal(value: string): string {
@@ -129,7 +137,9 @@ export function SalonPolicyPage() {
   const [savingHours, setSavingHours] = useState(false)
   const [savingAppointments, setSavingAppointments] = useState(false)
   const [savingClosures, setSavingClosures] = useState(false)
-  const [error, setError] = useState("")
+  const [workingHoursFeedback, setWorkingHoursFeedback] = useState<Feedback>(null)
+  const [appointmentsFeedback, setAppointmentsFeedback] = useState<Feedback>(null)
+  const [closuresFeedback, setClosuresFeedback] = useState<Feedback>(null)
 
   useEffect(() => {
     if (!policy) return
@@ -213,10 +223,10 @@ export function SalonPolicyPage() {
   const addSingleClosure = () => {
     const date = singleDate.trim()
     if (!isValidDate(date)) {
-      setError(t("policy.nonWorkingDayInvalid"))
+      setClosuresFeedback({ kind: "error", text: t("policy.nonWorkingDayInvalid") })
       return
     }
-    setError("")
+    setClosuresFeedback(null)
     if (repeatYearly) {
       const [, month, day] = date.split("-").map(Number)
       setDateClosures((prev) => [
@@ -237,14 +247,14 @@ export function SalonPolicyPage() {
     const start = rangeStart.trim()
     const end = rangeEnd.trim()
     if (!isValidDate(start) || !isValidDate(end)) {
-      setError(t("policy.nonWorkingDayInvalid"))
+      setClosuresFeedback({ kind: "error", text: t("policy.nonWorkingDayInvalid") })
       return
     }
     if (end < start) {
-      setError(t("policy.nonWorkingDayInvalidRange"))
+      setClosuresFeedback({ kind: "error", text: t("policy.nonWorkingDayInvalidRange") })
       return
     }
-    setError("")
+    setClosuresFeedback(null)
     setDateClosures((prev) => [
       ...prev,
       { key: newClosureKey(), type: "range", start_date: start, end_date: end, reason: rangeReason.trim() || undefined },
@@ -299,37 +309,41 @@ export function SalonPolicyPage() {
     }
   }
 
-  const persistPolicy = async (setSaving: (v: boolean) => void) => {
-    setError("")
+  const persistPolicy = async (
+    setSaving: (v: boolean) => void,
+    setFeedback: (f: Feedback) => void,
+  ) => {
+    setFeedback(null)
     setSaving(true)
     try {
       await updateSalonPolicy(businessId, buildPolicyInput())
       await queryClient.invalidateQueries({ queryKey: ["salon", slug] })
       await queryClient.invalidateQueries({ queryKey: ["slots"] })
+      setFeedback({ kind: "success", text: t("policy.saved") })
     } catch {
-      setError(t("policy.failed"))
+      setFeedback({ kind: "error", text: t("policy.failed") })
     } finally {
       setSaving(false)
     }
   }
 
-  const saveWorkingHours = () => void persistPolicy(setSavingHours)
+  const saveWorkingHours = () => void persistPolicy(setSavingHours, setWorkingHoursFeedback)
 
   const saveAppointments = () => {
     const lead = parseInt(leadHours, 10)
     const interval = parseInt(slotInterval, 10)
     if (Number.isNaN(lead) || lead < 0) {
-      setError(t("policy.cancellationInvalid"))
+      setAppointmentsFeedback({ kind: "error", text: t("policy.cancellationInvalid") })
       return
     }
     if (Number.isNaN(interval) || interval <= 0) {
-      setError(t("policy.intervalInvalid"))
+      setAppointmentsFeedback({ kind: "error", text: t("policy.intervalInvalid") })
       return
     }
-    void persistPolicy(setSavingAppointments)
+    void persistPolicy(setSavingAppointments, setAppointmentsFeedback)
   }
 
-  const saveNonWorkingDays = () => void persistPolicy(setSavingClosures)
+  const saveNonWorkingDays = () => void persistPolicy(setSavingClosures, setClosuresFeedback)
 
   return (
     <div className="space-y-6">
@@ -377,10 +391,15 @@ export function SalonPolicyPage() {
             </div>
           ))}
         </CardContent>
-        <CardFooter className="justify-end">
-          <Button size="sm" onClick={saveWorkingHours} isDisabled={savingHours || !canWrite}>
-            <Save /> {savingHours ? t("common.saving") : t("common.save")}
-          </Button>
+        <CardFooter className="flex-col items-stretch gap-2">
+          {workingHoursFeedback && (
+            <p className={feedbackStyles[workingHoursFeedback.kind]}>{workingHoursFeedback.text}</p>
+          )}
+          <div className="flex justify-end">
+            <Button size="sm" onClick={saveWorkingHours} isDisabled={savingHours || !canWrite}>
+              <Save /> {savingHours ? t("common.saving") : t("common.save")}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
 
@@ -515,10 +534,15 @@ export function SalonPolicyPage() {
             />
           </div>
         </CardContent>
-        <CardFooter className="justify-end">
-          <Button size="sm" onClick={saveAppointments} isDisabled={savingAppointments || !canWrite}>
-            <Save /> {savingAppointments ? t("common.saving") : t("common.save")}
-          </Button>
+        <CardFooter className="flex-col items-stretch gap-2">
+          {appointmentsFeedback && (
+            <p className={feedbackStyles[appointmentsFeedback.kind]}>{appointmentsFeedback.text}</p>
+          )}
+          <div className="flex justify-end">
+            <Button size="sm" onClick={saveAppointments} isDisabled={savingAppointments || !canWrite}>
+              <Save /> {savingAppointments ? t("common.saving") : t("common.save")}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
 
@@ -637,14 +661,17 @@ export function SalonPolicyPage() {
             </div>
           )}
         </CardContent>
-        <CardFooter className="justify-end">
-          <Button size="sm" onClick={saveNonWorkingDays} isDisabled={savingClosures || !canWrite}>
-            <Save /> {savingClosures ? t("common.saving") : t("common.save")}
-          </Button>
+        <CardFooter className="flex-col items-stretch gap-2">
+          {closuresFeedback && (
+            <p className={feedbackStyles[closuresFeedback.kind]}>{closuresFeedback.text}</p>
+          )}
+          <div className="flex justify-end">
+            <Button size="sm" onClick={saveNonWorkingDays} isDisabled={savingClosures || !canWrite}>
+              <Save /> {savingClosures ? t("common.saving") : t("common.save")}
+            </Button>
+          </div>
         </CardFooter>
       </Card>
-
-      {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   )
 }

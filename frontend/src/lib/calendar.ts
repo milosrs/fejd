@@ -1,4 +1,4 @@
-import { CalendarDate, getDayOfWeek } from "@internationalized/date"
+import { CalendarDate, getDayOfWeek, parseDate } from "@internationalized/date"
 
 export interface MonthCell {
   date: CalendarDate
@@ -60,4 +60,31 @@ export function formatDuration(start: Date, end: Date): string {
   if (hours === 0) return `${minutes} min`
   if (minutes === 0) return hours === 1 ? "1 hour" : `${hours} hours`
   return `${hours}h ${minutes}m`
+}
+
+// BusinessClosure is the subset of a salon closure needed to derive the
+// concrete calendar dates the salon is closed on. Single-day and range closures
+// map to specific dates; weekly/yearly recurrences are not expanded here.
+export interface BusinessClosure {
+  type: string
+  start_date?: string
+  end_date?: string
+}
+
+// closureDateKeys returns the set of "YYYY-MM-DD" keys the salon is closed on,
+// expanding single-day and inclusive date-range closures.
+export function closureDateKeys(closures: readonly BusinessClosure[] | undefined): Set<string> {
+  const keys = new Set<string>()
+  for (const c of closures ?? []) {
+    if (c.type === "single" && c.start_date) {
+      keys.add(c.start_date)
+    } else if (c.type === "range" && c.start_date && c.end_date) {
+      const start = parseDate(c.start_date)
+      const end = parseDate(c.end_date)
+      for (let d = start; d.compare(end) <= 0; d = d.add({ days: 1 })) {
+        keys.add(d.toString())
+      }
+    }
+  }
+  return keys
 }
